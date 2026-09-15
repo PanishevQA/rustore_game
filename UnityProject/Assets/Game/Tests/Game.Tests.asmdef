@@ -1,6 +1,6 @@
 {
   "name": "Game.Tests",
-  "references": ["Game.Core", "Game.Gameplay"],
+  "references": ["Game.Core", "Game.Gameplay", "Game.Daily"],
   "optionalUnityReferences": ["TestAssemblies"],
   "includePlatforms": ["Editor"],
   "autoReferenced": false
