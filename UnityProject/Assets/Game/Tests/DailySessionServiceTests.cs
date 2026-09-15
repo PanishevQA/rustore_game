@@ -1,0 +1,135 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using DontGetSidetracked.Core;
+using DontGetSidetracked.Daily;
+using DontGetSidetracked.Gameplay;
+using DontGetSidetracked.Services;
+using NUnit.Framework;
+
+namespace DontGetSidetracked.Tests
+{
+    public sealed class DailySessionServiceTests
+    {
+        [Test]
+        public async Task LoadCurrentAsync_UsesCachedServerDaily_WhenNetworkFails()
+        {
+            var save = SaveData.CreateNew();
+            save.LastDaily = new DailyCacheData
+            {
+                ChallengeId = "daily_2026_09_15",
+                Seed = 123456,
+                GeneratorVersion = 1,
+                ServerTimeUtc = "2026-09-15T06:30:00Z"
+            };
+            var repo = new MemorySaveRepository(save);
+            var api = new FakeGameApi { FailGetDaily = true };
+            var service = new DailySessionService(api, repo, save);
+
+            DailyLoadResult result = await service.LoadCurrentAsync();
+
+            Assert.That(result.FromCache, Is.True);
+            Assert.That(result.Challenge.ChallengeId, Is.EqualTo("daily_2026_09_15"));
+            Assert.That(result.ServerTimeUtc, Is.EqualTo(new DateTime(2026, 9, 15, 6, 30, 0, DateTimeKind.Utc)));
+        }
+
+        [Test]
+        public async Task CompleteAndSubmitAsync_QueuesReplayOffline_AndUsesServerDateForStreak()
+        {
+            var save = SaveData.CreateNew();
+            save.Streak = 2;
+            save.LastCompletedDailyDateUtc = "2026-09-14T00:00:00.0000000Z";
+            var repo = new MemorySaveRepository(save);
+            var api = new FakeGameApi { FailSubmit = true };
+            var service = new DailySessionService(api, repo, save);
+            var challenge = new DailyChallengeFactory().Create("daily_2026_09_15", 77, 1);
+            var session = new DailyLoadResult(challenge, new DateTime(2026, 9, 15, 23, 59, 0, DateTimeKind.Utc), false);
+            List<IReadOnlyList<RecordedPoint>> replays = CreateReplays(challenge);
+            var scores = new List<double> { 90.1, 91.2, 92.3 };
+
+            DailyAttemptSubmissionResult result = await service.CompleteAndSubmitAsync(session, replays, scores, false);
+
+            Assert.That(result.SubmittedToServer, Is.False);
+            Assert.That(save.PendingAttempts.Count, Is.EqualTo(1));
+            Assert.That(save.Streak, Is.EqualTo(3));
+            Assert.That(save.CompletedDailyCount, Is.EqualTo(1));
+            Assert.That(save.LastCompletedDailyDateUtc.StartsWith("2026-09-15"), Is.True);
+            Assert.That(save.PersonalBest, Is.EqualTo(91.2).Within(0.001));
+        }
+
+        [Test]
+        public async Task FlushPendingAsync_SubmitsAndRemovesQueuedAttempt()
+        {
+            var save = SaveData.CreateNew();
+            var repo = new MemorySaveRepository(save);
+            var api = new FakeGameApi { FailSubmit = true };
+            var service = new DailySessionService(api, repo, save);
+            var challenge = new DailyChallengeFactory().Create("daily_2026_09_15", 88, 1);
+            var session = new DailyLoadResult(challenge, new DateTime(2026, 9, 15, 12, 0, 0, DateTimeKind.Utc), false);
+            List<IReadOnlyList<RecordedPoint>> replays = CreateReplays(challenge);
+            var scores = new List<double> { 80, 81, 82 };
+
+            await service.CompleteAndSubmitAsync(session, replays, scores, false);
+            Assert.That(save.PendingAttempts.Count, Is.EqualTo(1));
+
+            api.FailSubmit = false;
+            int flushed = await service.FlushPendingAsync();
+
+            Assert.That(flushed, Is.EqualTo(1));
+            Assert.That(save.PendingAttempts, Is.Empty);
+            Assert.That(api.SubmitCount, Is.EqualTo(2));
+        }
+
+        private static List<IReadOnlyList<RecordedPoint>> CreateReplays(DailyChallengeDefinition challenge)
+        {
+            var result = new List<IReadOnlyList<RecordedPoint>>(3);
+            for (int i = 0; i < 3; i++)
+            {
+                IReadOnlyList<FixedPoint2> route = challenge.Routes[i].ReferencePoints;
+                result.Add(new List<RecordedPoint>
+                {
+                    new RecordedPoint(route[0], 0),
+                    new RecordedPoint(route[route.Count - 1], 800)
+                });
+            }
+            return result;
+        }
+
+        private sealed class MemorySaveRepository : ISaveRepository
+        {
+            private SaveData _data;
+            public MemorySaveRepository(SaveData data) => _data = data;
+            public SaveData Load() => _data;
+            public void Save(SaveData data) => _data = data;
+        }
+
+        private sealed class FakeGameApi : IGameApi
+        {
+            public bool FailGetDaily;
+            public bool FailSubmit;
+            public int SubmitCount;
+
+            public Task<DailyDto> GetDailyAsync()
+            {
+                if (FailGetDaily) throw new InvalidOperationException("offline");
+                return Task.FromResult(new DailyDto
+                {
+                    challengeId = "daily_2026_09_15",
+                    seed = 123,
+                    generatorVersion = 1,
+                    serverTimeUtc = "2026-09-15T06:00:00Z"
+                });
+            }
+
+            public Task<double> SubmitDailyAttemptAsync(string playerId, DailyChallengeDefinition challenge, IReadOnlyList<IReadOnlyList<RecordedPoint>> replays, IReadOnlyList<double> clientScores, bool assisted)
+            {
+                SubmitCount++;
+                if (FailSubmit) throw new InvalidOperationException("offline");
+                return Task.FromResult(DailyChallengeFactory.DailyScore(clientScores));
+            }
+
+            public Task<string> CreateChallengeAsync(string playerId, string challengeId, double score) => Task.FromResult("https://example.test/c/test");
+            public Task<ReferralDto> GetReferralAsync(string referralId) => Task.FromResult(new ReferralDto { referralId = referralId });
+        }
+    }
+}

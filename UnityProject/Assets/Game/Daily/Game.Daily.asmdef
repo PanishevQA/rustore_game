@@ -1,6 +1,6 @@
 {
   "name": "Game.Daily",
   "rootNamespace": "DontGetSidetracked.Daily",
-  "references": ["Game.Core", "Game.Gameplay"],
+  "references": ["Game.Core", "Game.Gameplay", "Game.Services"],
   "autoReferenced": true
 }
