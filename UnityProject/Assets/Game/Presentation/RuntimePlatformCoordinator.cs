@@ -24,6 +24,7 @@ namespace DontGetSidetracked.Presentation
         private RuStoreUpdateService _updateService;
         private RuStoreReviewService _reviewService;
         private INotificationPermissionService _notificationPermission;
+        private LocalDailyNotificationScheduler _localNotificationScheduler;
         private ReviewPolicy _reviewPolicy;
         private GameBootstrap _bootstrap;
         private FieldInfo _modeField;
@@ -32,7 +33,7 @@ namespace DontGetSidetracked.Presentation
         private bool _reviewInFlight;
         private bool _mandatoryUpdate;
         private bool _updateInFlight;
-        private bool _pushEnabled;
+        private bool _localReminderEnabled;
         private bool _notificationPromptOpen;
         private bool _notificationRequestPending;
         private float _permissionResultEarliestTime;
@@ -59,6 +60,7 @@ namespace DontGetSidetracked.Presentation
             _updateService = new RuStoreUpdateService();
             _reviewService = new RuStoreReviewService();
             _notificationPermission = new AndroidNotificationPermissionService();
+            _localNotificationScheduler = new LocalDailyNotificationScheduler();
             _reviewPolicy = new ReviewPolicy();
             ResolveBootstrap();
             StartCoroutine(InitializeWhenHome());
@@ -100,10 +102,10 @@ namespace DontGetSidetracked.Presentation
             }
             catch (Exception error)
             {
-                Debug.Log($"Remote config refresh failed; using cache/defaults: {error.Message}");
+                Debug.Log($"Config refresh skipped; using local defaults/cache: {error.Message}");
             }
 
-            _pushEnabled = _config.GetBool("push_enabled", false);
+            _localReminderEnabled = _config.GetBool("local_daily_reminder_enabled", true);
             _mandatoryUpdate = _config.RequiresMandatoryUpdate(Application.version);
             bool recommendedUpdate = _config.ShouldRecommendUpdate(Application.version);
 
@@ -113,6 +115,11 @@ namespace DontGetSidetracked.Presentation
                 save.NotificationPermissionGranted = true;
                 _saveRepository.Save(save);
             }
+
+            if (_localReminderEnabled && save.CompletedDailyCount >= 1 && _notificationPermission.IsGranted)
+                ScheduleLocalReminder();
+            else if (!_localReminderEnabled)
+                _localNotificationScheduler.Cancel();
 
             if (_mandatoryUpdate)
             {
@@ -156,7 +163,7 @@ namespace DontGetSidetracked.Presentation
 
         private void TryOfferNotificationPermission()
         {
-            if (!_pushEnabled || _notificationRequestPending) return;
+            if (!_localReminderEnabled || _notificationRequestPending) return;
 
             SaveData save = _saveRepository.Load();
             if (save.CompletedDailyCount < 1 || save.NotificationValuePromptShown) return;
@@ -166,6 +173,7 @@ namespace DontGetSidetracked.Presentation
                 save.NotificationValuePromptShown = true;
                 save.NotificationPermissionGranted = true;
                 _saveRepository.Save(save);
+                ScheduleLocalReminder();
                 return;
             }
 
@@ -183,8 +191,17 @@ namespace DontGetSidetracked.Presentation
                 new Dictionary<string, object>
                 {
                     ["completed_daily"] = save.CompletedDailyCount,
-                    ["session_number"] = save.SessionNumber
+                    ["session_number"] = save.SessionNumber,
+                    ["purpose"] = "local_daily_reminder"
                 });
+
+            if (!_notificationPermission.IsRuntimePermissionRequired)
+            {
+                save.NotificationPermissionGranted = true;
+                _saveRepository.Save(save);
+                ScheduleLocalReminder();
+                return;
+            }
 
             _notificationRequestPending = true;
             _permissionResultEarliestTime = Time.unscaledTime + 0.75f;
@@ -198,12 +215,14 @@ namespace DontGetSidetracked.Presentation
             save.NotificationPermissionGranted = false;
             _saveRepository.Save(save);
             HideNotificationValuePrompt();
+            _localNotificationScheduler.Cancel();
 
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PushPermissionResult,
                 new Dictionary<string, object>
                 {
                     ["granted"] = false,
-                    ["stage"] = "value_prompt"
+                    ["stage"] = "value_prompt",
+                    ["purpose"] = "local_daily_reminder"
                 });
         }
 
@@ -215,12 +234,30 @@ namespace DontGetSidetracked.Presentation
             save.NotificationPermissionGranted = granted;
             _saveRepository.Save(save);
 
+            if (granted) ScheduleLocalReminder();
+            else _localNotificationScheduler.Cancel();
+
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PushPermissionResult,
                 new Dictionary<string, object>
                 {
                     ["granted"] = granted,
-                    ["stage"] = "android_runtime"
+                    ["stage"] = "android_runtime",
+                    ["purpose"] = "local_daily_reminder"
                 });
+        }
+
+        private void ScheduleLocalReminder()
+        {
+            if (!_localReminderEnabled || !_notificationPermission.IsGranted) return;
+            int hour = _config.GetInt("daily_reminder_hour", 10);
+            try
+            {
+                _localNotificationScheduler.ScheduleNext(hour);
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"Local Daily reminder was not scheduled: {error.Message}");
+            }
         }
 
         private async void TryRequestReviewAfterPositiveDaily()
@@ -229,6 +266,9 @@ namespace DontGetSidetracked.Presentation
             if (save.CompletedDailyCount <= _observedCompletedDaily) return;
 
             _observedCompletedDaily = save.CompletedDailyCount;
+            if (_localReminderEnabled && save.NotificationPermissionGranted)
+                ScheduleLocalReminder();
+
             int minSessions = _config.GetInt("review_min_sessions", 5);
             if (save.SessionNumber < minSessions) return;
             if (!_reviewPolicy.ShouldRequest(save, save.PersonalBest)) return;
@@ -327,7 +367,7 @@ namespace DontGetSidetracked.Presentation
             title.text = "НЕ ПРОПУСКАТЬ DAILY?";
             Text body = CreateText(_notificationPrompt.transform, "Body", 32, TextAnchor.MiddleCenter,
                 new Vector2(0.10f, 0.38f), new Vector2(0.90f, 0.68f));
-            body.text = "Разрешить одно напоминание, когда появится новый Daily Challenge?";
+            body.text = "Разрешить локальное напоминание, когда появится новый Daily Challenge?";
 
             CreateButton(_notificationPrompt.transform, "ВКЛЮЧИТЬ", new Vector2(0.10f, 0.12f), new Vector2(0.57f, 0.30f), AcceptNotificationValuePrompt);
             CreateButton(_notificationPrompt.transform, "НЕ СЕЙЧАС", new Vector2(0.60f, 0.12f), new Vector2(0.90f, 0.30f), DeclineNotificationValuePrompt);
