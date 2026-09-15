@@ -21,6 +21,7 @@ namespace DontGetSidetracked.Network
         public int interstitial_cooldown_sec = 180;
         public string share_copy_variant = "A";
         public int review_min_sessions = 5;
+        public bool push_enabled = false;
         public int daily_push_hour = 10;
         public string store_offer_variant = "A";
     }
@@ -111,6 +112,7 @@ namespace DontGetSidetracked.Network
             {
                 case "rewarded_enabled": return _snapshot.config.rewarded_enabled;
                 case "interstitial_enabled": return _snapshot.config.interstitial_enabled;
+                case "push_enabled": return _snapshot.config.push_enabled;
                 default: return fallback;
             }
         }
