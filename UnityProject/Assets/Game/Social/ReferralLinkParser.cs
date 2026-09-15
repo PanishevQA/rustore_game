@@ -8,7 +8,10 @@ namespace DontGetSidetracked.Social
         {
             referralId = null;
             if (string.IsNullOrWhiteSpace(value)) return false;
-            if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out Uri uri)) return false;
+
+            string raw = value.Trim();
+            if (raw.IndexOf("..", StringComparison.Ordinal) >= 0 || raw.IndexOf('\\') >= 0) return false;
+            if (!Uri.TryCreate(raw, UriKind.Absolute, out Uri uri)) return false;
 
             string candidate = null;
             if (string.Equals(uri.Scheme, "nesbeisya", StringComparison.OrdinalIgnoreCase) &&
