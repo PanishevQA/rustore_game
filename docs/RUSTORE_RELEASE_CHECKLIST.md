@@ -13,41 +13,56 @@
 - [ ] Цена в UI берётся только из каталога Pay SDK.
 - [ ] BillingClient packages отсутствуют.
 - [ ] Старые Maven/Artifactory/NPM URL отсутствуют.
-- [ ] Production preflight проходит без placeholder package/backend значений.
+- [ ] `OptionalBackendBaseUrl` остаётся пустым: production MVP не требует собственного backend/DB.
+- [ ] Production preflight проходит без placeholder package name и без demo ad IDs.
 
-## Pay / economy
+## Pay / economy — без собственного сервера
 
-- [ ] Backend настроен с `RUSTORE_PUBLIC_TOKEN` и числовым `RUSTORE_APP_ID`; секреты не лежат в git/client build.
-- [ ] Для sandbox явно выставлен `RUSTORE_PAY_SANDBOX=true`, для production — false/отсутствует.
-- [ ] Entitlement не выдаётся по одному client callback: backend повторно проверяет RuStore invoice по `invoiceId`.
-- [ ] Проверяются `appId`, `invoiceStatus == CONFIRMED`, `order.itemCode`, `purchaseId`.
-- [ ] Повторный invoice/purchase идемпотентен для того же player и отклоняется для другого player/product.
-- [ ] Протестированы success/cancel/error, повторный callback, потеря сети после оплаты и restore после reinstall.
-- [ ] Consumable `hints_10` не выдаётся дважды для одного `purchaseId`.
+- [ ] Покупки идут только через актуальный RuStore Pay SDK.
+- [ ] Успешная локальная выдача требует completed-result SDK с непустыми `purchaseId`/`invoiceId`.
+- [ ] `GetPurchases` восстанавливает non-consumable entitlements после переустановки/очистки локального save.
+- [ ] `ProcessedPurchaseIds` не позволяет дважды выдать consumable в рамках сохранённого локального состояния.
+- [ ] Протестированы success/cancel/error и restore.
+- [ ] Проверено, что отсутствие RuStore/сети не блокирует основной gameplay.
+- [ ] Принят риск offline-MVP: без собственного backend защита покупок и результатов от модифицированного клиента слабее, чем при server-side verification.
 
-## Viral loop
+## Advertising
 
-- [ ] Link `/c/{referralId}` открывает challenge в установленной игре.
-- [ ] Без игры landing ведёт на RuStore URL с `referrerId`.
-- [ ] Install Referrer читается на первом запуске и сохраняется до успешной обработки.
-- [ ] После установки открывается исходный duel/challenge, а не просто home.
+- [ ] Импортирован официальный Yandex Mobile Ads Unity plugin версии, повторно проверенной перед release.
+- [ ] Для текущей интеграции проверена ветка Unity Plugin 8.x; на дату разработки использовалась 8.4.0.
+- [ ] В Android Scripting Define Symbols есть `YANDEX_MOBILE_ADS`.
+- [ ] В `YandexMobileAdsSettings` указаны реальные rewarded/interstitial `R-M-...` IDs.
+- [ ] Demo IDs отсутствуют в production build.
+- [ ] Rewarded выдаёт награду только после `OnRewarded`.
+- [ ] Interstitial невозможен во время route display/drawing/result/share/store/purchase.
+- [ ] `remove_ads` и `starter_pack` отключают interstitial.
+- [ ] Frequency cap проверен на реальном устройстве.
+
+## Viral loop — без собственного сервера
+
+- [ ] Share содержит `nesbeisya://challenge/<token>` для установленной игры.
+- [ ] Share содержит RuStore install URL с тем же token в `referrerId` для нового пользователя.
+- [ ] Challenge token содержит дату, seed, generatorVersion и score отправителя.
+- [ ] Install Referrer читается один раз и сохраняется локально до обработки.
+- [ ] После установки приложение восстанавливает тот же duel без обращения к нашей БД.
 - [ ] Seed + generatorVersion приглашённого challenge совпадают с challenge отправителя.
+- [ ] Повреждённый/невалидный token отклоняется безопасно и не ломает Home.
 
-## Gameplay / честность
+## Daily / gameplay
 
+- [ ] Один UTC день + generatorVersion дают один и тот же deterministic seed на разных устройствах.
 - [ ] 1000+ generated routes проходят validator.
 - [ ] Golden seed совпадает минимум на двух Android ABI/device.
-- [ ] Backend пересчитывает score из replay; client score не считается доверенным.
-- [ ] assisted Daily попытки не попадают в основной leaderboard.
-- [ ] Interstitial невозможен во время route display/drawing/result share/purchase.
+- [ ] Replay score повторно рассчитывается локально из траектории, client display score не используется как источник расчёта.
+- [ ] Пользователь понимает, что Daily использует часы устройства; без backend невозможно надёжно защититься от ручной смены даты/времени.
+- [ ] Streak, personal best, статистика, settings и косметика работают без сети.
 - [ ] Offline Training работает без RuStore и сети.
-- [ ] Pending offline Daily replay корректно отправляется после восстановления сети.
 
 ## Push / notifications
 
 - [ ] Перед включением Push повторно сверена актуальная **Unity** версия SDK; не использовать Kotlin/Java version number как Unity package version.
 - [ ] `push_enabled` остаётся false, пока RuStore Push project/signature не настроены и не проверены.
-- [ ] Совместно протестированы `RuStoreUnityActivity`/`UnityPlayerActivity`, Pay, push tap и challenge deeplink на реальном устройстве.
+- [ ] Совместно протестированы Activity, Pay, push tap и challenge deeplink на реальном устройстве.
 - [ ] POST_NOTIFICATIONS на Android 13+ запрашивается только после завершённого Daily и value prompt.
 - [ ] Отказ от notification permission не блокирует игру и не вызывает повторный системный prompt автоматически.
 
@@ -55,10 +70,11 @@
 
 - [ ] Нет location/contacts/camera/microphone/SMS/file permissions без необходимости.
 - [ ] Review вызывается только после позитивного события и без просьбы «5 звёзд».
-- [ ] Mandatory Update блокирует устаревший client только на safe UI state, не посреди раунда.
-- [ ] Store/leaderboard корректно работают при offline/timeout и не блокируют gameplay.
-- [ ] Back button, pause/resume, background/foreground, screen lock и process recreation проверены на Android.
+- [ ] Update проверяется только на safe Home state, не посреди раунда.
+- [ ] Локальная статистика и Store корректно переживают отсутствие сети.
+- [ ] Android Back закрывает meta/notification prompt перед выходом или отменой активного раунда.
+- [ ] Pause/background во время активного раунда безопасно возвращает пользователя на Home.
 - [ ] Safe area, DPI/aspect ratios и читаемость проверены на нескольких устройствах.
-- [ ] Production crash reporting подключён и проверен тестовым exception без персональных данных.
-- [ ] Analytics события не содержат секреты, токены, полный replay без необходимости или PII.
+- [ ] `LocalCrashLog` пишет ограниченный on-device diagnostics log и не загружает его автоматически.
+- [ ] `LocalAnalyticsService` хранит ограниченный on-device журнал и не отправляет данные на наш сервер.
 - [ ] AAB release подписан production key и протестирован минимум на API 24 и Android 13+.
