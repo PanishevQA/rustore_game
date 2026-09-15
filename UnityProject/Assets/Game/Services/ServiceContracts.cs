@@ -144,11 +144,13 @@ namespace DontGetSidetracked.Services
         public string challengeId;
         public long seed;
         public int generatorVersion;
+        public int routeCount = 3;
         public string serverTimeUtc;
 
         public string ChallengeId => challengeId;
         public long Seed => seed;
         public int GeneratorVersion => generatorVersion;
+        public int RouteCount => routeCount <= 0 ? 3 : routeCount;
         public string ServerTimeUtc => serverTimeUtc;
     }
 
@@ -161,6 +163,7 @@ namespace DontGetSidetracked.Services
         public double inviterScore;
         public long seed;
         public int generatorVersion;
+        public int routeCount = 3;
         public string serverTimeUtc;
 
         public string ReferralId => referralId;
@@ -169,6 +172,7 @@ namespace DontGetSidetracked.Services
         public double InviterScore => inviterScore;
         public long Seed => seed;
         public int GeneratorVersion => generatorVersion;
+        public int RouteCount => routeCount <= 0 ? 3 : routeCount;
         public string ServerTimeUtc => serverTimeUtc;
     }
 
