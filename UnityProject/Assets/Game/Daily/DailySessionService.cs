@@ -71,6 +71,7 @@ namespace DontGetSidetracked.Daily
                     routeCount,
                     displayTimes);
 
+                ChallengeAssistanceTracker.Clear(challenge.ChallengeId);
                 _save.LastDaily = new DailyCacheData
                 {
                     ChallengeId = dto.ChallengeId,
@@ -99,6 +100,7 @@ namespace DontGetSidetracked.Daily
                     cache.GeneratorVersion,
                     routeCount,
                     CachedDisplayTimes(cache, routeCount));
+                ChallengeAssistanceTracker.Clear(cached.ChallengeId);
                 return new DailyLoadResult(cached, cachedServerTime, true);
             }
         }
@@ -117,13 +119,22 @@ namespace DontGetSidetracked.Daily
             _streakService.ApplyCompletedDaily(_save, session.ServerTimeUtc);
             _saveRepository.Save(_save);
 
-            double acceptedScore = await _api.SubmitDailyAttemptAsync(
-                _save.AnonymousPlayerId,
-                session.Challenge,
-                replays,
-                clientScores,
-                assisted);
-            return new DailyAttemptSubmissionResult(true, acceptedScore, localScore);
+            string challengeId = session.Challenge.ChallengeId;
+            bool effectiveAssisted = assisted || ChallengeAssistanceTracker.IsAssisted(challengeId);
+            try
+            {
+                double acceptedScore = await _api.SubmitDailyAttemptAsync(
+                    _save.AnonymousPlayerId,
+                    session.Challenge,
+                    replays,
+                    clientScores,
+                    effectiveAssisted);
+                return new DailyAttemptSubmissionResult(true, acceptedScore, localScore);
+            }
+            finally
+            {
+                ChallengeAssistanceTracker.Clear(challengeId);
+            }
         }
 
         public Task<int> FlushPendingAsync()
