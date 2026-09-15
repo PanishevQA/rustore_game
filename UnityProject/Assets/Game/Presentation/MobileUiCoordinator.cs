@@ -231,6 +231,7 @@ namespace DontGetSidetracked.Presentation
             string.Equals(canvasName, "GameCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "MetaCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "RewardedCanvas", StringComparison.Ordinal) ||
+            string.Equals(canvasName, "HintCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "NotificationValueCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "MandatoryUpdateCanvas", StringComparison.Ordinal);
 
