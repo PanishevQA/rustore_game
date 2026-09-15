@@ -10,7 +10,7 @@ using UnityEngine.Networking;
 
 namespace DontGetSidetracked.Network
 {
-    public sealed class UnityGameApi : IGameApi
+    public sealed class UnityGameApi : IGameApi, ILeaderboardApi
     {
         private readonly string _baseUrl;
         private readonly int _timeoutSeconds;
@@ -25,6 +25,15 @@ namespace DontGetSidetracked.Network
         {
             string json = await SendAsync("GET", "/daily", null);
             return JsonUtility.FromJson<DailyDto>(json);
+        }
+
+        public async Task<LeaderboardDto> GetDailyLeaderboardAsync(string challengeId, int limit = 100)
+        {
+            if (string.IsNullOrWhiteSpace(challengeId)) throw new ArgumentException("Challenge id is required.", nameof(challengeId));
+            limit = Math.Max(1, Math.Min(100, limit));
+            string path = "/leaderboard/daily?challengeId=" + UnityWebRequest.EscapeURL(challengeId) + "&limit=" + limit;
+            string json = await SendAsync("GET", path, null);
+            return JsonUtility.FromJson<LeaderboardDto>(json);
         }
 
         public async Task<double> SubmitDailyAttemptAsync(
