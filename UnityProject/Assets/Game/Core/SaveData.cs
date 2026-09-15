@@ -17,6 +17,7 @@ namespace DontGetSidetracked.Core
         public string ChallengeId = string.Empty;
         public long Seed;
         public int GeneratorVersion = 1;
+        public int RouteCount = 3;
         public string ServerTimeUtc = string.Empty;
     }
 
@@ -49,7 +50,7 @@ namespace DontGetSidetracked.Core
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 8;
+        public const int CurrentVersion = 9;
 
         public int Version = CurrentVersion;
         public string AnonymousPlayerId = string.Empty;
@@ -148,6 +149,14 @@ namespace DontGetSidetracked.Core
                 data.Version = 8;
             }
 
+            if (data.Version == 8)
+            {
+                if (data.LastDaily == null) data.LastDaily = new DailyCacheData();
+                if (data.LastDaily.RouteCount < 1 || data.LastDaily.RouteCount > 3)
+                    data.LastDaily.RouteCount = 3;
+                data.Version = 9;
+            }
+
             if (string.IsNullOrWhiteSpace(data.AnonymousPlayerId))
                 data.AnonymousPlayerId = "anon_" + Guid.NewGuid().ToString("N");
             if (data.Settings == null) data.Settings = new GameSettingsData();
@@ -155,6 +164,7 @@ namespace DontGetSidetracked.Core
             if (data.Entitlements == null) data.Entitlements = new List<string>();
             if (data.ProcessedPurchaseIds == null) data.ProcessedPurchaseIds = new List<string>();
             if (data.LastDaily == null) data.LastDaily = new DailyCacheData();
+            if (data.LastDaily.RouteCount < 1 || data.LastDaily.RouteCount > 3) data.LastDaily.RouteCount = 3;
             if (data.PendingAttempts == null) data.PendingAttempts = new List<PendingDailyAttemptData>();
 
             data.Version = SaveData.CurrentVersion;
