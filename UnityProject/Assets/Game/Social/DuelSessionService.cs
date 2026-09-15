@@ -21,6 +21,7 @@ namespace DontGetSidetracked.Social
 
     public sealed class DuelSubmissionResult
     {
+        // Kept for presentation/API compatibility. In the release build the accepted provider is local.
         public bool SubmittedToServer { get; }
         public double Score { get; }
         public double InviterScore { get; }
@@ -80,65 +81,21 @@ namespace DontGetSidetracked.Social
 
             double localScore = DailyChallengeFactory.DailyScore(clientScores);
             if (localScore > _save.PersonalBest) _save.PersonalBest = localScore;
-
-            bool submitted = false;
-            double score = localScore;
-            try
-            {
-                score = await _api.SubmitDailyAttemptAsync(
-                    _save.AnonymousPlayerId,
-                    session.Challenge,
-                    replays,
-                    clientScores,
-                    false);
-                submitted = true;
-            }
-            catch
-            {
-                _save.PendingAttempts.Add(ToPendingAttempt(session.Challenge, replays, clientScores));
-            }
-
             if (string.Equals(_save.PendingReferralId, session.Referral.ReferralId, StringComparison.OrdinalIgnoreCase))
                 _save.PendingReferralId = string.Empty;
+
+            // Persist local progress before invoking the provider; a provider failure never creates a
+            // nonexistent "sync later" queue in the offline-first release.
             _saveRepository.Save(_save);
 
-            return new DuelSubmissionResult(submitted, score, session.Referral.InviterScore);
-        }
+            double acceptedScore = await _api.SubmitDailyAttemptAsync(
+                _save.AnonymousPlayerId,
+                session.Challenge,
+                replays,
+                clientScores,
+                false);
 
-        private static PendingDailyAttemptData ToPendingAttempt(
-            DailyChallengeDefinition challenge,
-            IReadOnlyList<IReadOnlyList<RecordedPoint>> replays,
-            IReadOnlyList<double> clientScores)
-        {
-            var pending = new PendingDailyAttemptData
-            {
-                ChallengeId = challenge.ChallengeId,
-                Seed = challenge.Seed,
-                GeneratorVersion = challenge.GeneratorVersion,
-                Assisted = false
-            };
-
-            for (int i = 0; i < 3; i++)
-            {
-                var route = new PendingRouteAttemptData
-                {
-                    RouteIndex = i,
-                    ClientScore = clientScores[i]
-                };
-                IReadOnlyList<RecordedPoint> replay = replays[i];
-                for (int p = 0; p < replay.Count; p++)
-                {
-                    route.Points.Add(new ReplayPointData
-                    {
-                        X = replay[p].Position.X,
-                        Y = replay[p].Position.Y,
-                        TimestampMs = replay[p].TimestampMs
-                    });
-                }
-                pending.Routes.Add(route);
-            }
-
-            return pending;
+            return new DuelSubmissionResult(true, acceptedScore, session.Referral.InviterScore);
         }
 
         private static void ValidateAttempt(
