@@ -49,7 +49,7 @@ namespace DontGetSidetracked.Core
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 4;
+        public const int CurrentVersion = 5;
 
         public int Version = CurrentVersion;
         public string AnonymousPlayerId = string.Empty;
@@ -63,6 +63,7 @@ namespace DontGetSidetracked.Core
         public string LastCompletedDailyDateUtc = string.Empty;
         public DailyCacheData LastDaily = new DailyCacheData();
         public string PendingReferralId = string.Empty;
+        public bool InstallReferrerConsumed;
         public int SessionNumber;
         public int CompletedDailyCount;
         public List<PendingDailyAttemptData> PendingAttempts = new List<PendingDailyAttemptData>();
@@ -110,6 +111,13 @@ namespace DontGetSidetracked.Core
                 data.LastReviewRequestSession = 0;
                 data.ReviewRequestCount = 0;
                 data.Version = 4;
+            }
+
+            if (data.Version == 4)
+            {
+                // Existing installs have never consumed the one-shot Install Referrer through this app version.
+                data.InstallReferrerConsumed = false;
+                data.Version = 5;
             }
 
             if (string.IsNullOrWhiteSpace(data.AnonymousPlayerId))
