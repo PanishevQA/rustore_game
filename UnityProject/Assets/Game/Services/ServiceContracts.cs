@@ -61,11 +61,46 @@ namespace DontGetSidetracked.Services
         }
     }
 
+    public sealed class PurchaseVerificationResult
+    {
+        public bool Verified { get; }
+        public string ProductId { get; }
+        public string PurchaseId { get; }
+        public string InvoiceId { get; }
+        public string Status { get; }
+        public string ErrorMessage { get; }
+
+        public PurchaseVerificationResult(
+            bool verified,
+            string productId,
+            string purchaseId,
+            string invoiceId,
+            string status,
+            string errorMessage = null)
+        {
+            Verified = verified;
+            ProductId = productId;
+            PurchaseId = purchaseId;
+            InvoiceId = invoiceId;
+            Status = status;
+            ErrorMessage = errorMessage;
+        }
+    }
+
     public interface IPaymentService
     {
         Task<IReadOnlyList<StoreProduct>> GetProductsAsync(IReadOnlyList<string> productIds);
         Task<PaymentPurchaseResult> PurchaseAsync(string productId);
         Task<IReadOnlyList<string>> RestoreEntitlementsAsync();
+    }
+
+    public interface IPurchaseVerificationApi
+    {
+        Task<PurchaseVerificationResult> VerifyPurchaseAsync(
+            string playerId,
+            string productId,
+            string invoiceId,
+            string purchaseId);
     }
 
     public interface IAnalyticsService
