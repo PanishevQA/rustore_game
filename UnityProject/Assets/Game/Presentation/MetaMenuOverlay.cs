@@ -13,7 +13,8 @@ using UnityEngine.UI;
 namespace DontGetSidetracked.Presentation
 {
     /// <summary>
-    /// Home-only meta UI. Gameplay stays in GameBootstrap; this component owns leaderboard/store surfaces.
+    /// Home-only meta UI for the offline-first MVP: local statistics + RuStore shop.
+    /// No developer-operated backend is required.
     /// </summary>
     public sealed class MetaMenuOverlay : MonoBehaviour
     {
@@ -26,9 +27,7 @@ namespace DontGetSidetracked.Presentation
         private FieldInfo _modeField;
         private JsonFileSaveRepository _saveRepository;
         private SaveData _save;
-        private UnityGameApi _api;
         private StoreService _store;
-        private LeaderboardService _leaderboard;
         private bool _panelOpen;
         private float _nextVisibilityCheck;
 
@@ -44,9 +43,7 @@ namespace DontGetSidetracked.Presentation
         private void Awake()
         {
             _saveRepository = new JsonFileSaveRepository();
-            _save = _saveRepository.Load();
-            _api = new UnityGameApi(GameRuntimeSettings.BackendBaseUrl);
-            RebuildServices();
+            RebuildStore();
             BuildUi();
             ResolveBootstrap();
             SetHomeButtonsVisible(false);
@@ -60,16 +57,16 @@ namespace DontGetSidetracked.Presentation
             SetHomeButtonsVisible(!_panelOpen && IsHomeMode());
         }
 
-        private void RebuildServices()
+        private void RebuildStore()
         {
             _save = _saveRepository.Load();
+            var localApi = new UnityGameApi(GameRuntimeSettings.BackendBaseUrl);
             _store = new StoreService(
                 new RuStorePaymentService(),
                 _saveRepository,
                 _save,
-                _api,
+                localApi,
                 _save.AnonymousPlayerId);
-            _leaderboard = new LeaderboardService(_api, _save.AnonymousPlayerId);
         }
 
         private void ResolveBootstrap()
@@ -87,43 +84,30 @@ namespace DontGetSidetracked.Presentation
             return mode != null && string.Equals(mode.ToString(), "Home", StringComparison.Ordinal);
         }
 
-        private async void OpenLeaderboard()
+        private void OpenStatistics()
         {
             _panelOpen = true;
-            ShowPanel("РЕЙТИНГ", "Загружаем подтверждённые результаты…");
+            RebuildStore();
+            ShowPanel("СТАТИСТИКА", BuildStatisticsText());
+        }
 
-            try
-            {
-                RebuildServices();
-                string challengeId = _save.LastDaily?.ChallengeId;
-                if (string.IsNullOrWhiteSpace(challengeId))
-                {
-                    _panelBody.text = "Сначала открой Daily Challenge, чтобы узнать рейтинг дня.";
-                    return;
-                }
+        private string BuildStatisticsText()
+        {
+            string best = _save.PersonalBest > 0 ? _save.PersonalBest.ToString("0.0") + "%" : "—";
+            int cosmetics = _save.Inventory?.Count ?? 0;
+            int purchases = _save.ProcessedPurchaseIds?.Count ?? 0;
+            string lastDaily = _save.LastCompletedDailyDateUtc;
+            if (string.IsNullOrWhiteSpace(lastDaily)) lastDaily = "—";
 
-                LeaderboardSnapshot snapshot = await _leaderboard.LoadAsync(challengeId, 50);
-                var lines = new List<string>();
-                int visible = Math.Min(10, snapshot.Items.Count);
-                for (int i = 0; i < visible; i++)
-                {
-                    LeaderboardItemDto item = snapshot.Items[i];
-                    string me = string.Equals(item.PlayerId, _save.AnonymousPlayerId, StringComparison.Ordinal) ? "  ← ВЫ" : string.Empty;
-                    lines.Add($"#{item.Rank}   {ShortPlayer(item.PlayerId)}   {item.Score:0.0}%{me}");
-                }
-
-                if (snapshot.CurrentPlayer != null && snapshot.CurrentPlayer.Rank > visible)
-                    lines.Add($"\nВАША ПОЗИЦИЯ: #{snapshot.CurrentPlayer.Rank}   {snapshot.CurrentPlayer.Score:0.0}%");
-                else if (snapshot.CurrentPlayer == null)
-                    lines.Add("\nВаш подтверждённый результат пока не попал в топ-50.");
-
-                _panelBody.text = lines.Count == 0 ? "Пока нет результатов." : string.Join("\n", lines);
-            }
-            catch (Exception error)
-            {
-                Debug.LogWarning($"Leaderboard unavailable: {error.Message}");
-                _panelBody.text = "Рейтинг сейчас недоступен. Попробуйте позже.";
-            }
+            return
+                $"🔥 Серия: {_save.Streak} дней\n" +
+                $"Лучший Daily: {best}\n" +
+                $"Завершено Daily: {_save.CompletedDailyCount}\n" +
+                $"Последний Daily: {lastDaily}\n" +
+                $"Подсказки: {_save.Hints}\n" +
+                $"Косметика: {cosmetics}\n" +
+                $"Покупок применено: {purchases}\n\n" +
+                "Все игровые результаты хранятся на этом устройстве.";
         }
 
         private async void OpenStore()
@@ -134,14 +118,14 @@ namespace DontGetSidetracked.Presentation
 
             try
             {
-                RebuildServices();
+                RebuildStore();
                 IReadOnlyList<StoreProduct> products = await _store.LoadCatalogAsync();
                 RenderStore(products);
             }
             catch (Exception error)
             {
                 Debug.LogWarning($"Store unavailable: {error.Message}");
-                _panelBody.text = "Магазин сейчас недоступен. Игра продолжает работать без покупок.";
+                _panelBody.text = "Магазин сейчас недоступен. Игра продолжает работать полностью локально.";
                 ClearActions();
                 AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases);
             }
@@ -188,11 +172,9 @@ namespace DontGetSidetracked.Presentation
                 _save = _store.Save;
                 if (result?.Payment?.Outcome == PurchaseOutcome.Completed && result.Verified)
                 {
-                    AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseSuccess, Params(
-                        "product_id", productId,
-                        "purchase_id", result.Verification?.PurchaseId ?? string.Empty));
+                    AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseSuccess, Params("product_id", productId));
                     _panelBody.text = result.GrantApplied
-                        ? "Покупка проверена сервером и применена."
+                        ? "Покупка подтверждена RuStore и применена на этом устройстве."
                         : "Покупка уже была применена ранее.";
                 }
                 else if (result?.Payment?.Outcome == PurchaseOutcome.Cancelled)
@@ -200,19 +182,11 @@ namespace DontGetSidetracked.Presentation
                     AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseCancel, Params("product_id", productId));
                     _panelBody.text = "Покупка отменена.";
                 }
-                else if (result?.Payment?.Outcome == PurchaseOutcome.Completed)
-                {
-                    string verificationError = result.Verification?.ErrorMessage ?? "verification_failed";
-                    AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseError, Params(
-                        "product_id", productId,
-                        "error", verificationError));
-                    _panelBody.text = "Оплата получена, но серверная проверка пока не завершена. Товар не выдан. Попробуйте восстановление позже.";
-                }
                 else
                 {
                     AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseError, Params(
                         "product_id", productId,
-                        "error", result?.Payment?.ErrorMessage ?? "unknown"));
+                        "error", result?.Verification?.ErrorMessage ?? result?.Payment?.ErrorMessage ?? "unknown"));
                     _panelBody.text = "Покупка не завершена. Товар не выдан.";
                 }
             }
@@ -238,7 +212,7 @@ namespace DontGetSidetracked.Presentation
                 int restored = await _store.RestoreAsync();
                 _save = _store.Save;
                 _panelBody.text = restored > 0
-                    ? $"Восстановлено: {restored}. Откройте магазин снова, чтобы увидеть статус товаров."
+                    ? $"Восстановлено: {restored}."
                     : "Новых покупок для восстановления нет.";
             }
             catch (Exception error)
@@ -270,7 +244,7 @@ namespace DontGetSidetracked.Presentation
             _homeButtons = new GameObject("HomeMetaButtons", typeof(RectTransform));
             _homeButtons.transform.SetParent(canvasGo.transform, false);
             SetAnchors(_homeButtons.GetComponent<RectTransform>(), Vector2.zero, Vector2.one);
-            CreateButton(_homeButtons.transform, "РЕЙТИНГ", new Vector2(0.52f, 0.035f), new Vector2(0.71f, 0.105f), OpenLeaderboard);
+            CreateButton(_homeButtons.transform, "СТАТИСТИКА", new Vector2(0.52f, 0.035f), new Vector2(0.71f, 0.105f), OpenStatistics);
             CreateButton(_homeButtons.transform, "МАГАЗИН", new Vector2(0.72f, 0.035f), new Vector2(0.92f, 0.105f), OpenStore);
 
             _panel = new GameObject("MetaPanel", typeof(RectTransform), typeof(Image));
@@ -390,12 +364,6 @@ namespace DontGetSidetracked.Presentation
             rt.anchorMax = max;
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
-        }
-
-        private static string ShortPlayer(string id)
-        {
-            if (string.IsNullOrWhiteSpace(id)) return "ANON";
-            return id.Length <= 10 ? id : id.Substring(0, 6) + "…" + id.Substring(id.Length - 3);
         }
 
         private static string ProductLabel(string id)
