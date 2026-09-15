@@ -120,6 +120,17 @@ def _daily_payload(day: date) -> dict:
     }
 
 
+def _referral_payload(data: dict) -> dict:
+    day = _parse_challenge_id(data["challengeId"])
+    daily = _daily_payload(day)
+    return {
+        **data,
+        "seed": daily["seed"],
+        "generatorVersion": daily["generatorVersion"],
+        "serverTimeUtc": daily["serverTimeUtc"],
+    }
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True, "generatorVersion": GENERATOR_VERSION}
@@ -214,7 +225,7 @@ def get_challenge(referral_id: str) -> dict:
     data = store.get_referral(referral_id)
     if not data:
         raise HTTPException(404, "challenge not found")
-    return data
+    return _referral_payload(data)
 
 
 @app.get("/referral/{referral_id}")
@@ -222,7 +233,7 @@ def get_referral(referral_id: str) -> dict:
     data = store.get_referral(referral_id, increment_open=True)
     if not data:
         raise HTTPException(404, "referral not found")
-    return data
+    return _referral_payload(data)
 
 
 @app.post("/referral")
@@ -231,7 +242,7 @@ def consume_referral(payload: dict) -> dict:
     data = store.get_referral(referral_id, increment_open=True)
     if not data:
         raise HTTPException(404, "referral not found")
-    return {"accepted": True, **data}
+    return {"accepted": True, **_referral_payload(data)}
 
 
 @app.post("/analytics/events")
