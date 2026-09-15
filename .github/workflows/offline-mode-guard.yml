@@ -18,13 +18,17 @@ jobs:
           grep -q 'OfflineGameApi' UnityProject/Assets/Game/Network/UnityGameApi.cs
           grep -q 'SeedForDate' UnityProject/Assets/Game/Social/OfflineGameApi.cs
           grep -q 'BuildInstallUrl' UnityProject/Assets/Game/Social/OfflineGameApi.cs
-          if grep -RInE 'ProductionBackendBaseUrl|backend is required|configure the deployed HTTPS backend' \
+
+          # Reject concrete release wiring to a mandatory developer backend. Do not match prose such as
+          # "no backend is required", because that would be a self-defeating false positive.
+          if grep -RInE 'ProductionBackendBaseUrl|configure the deployed HTTPS backend|REQUIRED_BACKEND_URL' \
               UnityProject/Assets/Game docs README.md \
               --exclude=UnityGameApi.cs \
               --exclude=BootstrapRemoteConfigService.cs; then
-            echo 'Mandatory developer-backend dependency text/code detected.'
+            echo 'Mandatory developer-backend configuration detected.'
             exit 1
           fi
+
           if grep -RInE 'https?://(localhost|127\.0\.0\.1)' UnityProject/Assets/Game; then
             echo 'Local developer HTTP endpoint leaked into runtime.'
             exit 1
