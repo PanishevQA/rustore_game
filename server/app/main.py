@@ -12,6 +12,12 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from .game_rules import RecordedPoint, create_daily_routes, score_route, validate_replay
+from .rustore_pay import (
+    RuStorePayConfigurationError,
+    RuStorePayUpstreamError,
+    RuStorePayVerificationError,
+    verify_rustore_purchase,
+)
 from .store import Store
 
 app = FastAPI(title="НЕ СБЕЙСЯ! API", version="0.1.0")
@@ -21,6 +27,14 @@ RUSTORE_PACKAGE_NAME = os.getenv("RUSTORE_PACKAGE_NAME", "ru.panishedqa.nesbeisy
 DAILY_SECRET = os.getenv("DAILY_SECRET", "dev-only-change-me")
 GENERATOR_VERSION = 1
 store = Store(DB_PATH)
+
+MVP_PRODUCT_IDS = {
+    "remove_ads",
+    "starter_pack",
+    "skin_neon",
+    "skin_retro",
+    "hints_10",
+}
 
 ANALYTICS_EVENT_NAMES = {
     "app_open",
@@ -78,6 +92,13 @@ class ChallengeRequest(BaseModel):
     inviterId: str = Field(min_length=4, max_length=128)
     challengeId: str
     score: float = Field(ge=0, le=100)
+
+
+class PurchaseVerifyRequest(BaseModel):
+    playerId: str = Field(min_length=4, max_length=128)
+    productId: str = Field(min_length=1, max_length=128)
+    invoiceId: str = Field(min_length=1, max_length=128)
+    purchaseId: str | None = Field(default=None, max_length=128)
 
 
 class AnalyticsParameterDto(BaseModel):
@@ -269,10 +290,44 @@ def analytics_events(request: AnalyticsBatchRequest) -> dict:
 
 
 @app.post("/purchase/verify")
-def verify_purchase() -> dict:
-    # Requires RuStore server-side credentials and the concrete verification API contract.
-    # Fail closed until configured: never grant entitlement from a client-only claim.
-    raise HTTPException(501, "RuStore server-side purchase verification is not configured")
+def verify_purchase(request: PurchaseVerifyRequest) -> dict:
+    if request.productId not in MVP_PRODUCT_IDS:
+        raise HTTPException(400, "unknown productId")
+
+    try:
+        verified = verify_rustore_purchase(
+            request.invoiceId,
+            request.productId,
+            request.purchaseId,
+        )
+    except RuStorePayConfigurationError as exc:
+        # Release infrastructure is intentionally fail-closed until credentials are configured.
+        raise HTTPException(503, str(exc)) from exc
+    except RuStorePayUpstreamError as exc:
+        raise HTTPException(502, str(exc)) from exc
+    except RuStorePayVerificationError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+    try:
+        first_claim = store.claim_purchase(
+            verified.invoice_id,
+            verified.purchase_id,
+            verified.product_id,
+            request.playerId,
+            verified.status,
+        )
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+    return {
+        "verified": True,
+        "productId": verified.product_id,
+        "purchaseId": verified.purchase_id,
+        "invoiceId": verified.invoice_id,
+        "status": verified.status,
+        "firstClaim": first_claim,
+        "errorMessage": None,
+    }
 
 
 @app.get("/c/{referral_id}", response_class=HTMLResponse)
