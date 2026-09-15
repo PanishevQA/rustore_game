@@ -34,7 +34,8 @@ namespace DontGetSidetracked.Social
 
         public static bool IsValidReferralId(string value)
         {
-            if (string.IsNullOrWhiteSpace(value) || value.Length < 4 || value.Length > 32) return false;
+            // L3 self-contained tokens are up to 36 chars for a 3-route Daily.
+            if (string.IsNullOrWhiteSpace(value) || value.Length < 4 || value.Length > 48) return false;
             for (int i = 0; i < value.Length; i++)
             {
                 char c = value[i];
