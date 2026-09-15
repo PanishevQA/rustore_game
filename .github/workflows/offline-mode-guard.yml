@@ -16,6 +16,8 @@ jobs:
           test -f UnityProject/Assets/Game/Social/OfflineGameApi.cs
           test -f UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
           test -f UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs
+          test -f UnityProject/Assets/Game/Gameplay/ChallengeAssistanceTracker.cs
           grep -q 'OptionalBackendBaseUrl = ""' UnityProject/Assets/Game/Presentation/GameRuntimeSettings.cs
           grep -q 'OfflineGameApi' UnityProject/Assets/Game/Network/UnityGameApi.cs
           grep -q 'SeedForDate' UnityProject/Assets/Game/Social/OfflineGameApi.cs
@@ -34,6 +36,18 @@ jobs:
           grep -q 'DisplayTimeMediumMs' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'DisplayTimeHardMs' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'RouteCount' UnityProject/Assets/Game/Presentation/GameBootstrap.cs
+
+          # Hints bought in the store or earned via rewarded ads must be usable, locally persisted,
+          # and Daily hint usage must propagate as assisted instead of silently remaining competitive.
+          grep -q 'save.Hints--' UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs
+          grep -q 'ChallengeAssistanceTracker.MarkAssisted' UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs
+          grep -q 'ChallengeAssistanceTracker.IsAssisted' UnityProject/Assets/Game/Daily/DailySessionService.cs
+          grep -q 'string.Equals(mode, "Daily"' UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs
+          grep -q 'string.Equals(mode, "Training"' UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs
+          if grep -n 'string.Equals(mode, "Duel"' UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs; then
+            echo 'Hints must not be offered in friend Duel mode.'
+            exit 1
+          fi
 
           # Remote Config controls session tuning but never route geometry.
           grep -q 'RuStoreRemoteConfigService' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs
