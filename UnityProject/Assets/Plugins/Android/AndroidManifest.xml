@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Declared for optional Daily reminders. Android 13+ runtime request is feature-flagged and contextual. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application>
         <!-- RuStore Pay 11.x requires UnityPlayerActivity. Do not switch Android Application Entry to GameActivity. -->
         <activity
