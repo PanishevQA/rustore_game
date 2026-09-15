@@ -19,7 +19,19 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public void StreakUsesServerDateAndDoesNotDoubleCountDay()
+        public void Version7MigrationClearsObsoletePendingBackendAttempts()
+        {
+            var data = new SaveData { Version = 7 };
+            data.PendingAttempts.Add(new PendingDailyAttemptData { ChallengeId = "legacy" });
+
+            SaveData migrated = SaveMigrator.Migrate(data);
+
+            Assert.That(migrated.Version, Is.EqualTo(8));
+            Assert.That(migrated.PendingAttempts, Is.Empty);
+        }
+
+        [Test]
+        public void StreakUsesUtcChallengeDateAndDoesNotDoubleCountDay()
         {
             var save = SaveData.CreateNew();
             var streak = new StreakService();
