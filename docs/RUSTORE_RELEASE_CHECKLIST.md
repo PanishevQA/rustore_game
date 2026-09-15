@@ -15,6 +15,9 @@
 - [ ] Старые Maven/Artifactory/NPM URL отсутствуют.
 - [ ] `OptionalBackendBaseUrl` остаётся пустым: production MVP не требует собственного backend/DB.
 - [ ] Production preflight проходит без placeholder package name, пустого Remote Config App ID и demo ad IDs.
+- [ ] Release build — AAB, IL2CPP, ARM64, положительный versionCode.
+- [ ] Включён custom production keystore и выбран production key alias; debug/default signing не используется.
+- [ ] Keystore/passwords не закоммичены в репозиторий.
 
 ## Remote Config — RuStore, без собственного backend
 
@@ -23,7 +26,7 @@
 - [ ] В RuStore Console заведены ключи с корректными типами: `route_display_time_easy_ms`, `route_display_time_medium_ms`, `route_display_time_hard_ms`, `daily_route_count`, `rewarded_enabled`, `interstitial_enabled`, `interstitial_min_rounds`, `interstitial_cooldown_sec`, `share_copy_variant`, `review_min_sessions`, `local_daily_reminder_enabled`, `daily_reminder_hour`, `store_offer_variant`, `min_supported_version`, `recommended_version`.
 - [ ] `daily_route_count` принимает только 1–3; клиент валидирует значение и применяет безопасный default 3.
 - [ ] Display-time Remote Config меняет только время показа, но не геометрию `seed + generatorVersion`.
-- [ ] Значения за пределами безопасных диапазонов не ломают runtime: клиент валидирует snapshot и использует defaults/cache.
+- [ ] Display-time values вне 750–10000 мс не применяются; используются безопасные defaults/cache.
 - [ ] Без сети/без RuStore Remote Config основной gameplay, Training, сохранения и магазин продолжают запускаться.
 - [ ] Проверено, что runtime config не обращается к developer-owned `/config/bootstrap`.
 
@@ -54,18 +57,22 @@
 
 - [ ] Share содержит `nesbeisya://challenge/<token>` для установленной игры.
 - [ ] Share содержит RuStore install URL с тем же token в `referrerId` для нового пользователя.
-- [ ] Challenge token L2 содержит дату, seed, generatorVersion, `routeCount` и score отправителя.
-- [ ] Старые L1 challenge tokens продолжают открываться как challenge из 3 маршрутов.
+- [ ] Challenge token L3 содержит дату, seed, generatorVersion, `routeCount`, exact display-time profile и score отправителя.
+- [ ] L1 challenge tokens продолжают открываться как 3 маршрута с default display times.
+- [ ] L2 challenge tokens продолжают сохранять routeCount и открываются с default display times.
 - [ ] Install Referrer читается один раз и сохраняется локально до обработки.
 - [ ] После установки приложение восстанавливает тот же duel без обращения к нашей БД.
 - [ ] Seed + generatorVersion + routeCount приглашённого challenge совпадают с challenge отправителя.
+- [ ] Exact display time каждого маршрута L3 совпадает с challenge отправителя даже после изменения Remote Config на устройстве друга.
+- [ ] Reshare уже полученного L3 challenge сохраняет исходные seed/version/routeCount/display-times, меняя только score нового отправителя.
 - [ ] Повреждённый/невалидный token отклоняется безопасно и не ломает Home.
+- [ ] Максимальный трёхмаршрутный L3 token корректно проходит deeplink + Install Referrer путь.
 
 ## Daily / gameplay
 
 - [ ] Один UTC день + generatorVersion дают один и тот же deterministic seed на разных устройствах.
 - [ ] `daily_route_count` 1/2/3 корректно завершает Daily, локальный replay recalculation и Duel.
-- [ ] LastDaily cache сохраняет routeCount; offline fallback не меняет число маршрутов уже созданного challenge.
+- [ ] LastDaily cache сохраняет routeCount **и display-time profile**; offline fallback не меняет условия уже созданного challenge.
 - [ ] 1000+ generated routes проходят validator.
 - [ ] Golden seed совпадает минимум на двух Android ABI/device.
 - [ ] Replay score повторно рассчитывается локально из траектории, client display score не используется как источник расчёта.
