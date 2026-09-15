@@ -8,7 +8,7 @@ namespace DontGetSidetracked.Tests
     public sealed class SaveAndStreakTests
     {
         [Test]
-        public void MigrationCreatesRequiredCollectionsAndId()
+        public void MigrationCreatesRequiredCollectionsIdAndDailyProfile()
         {
             var data = new SaveData { Version = 1, AnonymousPlayerId = string.Empty, Entitlements = null, LastDaily = null };
             SaveData migrated = SaveMigrator.Migrate(data);
@@ -17,6 +17,9 @@ namespace DontGetSidetracked.Tests
             Assert.That(migrated.Entitlements, Is.Not.Null);
             Assert.That(migrated.LastDaily, Is.Not.Null);
             Assert.That(migrated.LastDaily.RouteCount, Is.EqualTo(3));
+            Assert.That(migrated.LastDaily.DisplayTimeEasyMs, Is.EqualTo(DailyCacheData.DefaultEasyDisplayTimeMs));
+            Assert.That(migrated.LastDaily.DisplayTimeMediumMs, Is.EqualTo(DailyCacheData.DefaultMediumDisplayTimeMs));
+            Assert.That(migrated.LastDaily.DisplayTimeHardMs, Is.EqualTo(DailyCacheData.DefaultHardDisplayTimeMs));
         }
 
         [Test]
@@ -45,6 +48,30 @@ namespace DontGetSidetracked.Tests
 
             Assert.That(migrated.Version, Is.EqualTo(SaveData.CurrentVersion));
             Assert.That(migrated.LastDaily.RouteCount, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Version9MigrationNormalizesInvalidCachedDisplayTimes()
+        {
+            var data = new SaveData
+            {
+                Version = 9,
+                LastDaily = new DailyCacheData
+                {
+                    RouteCount = 2,
+                    DisplayTimeEasyMs = 0,
+                    DisplayTimeMediumMs = 50000,
+                    DisplayTimeHardMs = 900
+                }
+            };
+
+            SaveData migrated = SaveMigrator.Migrate(data);
+
+            Assert.That(migrated.Version, Is.EqualTo(SaveData.CurrentVersion));
+            Assert.That(migrated.LastDaily.RouteCount, Is.EqualTo(2));
+            Assert.That(migrated.LastDaily.DisplayTimeEasyMs, Is.EqualTo(DailyCacheData.DefaultEasyDisplayTimeMs));
+            Assert.That(migrated.LastDaily.DisplayTimeMediumMs, Is.EqualTo(DailyCacheData.DefaultMediumDisplayTimeMs));
+            Assert.That(migrated.LastDaily.DisplayTimeHardMs, Is.EqualTo(900));
         }
 
         [Test]
