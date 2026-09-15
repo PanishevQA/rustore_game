@@ -10,22 +10,52 @@ namespace DontGetSidetracked.Tests
     public sealed class StoreServiceTests
     {
         [Test]
-        public async Task HintsPurchase_IsGrantedOncePerPurchaseId()
+        public async Task HintsPurchase_IsGrantedOncePerVerifiedPurchaseId()
         {
             var save = SaveData.CreateNew();
             var repo = new MemorySaveRepository(save);
             var payments = new FakePayments
             {
-                PurchaseResult = new PaymentPurchaseResult(PurchaseOutcome.Completed, ProductIds.Hints10, "purchase_1")
+                PurchaseResult = new PaymentPurchaseResult(
+                    PurchaseOutcome.Completed,
+                    ProductIds.Hints10,
+                    "purchase_1",
+                    "100001")
             };
-            var store = new StoreService(payments, repo, save);
+            var verification = new FakeVerification();
+            var store = new StoreService(payments, repo, save, verification, save.AnonymousPlayerId);
 
             StorePurchaseResult first = await store.PurchaseAsync(ProductIds.Hints10);
             StorePurchaseResult second = await store.PurchaseAsync(ProductIds.Hints10);
 
+            Assert.That(first.Verified, Is.True);
             Assert.That(first.GrantApplied, Is.True);
+            Assert.That(second.Verified, Is.True);
             Assert.That(second.GrantApplied, Is.False);
             Assert.That(save.Hints, Is.EqualTo(10));
+            Assert.That(verification.CallCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public async Task CompletedPaymentWithoutVerification_DoesNotGrantEntitlement()
+        {
+            var save = SaveData.CreateNew();
+            var payments = new FakePayments
+            {
+                PurchaseResult = new PaymentPurchaseResult(
+                    PurchaseOutcome.Completed,
+                    ProductIds.RemoveAds,
+                    "purchase_2",
+                    "100002")
+            };
+            var store = new StoreService(payments, new MemorySaveRepository(save), save);
+
+            StorePurchaseResult result = await store.PurchaseAsync(ProductIds.RemoveAds);
+
+            Assert.That(result.Payment.IsSuccess, Is.True);
+            Assert.That(result.Verified, Is.False);
+            Assert.That(result.GrantApplied, Is.False);
+            Assert.That(store.InterstitialsRemoved, Is.False);
         }
 
         [Test]
@@ -38,7 +68,9 @@ namespace DontGetSidetracked.Tests
                     PurchaseResult = new PaymentPurchaseResult(PurchaseOutcome.Cancelled, ProductIds.RemoveAds)
                 },
                 new MemorySaveRepository(save),
-                save);
+                save,
+                new FakeVerification(),
+                save.AnonymousPlayerId);
 
             StorePurchaseResult result = await store.PurchaseAsync(ProductIds.RemoveAds);
 
@@ -87,6 +119,26 @@ namespace DontGetSidetracked.Tests
 
             public Task<IReadOnlyList<string>> RestoreEntitlementsAsync() =>
                 Task.FromResult(Restored);
+        }
+
+        private sealed class FakeVerification : IPurchaseVerificationApi
+        {
+            public int CallCount;
+
+            public Task<PurchaseVerificationResult> VerifyPurchaseAsync(
+                string playerId,
+                string productId,
+                string invoiceId,
+                string purchaseId)
+            {
+                CallCount++;
+                return Task.FromResult(new PurchaseVerificationResult(
+                    true,
+                    productId,
+                    purchaseId,
+                    invoiceId,
+                    "CONFIRMED"));
+            }
         }
     }
 }
