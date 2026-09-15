@@ -22,6 +22,36 @@ DAILY_SECRET = os.getenv("DAILY_SECRET", "dev-only-change-me")
 GENERATOR_VERSION = 1
 store = Store(DB_PATH)
 
+ANALYTICS_EVENT_NAMES = {
+    "app_open",
+    "session_start",
+    "tutorial_start",
+    "tutorial_complete",
+    "daily_start",
+    "daily_complete",
+    "round_start",
+    "round_complete",
+    "round_failed",
+    "score_generated",
+    "personal_best",
+    "share_click",
+    "share_complete",
+    "challenge_open",
+    "challenge_complete",
+    "rewarded_offer",
+    "rewarded_start",
+    "rewarded_complete",
+    "interstitial_show",
+    "store_open",
+    "purchase_start",
+    "purchase_success",
+    "purchase_cancel",
+    "purchase_error",
+    "review_flow_request",
+    "push_permission_request",
+    "push_permission_result",
+}
+
 
 class PointDto(BaseModel):
     x: int
@@ -48,6 +78,24 @@ class ChallengeRequest(BaseModel):
     inviterId: str = Field(min_length=4, max_length=128)
     challengeId: str
     score: float = Field(ge=0, le=100)
+
+
+class AnalyticsParameterDto(BaseModel):
+    key: str = Field(min_length=1, max_length=64)
+    value: str = Field(max_length=512)
+
+
+class AnalyticsEventDto(BaseModel):
+    eventId: str = Field(min_length=8, max_length=64)
+    playerId: str = Field(min_length=4, max_length=128)
+    sessionNumber: int = Field(ge=1)
+    eventName: str = Field(min_length=1, max_length=64)
+    occurredAtUtc: datetime
+    parameters: list[AnalyticsParameterDto] = Field(default_factory=list, max_length=64)
+
+
+class AnalyticsBatchRequest(BaseModel):
+    events: list[AnalyticsEventDto] = Field(min_length=1, max_length=100)
 
 
 def _seed_for(day: date) -> int:
@@ -184,6 +232,29 @@ def consume_referral(payload: dict) -> dict:
     if not data:
         raise HTTPException(404, "referral not found")
     return {"accepted": True, **data}
+
+
+@app.post("/analytics/events")
+def analytics_events(request: AnalyticsBatchRequest) -> dict:
+    serialized: list[dict] = []
+    for event in request.events:
+        if event.eventName not in ANALYTICS_EVENT_NAMES:
+            raise HTTPException(400, f"unsupported analytics event: {event.eventName}")
+        if event.occurredAtUtc.tzinfo is None:
+            raise HTTPException(400, "occurredAtUtc must include timezone")
+        serialized.append(
+            {
+                "eventId": event.eventId,
+                "playerId": event.playerId,
+                "sessionNumber": event.sessionNumber,
+                "eventName": event.eventName,
+                "occurredAtUtc": event.occurredAtUtc.astimezone(timezone.utc).isoformat(),
+                "parameters": [parameter.model_dump() for parameter in event.parameters],
+            }
+        )
+
+    inserted = store.save_analytics_events(serialized)
+    return {"accepted": len(serialized), "inserted": inserted}
 
 
 @app.post("/purchase/verify")
