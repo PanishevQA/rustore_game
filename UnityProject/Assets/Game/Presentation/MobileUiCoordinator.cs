@@ -6,8 +6,9 @@ using UnityEngine;
 namespace DontGetSidetracked.Presentation
 {
     /// <summary>
-    /// Mobile-only presentation glue: keeps runtime-created canvases inside the device safe area
-    /// and provides predictable Android Back behaviour without leaking navigation into gameplay rules.
+    /// Mobile-only presentation glue: keeps runtime-created canvases inside the device safe area,
+    /// provides predictable Android Back behaviour and prevents half-finished rounds from resuming
+    /// after the app was backgrounded.
     /// </summary>
     public sealed class MobileUiCoordinator : MonoBehaviour
     {
@@ -50,6 +51,11 @@ namespace DontGetSidetracked.Presentation
             }
         }
 
+        private void OnApplicationPause(bool paused)
+        {
+            if (paused) AbortActiveRoundToHome();
+        }
+
         private void HandleBack()
         {
             MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
@@ -70,6 +76,19 @@ namespace DontGetSidetracked.Presentation
                 Application.Quit();
                 return;
             }
+
+            AbortActiveRoundToHome(bootstrap);
+        }
+
+        private static void AbortActiveRoundToHome(GameBootstrap bootstrap = null)
+        {
+            if (bootstrap == null) bootstrap = FindFirstObjectByType<GameBootstrap>();
+            if (bootstrap == null) return;
+
+            Type type = typeof(GameBootstrap);
+            FieldInfo modeField = type.GetField("_mode", BindingFlags.Instance | BindingFlags.NonPublic);
+            object mode = modeField?.GetValue(bootstrap);
+            if (mode != null && string.Equals(mode.ToString(), "Home", StringComparison.Ordinal)) return;
 
             // A route reveal/countdown is coroutine-driven. Stop it before switching state,
             // otherwise it could resume later and put a Home screen back into Drawing mode.
