@@ -21,6 +21,7 @@ namespace DontGetSidetracked.Tests
             var api = new FakeApi { RouteCount = routeCount };
             var service = new DuelSessionService(api, new MemorySaveRepository(save), save);
 
+            RouteRuntimeTuning.ConfigureDisplayTimes(1000, 1000, 1000); // Recipient config must not override referral timing.
             DuelSession session = await service.LoadAsync("ABC123");
 
             Assert.That(session.Referral.InviterScore, Is.EqualTo(94.7));
@@ -28,6 +29,10 @@ namespace DontGetSidetracked.Tests
             Assert.That(session.Challenge.Seed, Is.EqualTo(778899));
             Assert.That(session.Challenge.GeneratorVersion, Is.EqualTo(1));
             Assert.That(session.Challenge.RouteCount, Is.EqualTo(routeCount));
+            Assert.That(session.Challenge.Routes[0].DisplayTimeMs, Is.EqualTo(api.EasyMs));
+            if (routeCount > 1) Assert.That(session.Challenge.Routes[1].DisplayTimeMs, Is.EqualTo(api.MediumMs));
+            if (routeCount > 2) Assert.That(session.Challenge.Routes[2].DisplayTimeMs, Is.EqualTo(api.HardMs));
+            RouteRuntimeTuning.ResetDefaults();
         }
 
         [TestCase(1)]
@@ -110,6 +115,9 @@ namespace DontGetSidetracked.Tests
         {
             public bool FailSubmit;
             public int RouteCount = 3;
+            public int EasyMs = 4200;
+            public int MediumMs = 3600;
+            public int HardMs = 2900;
 
             public Task<DailyDto> GetDailyAsync() => throw new NotSupportedException();
 
@@ -136,6 +144,9 @@ namespace DontGetSidetracked.Tests
                 seed = 778899,
                 generatorVersion = 1,
                 routeCount = RouteCount,
+                displayTimeEasyMs = EasyMs,
+                displayTimeMediumMs = MediumMs,
+                displayTimeHardMs = HardMs,
                 serverTimeUtc = "2026-09-15T06:00:00Z"
             });
         }
