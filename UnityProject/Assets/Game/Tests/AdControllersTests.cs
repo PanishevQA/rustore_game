@@ -11,7 +11,7 @@ namespace DontGetSidetracked.Tests
         [Test]
         public async Task Interstitial_ShowsOnlyBetweenSessionsAfterCapAndCooldown()
         {
-            var ads = new FakeAds { IsInterstitialReadyValue = true };
+            var ads = new FakeAds { IsInterstitialReadyValue = true, InterstitialResult = true };
             var config = new FakeConfig();
             DateTime now = new DateTime(2026, 9, 15, 10, 0, 0, DateTimeKind.Utc);
             var controller = new InterstitialController(ads, config, () => now);
@@ -32,6 +32,21 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
+        public async Task FailedInterstitial_DoesNotConsumeRoundCapOrStartCooldown()
+        {
+            var ads = new FakeAds { IsInterstitialReadyValue = true, InterstitialResult = false };
+            var config = new FakeConfig();
+            DateTime now = new DateTime(2026, 9, 15, 10, 0, 0, DateTimeKind.Utc);
+            var controller = new InterstitialController(ads, config, () => now);
+            for (int i = 0; i < 5; i++) controller.NotifyRoundCompleted();
+
+            Assert.That(await controller.TryShowBetweenSessionsAsync(false, false), Is.False);
+            Assert.That(ads.InterstitialShows, Is.EqualTo(1));
+            Assert.That(controller.CanShowBetweenSessions(false, false), Is.True,
+                "A provider failure must not consume the cap or start cooldown.");
+        }
+
+        [Test]
         public async Task Rewarded_RequiresConfigAndReadyProvider()
         {
             var ads = new FakeAds { IsRewardedReadyValue = true };
@@ -47,19 +62,22 @@ namespace DontGetSidetracked.Tests
         {
             public bool IsRewardedReadyValue;
             public bool IsInterstitialReadyValue;
+            public bool InterstitialResult = true;
             public int RewardedShows;
             public int InterstitialShows;
             public bool IsRewardedReady => IsRewardedReadyValue;
             public bool IsInterstitialReady => IsInterstitialReadyValue;
+
             public Task<bool> ShowRewardedAsync(RewardPlacement placement)
             {
                 RewardedShows++;
                 return Task.FromResult(true);
             }
-            public Task ShowInterstitialAsync()
+
+            public Task<bool> ShowInterstitialAsync()
             {
                 InterstitialShows++;
-                return Task.CompletedTask;
+                return Task.FromResult(InterstitialResult);
             }
         }
 
