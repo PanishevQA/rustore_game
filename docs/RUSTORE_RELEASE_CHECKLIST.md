@@ -21,6 +21,8 @@
 - [ ] В `RuStoreRemoteConfigSettings.AppId` указан реальный App ID инструмента Remote Config из RuStore Console.
 - [ ] `ru.rustore.remoteconfig` закреплён на версии, повторно проверенной перед production; на дату разработки — `10.5.1`.
 - [ ] В RuStore Console заведены ключи с корректными типами: `route_display_time_easy_ms`, `route_display_time_medium_ms`, `route_display_time_hard_ms`, `daily_route_count`, `rewarded_enabled`, `interstitial_enabled`, `interstitial_min_rounds`, `interstitial_cooldown_sec`, `share_copy_variant`, `review_min_sessions`, `local_daily_reminder_enabled`, `daily_reminder_hour`, `store_offer_variant`, `min_supported_version`, `recommended_version`.
+- [ ] `daily_route_count` принимает только 1–3; клиент валидирует значение и применяет безопасный default 3.
+- [ ] Display-time Remote Config меняет только время показа, но не геометрию `seed + generatorVersion`.
 - [ ] Значения за пределами безопасных диапазонов не ломают runtime: клиент валидирует snapshot и использует defaults/cache.
 - [ ] Без сети/без RuStore Remote Config основной gameplay, Training, сохранения и магазин продолжают запускаться.
 - [ ] Проверено, что runtime config не обращается к developer-owned `/config/bootstrap`.
@@ -52,21 +54,25 @@
 
 - [ ] Share содержит `nesbeisya://challenge/<token>` для установленной игры.
 - [ ] Share содержит RuStore install URL с тем же token в `referrerId` для нового пользователя.
-- [ ] Challenge token содержит дату, seed, generatorVersion и score отправителя.
+- [ ] Challenge token L2 содержит дату, seed, generatorVersion, `routeCount` и score отправителя.
+- [ ] Старые L1 challenge tokens продолжают открываться как challenge из 3 маршрутов.
 - [ ] Install Referrer читается один раз и сохраняется локально до обработки.
 - [ ] После установки приложение восстанавливает тот же duel без обращения к нашей БД.
-- [ ] Seed + generatorVersion приглашённого challenge совпадают с challenge отправителя.
+- [ ] Seed + generatorVersion + routeCount приглашённого challenge совпадают с challenge отправителя.
 - [ ] Повреждённый/невалидный token отклоняется безопасно и не ломает Home.
 
 ## Daily / gameplay
 
 - [ ] Один UTC день + generatorVersion дают один и тот же deterministic seed на разных устройствах.
+- [ ] `daily_route_count` 1/2/3 корректно завершает Daily, локальный replay recalculation и Duel.
+- [ ] LastDaily cache сохраняет routeCount; offline fallback не меняет число маршрутов уже созданного challenge.
 - [ ] 1000+ generated routes проходят validator.
 - [ ] Golden seed совпадает минимум на двух Android ABI/device.
 - [ ] Replay score повторно рассчитывается локально из траектории, client display score не используется как источник расчёта.
 - [ ] Пользователь понимает, что Daily использует часы устройства; без backend невозможно надёжно защититься от ручной смены даты/времени.
 - [ ] Streak, personal best, статистика, settings и косметика работают без сети.
 - [ ] Offline Training работает без RuStore и сети.
+- [ ] UI нигде не показывает «синхронизацию» или «отправим позже» в offline-first build.
 
 ## Notifications
 
@@ -85,6 +91,7 @@
 - [ ] Локальная статистика и Store корректно переживают отсутствие сети.
 - [ ] Android Back закрывает meta/notification prompt перед выходом или отменой активного раунда.
 - [ ] Pause/background во время активного раунда безопасно возвращает пользователя на Home.
+- [ ] Result/share переживает системный share sheet/background transition без потери результата.
 - [ ] Safe area, DPI/aspect ratios и читаемость проверены на нескольких устройствах.
 - [ ] `LocalCrashLog` пишет ограниченный on-device diagnostics log и не загружает его автоматически.
 - [ ] `LocalAnalyticsService` хранит ограниченный on-device журнал и не отправляет данные на наш сервер.
