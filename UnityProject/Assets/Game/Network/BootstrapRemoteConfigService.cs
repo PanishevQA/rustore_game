@@ -21,6 +21,8 @@ namespace DontGetSidetracked.Network
         public int interstitial_cooldown_sec = 180;
         public string share_copy_variant = "A";
         public int review_min_sessions = 5;
+        public bool local_daily_reminder_enabled = true;
+        public int daily_reminder_hour = 10;
         public bool push_enabled = false;
         public int daily_push_hour = 10;
         public string store_offer_variant = "A";
@@ -101,7 +103,8 @@ namespace DontGetSidetracked.Network
                 case "interstitial_min_rounds": return Positive(c.interstitial_min_rounds, fallback);
                 case "interstitial_cooldown_sec": return Positive(c.interstitial_cooldown_sec, fallback);
                 case "review_min_sessions": return Positive(c.review_min_sessions, fallback);
-                case "daily_push_hour": return c.daily_push_hour >= 0 && c.daily_push_hour <= 23 ? c.daily_push_hour : fallback;
+                case "daily_reminder_hour": return Hour(c.daily_reminder_hour, fallback);
+                case "daily_push_hour": return Hour(c.daily_push_hour, fallback);
                 default: return fallback;
             }
         }
@@ -112,6 +115,7 @@ namespace DontGetSidetracked.Network
             {
                 case "rewarded_enabled": return _snapshot.config.rewarded_enabled;
                 case "interstitial_enabled": return _snapshot.config.interstitial_enabled;
+                case "local_daily_reminder_enabled": return _snapshot.config.local_daily_reminder_enabled;
                 case "push_enabled": return _snapshot.config.push_enabled;
                 default: return fallback;
             }
@@ -180,6 +184,7 @@ namespace DontGetSidetracked.Network
         }
 
         private static int Positive(int value, int fallback) => value > 0 ? value : fallback;
+        private static int Hour(int value, int fallback) => value >= 0 && value <= 23 ? value : fallback;
     }
 
     public static class VersionPolicy
