@@ -49,7 +49,7 @@ namespace DontGetSidetracked.Core
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 3;
+        public const int CurrentVersion = 4;
 
         public int Version = CurrentVersion;
         public string AnonymousPlayerId = string.Empty;
@@ -66,6 +66,8 @@ namespace DontGetSidetracked.Core
         public int SessionNumber;
         public int CompletedDailyCount;
         public List<PendingDailyAttemptData> PendingAttempts = new List<PendingDailyAttemptData>();
+        public int LastReviewRequestSession;
+        public int ReviewRequestCount;
 
         public static SaveData CreateNew()
         {
@@ -101,6 +103,13 @@ namespace DontGetSidetracked.Core
             {
                 if (data.PendingAttempts == null) data.PendingAttempts = new List<PendingDailyAttemptData>();
                 data.Version = 3;
+            }
+
+            if (data.Version == 3)
+            {
+                data.LastReviewRequestSession = 0;
+                data.ReviewRequestCount = 0;
+                data.Version = 4;
             }
 
             if (string.IsNullOrWhiteSpace(data.AnonymousPlayerId))
