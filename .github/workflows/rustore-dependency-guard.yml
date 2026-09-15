@@ -13,7 +13,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RInE 'billingclient|artifactory-external\.vkpartner\.ru|nexus-external\.vkteam\.ru' UnityProject --exclude-dir=Library; then
+          # ProductionReleaseValidator intentionally contains the forbidden token as a runtime scan rule,
+          # so exclude that one source file from this text-level CI check to avoid self-matching.
+          if grep -RInE 'billingclient|artifactory-external\.vkpartner\.ru|nexus-external\.vkteam\.ru' UnityProject \
+              --exclude-dir=Library \
+              --exclude=ProductionReleaseValidator.cs; then
             echo 'Deprecated RuStore dependency/reference found.'
             exit 1
           fi
