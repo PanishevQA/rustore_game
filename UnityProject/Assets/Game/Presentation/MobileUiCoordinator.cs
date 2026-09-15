@@ -71,6 +71,9 @@ namespace DontGetSidetracked.Presentation
                 return;
             }
 
+            // A route reveal/countdown is coroutine-driven. Stop it before switching state,
+            // otherwise it could resume later and put a Home screen back into Drawing mode.
+            bootstrap.StopAllCoroutines();
             MethodInfo showHome = type.GetMethod("ShowHome", BindingFlags.Instance | BindingFlags.NonPublic);
             showHome?.Invoke(bootstrap, null);
         }
