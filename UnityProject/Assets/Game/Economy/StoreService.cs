@@ -27,10 +27,17 @@ namespace DontGetSidetracked.Economy
     public sealed class StorePurchaseResult
     {
         public PaymentPurchaseResult Payment { get; }
+        public PurchaseVerificationResult Verification { get; }
         public bool GrantApplied { get; }
-        public StorePurchaseResult(PaymentPurchaseResult payment, bool grantApplied)
+        public bool Verified => Verification != null && Verification.Verified;
+
+        public StorePurchaseResult(
+            PaymentPurchaseResult payment,
+            PurchaseVerificationResult verification,
+            bool grantApplied)
         {
             Payment = payment;
+            Verification = verification;
             GrantApplied = grantApplied;
         }
     }
@@ -38,17 +45,26 @@ namespace DontGetSidetracked.Economy
     public sealed class StoreService
     {
         private readonly IPaymentService _payments;
+        private readonly IPurchaseVerificationApi _verificationApi;
         private readonly ISaveRepository _saveRepository;
         private readonly SaveData _save;
+        private readonly string _playerId;
 
         public SaveData Save => _save;
         public bool InterstitialsRemoved => HasEntitlement(ProductIds.RemoveAds) || HasEntitlement(ProductIds.StarterPack);
 
-        public StoreService(IPaymentService payments, ISaveRepository saveRepository, SaveData save)
+        public StoreService(
+            IPaymentService payments,
+            ISaveRepository saveRepository,
+            SaveData save,
+            IPurchaseVerificationApi verificationApi = null,
+            string playerId = null)
         {
             _payments = payments ?? throw new ArgumentNullException(nameof(payments));
             _saveRepository = saveRepository ?? throw new ArgumentNullException(nameof(saveRepository));
             _save = SaveMigrator.Migrate(save ?? SaveData.CreateNew());
+            _verificationApi = verificationApi;
+            _playerId = string.IsNullOrWhiteSpace(playerId) ? _save.AnonymousPlayerId : playerId;
         }
 
         public Task<IReadOnlyList<StoreProduct>> LoadCatalogAsync() =>
@@ -61,15 +77,76 @@ namespace DontGetSidetracked.Economy
 
             PaymentPurchaseResult payment = await _payments.PurchaseAsync(productId);
             if (payment == null || !payment.IsSuccess)
-                return new StorePurchaseResult(payment, false);
+                return new StorePurchaseResult(payment, null, false);
 
-            bool granted = ApplyPurchase(payment);
+            if (_verificationApi == null)
+            {
+                return new StorePurchaseResult(
+                    payment,
+                    new PurchaseVerificationResult(false, productId, payment.PurchaseId, payment.InvoiceId, string.Empty,
+                        "Server purchase verification is not configured."),
+                    false);
+            }
+
+            if (string.IsNullOrWhiteSpace(payment.InvoiceId))
+            {
+                return new StorePurchaseResult(
+                    payment,
+                    new PurchaseVerificationResult(false, productId, payment.PurchaseId, payment.InvoiceId, string.Empty,
+                        "RuStore purchase result has no invoiceId."),
+                    false);
+            }
+
+            PurchaseVerificationResult verification;
+            try
+            {
+                verification = await _verificationApi.VerifyPurchaseAsync(
+                    _playerId,
+                    productId,
+                    payment.InvoiceId,
+                    payment.PurchaseId);
+            }
+            catch (Exception error)
+            {
+                verification = new PurchaseVerificationResult(
+                    false,
+                    productId,
+                    payment.PurchaseId,
+                    payment.InvoiceId,
+                    string.Empty,
+                    error.Message);
+            }
+
+            if (verification == null || !verification.Verified ||
+                !string.Equals(verification.ProductId, productId, StringComparison.Ordinal))
+                return new StorePurchaseResult(payment, verification, false);
+
+            string verifiedPurchaseId = string.IsNullOrWhiteSpace(verification.PurchaseId)
+                ? payment.PurchaseId
+                : verification.PurchaseId;
+            if (string.IsNullOrWhiteSpace(verifiedPurchaseId))
+            {
+                return new StorePurchaseResult(
+                    payment,
+                    new PurchaseVerificationResult(false, productId, null, payment.InvoiceId, verification.Status,
+                        "Verified purchase has no purchaseId."),
+                    false);
+            }
+
+            var verifiedPayment = new PaymentPurchaseResult(
+                PurchaseOutcome.Completed,
+                productId,
+                verifiedPurchaseId,
+                payment.InvoiceId,
+                payment.SubscriptionToken);
+            bool granted = ApplyPurchase(verifiedPayment);
             if (granted) _saveRepository.Save(_save);
-            return new StorePurchaseResult(payment, granted);
+            return new StorePurchaseResult(payment, verification, granted);
         }
 
         public async Task<int> RestoreAsync()
         {
+            // RuStore GetPurchases is itself an authoritative source for previously confirmed non-consumables.
             IReadOnlyList<string> owned = await _payments.RestoreEntitlementsAsync();
             int changed = 0;
             if (owned != null)
@@ -90,11 +167,9 @@ namespace DontGetSidetracked.Economy
 
         private bool ApplyPurchase(PaymentPurchaseResult purchase)
         {
-            if (!string.IsNullOrWhiteSpace(purchase.PurchaseId))
-            {
-                if (_save.ProcessedPurchaseIds.Contains(purchase.PurchaseId)) return false;
-                _save.ProcessedPurchaseIds.Add(purchase.PurchaseId);
-            }
+            if (string.IsNullOrWhiteSpace(purchase.PurchaseId)) return false;
+            if (_save.ProcessedPurchaseIds.Contains(purchase.PurchaseId)) return false;
+            _save.ProcessedPurchaseIds.Add(purchase.PurchaseId);
 
             switch (purchase.ProductId)
             {
