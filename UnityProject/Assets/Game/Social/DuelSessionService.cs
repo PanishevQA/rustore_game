@@ -21,7 +21,6 @@ namespace DontGetSidetracked.Social
 
     public sealed class DuelSubmissionResult
     {
-        // Kept for presentation/API compatibility. In the release build the accepted provider is local.
         public bool SubmittedToServer { get; }
         public double Score { get; }
         public double InviterScore { get; }
@@ -70,7 +69,8 @@ namespace DontGetSidetracked.Social
                 referral.ChallengeId,
                 referral.Seed,
                 referral.GeneratorVersion,
-                referral.RouteCount);
+                referral.RouteCount,
+                referral.DisplayTimesMs);
             return new DuelSession(referral, challenge);
         }
 
@@ -87,8 +87,6 @@ namespace DontGetSidetracked.Social
             if (string.Equals(_save.PendingReferralId, session.Referral.ReferralId, StringComparison.OrdinalIgnoreCase))
                 _save.PendingReferralId = string.Empty;
 
-            // Persist local progress before invoking the provider; a provider failure never creates a
-            // nonexistent "sync later" queue in the offline-first release.
             _saveRepository.Save(_save);
 
             double acceptedScore = await _api.SubmitDailyAttemptAsync(
