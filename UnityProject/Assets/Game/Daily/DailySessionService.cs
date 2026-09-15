@@ -64,17 +64,19 @@ namespace DontGetSidetracked.Daily
                 DailyDto dto = await _api.GetDailyAsync();
                 ValidateDaily(dto);
                 DateTime serverTime = ParseServerTime(dto.ServerTimeUtc);
+                int routeCount = NormalizeRouteCount(dto.RouteCount);
                 DailyChallengeDefinition challenge = _factory.Create(
                     dto.ChallengeId,
                     dto.Seed,
                     dto.GeneratorVersion,
-                    NormalizeRouteCount(dto.RouteCount));
+                    routeCount);
 
                 _save.LastDaily = new DailyCacheData
                 {
                     ChallengeId = dto.ChallengeId,
                     Seed = dto.Seed,
                     GeneratorVersion = dto.GeneratorVersion,
+                    RouteCount = routeCount,
                     ServerTimeUtc = serverTime.ToString("O", CultureInfo.InvariantCulture)
                 };
                 _saveRepository.Save(_save);
@@ -91,7 +93,7 @@ namespace DontGetSidetracked.Daily
                     cache.ChallengeId,
                     cache.Seed,
                     cache.GeneratorVersion,
-                    RouteRuntimeTuning.DailyRouteCount);
+                    NormalizeRouteCount(cache.RouteCount));
                 return new DailyLoadResult(cached, cachedServerTime, true);
             }
         }
