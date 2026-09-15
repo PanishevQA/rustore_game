@@ -1,0 +1,6 @@
+{
+  "name": "Game.Presentation",
+  "rootNamespace": "DontGetSidetracked.Presentation",
+  "references": ["Game.Core", "Game.Gameplay", "Game.Services", "UnityEngine.UI"],
+  "autoReferenced": true
+}
