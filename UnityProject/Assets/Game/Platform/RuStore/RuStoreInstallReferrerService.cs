@@ -25,12 +25,14 @@ namespace DontGetSidetracked.Platform.RuStore
                     return Task.FromResult(new InstallReferrerResult(false, null));
                 }
 
-                PropertyInfo instanceProperty = clientType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static);
+                PropertyInfo instanceProperty = clientType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static) ??
+                                                clientType.GetProperty("instance", BindingFlags.Public | BindingFlags.Static);
                 object client = instanceProperty?.GetValue(null);
                 if (client == null)
                     return Task.FromResult(new InstallReferrerResult(false, null));
 
-                PropertyInfo initializedProperty = clientType.GetProperty("IsInitialized", BindingFlags.Public | BindingFlags.Instance);
+                PropertyInfo initializedProperty = clientType.GetProperty("IsInitialized", BindingFlags.Public | BindingFlags.Instance) ??
+                                                   clientType.GetProperty("isInitialized", BindingFlags.Public | BindingFlags.Instance);
                 bool initialized = initializedProperty != null && initializedProperty.PropertyType == typeof(bool) &&
                                    (bool)initializedProperty.GetValue(client);
                 if (!initialized)
@@ -48,9 +50,18 @@ namespace DontGetSidetracked.Platform.RuStore
 
                 ParameterInfo[] parameters = getMethod.GetParameters();
                 var callbacks = new CallbackBox();
-                Delegate failure = CreateCallback(parameters[0].ParameterType, callbacks, nameof(CallbackBox.OnFailure));
-                Delegate success = CreateCallback(parameters[1].ParameterType, callbacks, nameof(CallbackBox.OnSuccess));
-                getMethod.Invoke(client, new object[] { failure, success });
+                var args = new object[2];
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    string name = parameters[i].Name ?? string.Empty;
+                    bool failure = name.IndexOf("failure", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                   name.IndexOf("error", StringComparison.OrdinalIgnoreCase) >= 0;
+                    args[i] = CreateCallback(
+                        parameters[i].ParameterType,
+                        callbacks,
+                        failure ? nameof(CallbackBox.OnFailure) : nameof(CallbackBox.OnSuccess));
+                }
+                getMethod.Invoke(client, args);
                 return callbacks.Task;
             }
             catch (Exception error)
@@ -72,8 +83,8 @@ namespace DontGetSidetracked.Platform.RuStore
                 if (!string.Equals(method.Name, "GetInstallReferrer", StringComparison.Ordinal)) continue;
                 ParameterInfo[] parameters = method.GetParameters();
                 if (parameters.Length == 2 &&
-                    typeof(Delegate).IsAssignableFrom(parameters[0].ParameterType.BaseType) &&
-                    typeof(Delegate).IsAssignableFrom(parameters[1].ParameterType.BaseType))
+                    typeof(Delegate).IsAssignableFrom(parameters[0].ParameterType) &&
+                    typeof(Delegate).IsAssignableFrom(parameters[1].ParameterType))
                     return method;
             }
             return null;
@@ -85,7 +96,8 @@ namespace DontGetSidetracked.Platform.RuStore
             if (genericArguments.Length != 1)
                 throw new InvalidOperationException($"Unexpected RuStore callback type: {delegateType.FullName}");
 
-            MethodInfo openMethod = typeof(CallbackBox).GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
+            MethodInfo openMethod = typeof(CallbackBox).GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public) ??
+                                    throw new MissingMethodException(typeof(CallbackBox).FullName, methodName);
             MethodInfo closedMethod = openMethod.MakeGenericMethod(genericArguments[0]);
             return Delegate.CreateDelegate(delegateType, target, closedMethod);
         }
@@ -144,9 +156,9 @@ namespace DontGetSidetracked.Platform.RuStore
                 }
 
                 Type resultType = result.GetType();
-                PropertyInfo property = resultType.GetProperty("referrerId", BindingFlags.Public | BindingFlags.Instance) ??
-                                        resultType.GetProperty("ReferrerId", BindingFlags.Public | BindingFlags.Instance);
-                string referrerId = property?.GetValue(result)?.ToString();
+                PropertyInfo property = resultType.GetProperty("referrerId", BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                FieldInfo field = resultType.GetField("referrerId", BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                string referrerId = (property?.GetValue(result) ?? field?.GetValue(result))?.ToString();
                 _completion.TrySetResult(new InstallReferrerResult(true, string.IsNullOrWhiteSpace(referrerId) ? null : referrerId));
             }
         }
