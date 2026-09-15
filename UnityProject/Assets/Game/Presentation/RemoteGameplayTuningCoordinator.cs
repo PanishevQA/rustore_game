@@ -5,7 +5,7 @@ using UnityEngine;
 namespace DontGetSidetracked.Presentation
 {
     /// <summary>
-    /// Bridges validated Remote Config values into pure gameplay presentation tuning.
+    /// Bridges validated Remote Config values into pure gameplay/session tuning.
     /// No RuStore SDK type crosses into Gameplay.
     /// </summary>
     public sealed class RemoteGameplayTuningCoordinator : MonoBehaviour
@@ -15,6 +15,7 @@ namespace DontGetSidetracked.Presentation
         private int _easy;
         private int _medium;
         private int _hard;
+        private int _dailyRouteCount;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoStart()
@@ -43,12 +44,21 @@ namespace DontGetSidetracked.Presentation
             int easy = _config.GetInt("route_display_time_easy_ms", RouteRuntimeTuning.DefaultEasyDisplayTimeMs);
             int medium = _config.GetInt("route_display_time_medium_ms", RouteRuntimeTuning.DefaultMediumDisplayTimeMs);
             int hard = _config.GetInt("route_display_time_hard_ms", RouteRuntimeTuning.DefaultHardDisplayTimeMs);
+            int routeCount = _config.GetInt("daily_route_count", RouteRuntimeTuning.DefaultDailyRouteCount);
 
-            if (!force && easy == _easy && medium == _medium && hard == _hard) return;
+            if (!force &&
+                easy == _easy &&
+                medium == _medium &&
+                hard == _hard &&
+                routeCount == _dailyRouteCount)
+                return;
+
             _easy = easy;
             _medium = medium;
             _hard = hard;
+            _dailyRouteCount = routeCount;
             RouteRuntimeTuning.ConfigureDisplayTimes(easy, medium, hard);
+            RouteRuntimeTuning.ConfigureDailyRouteCount(routeCount);
         }
     }
 }
