@@ -1,194 +1,129 @@
 using System;
-using System.IO;
-using System.Text;
+using System.Reflection;
 using System.Threading.Tasks;
 using DontGetSidetracked.Services;
 using UnityEngine;
-using UnityEngine.Networking;
 
 namespace DontGetSidetracked.Network
 {
-    [Serializable]
-    internal sealed class BootstrapConfigValuesDto
-    {
-        public int route_display_time_easy_ms = 3500;
-        public int route_display_time_medium_ms = 3000;
-        public int route_display_time_hard_ms = 2500;
-        public int daily_route_count = 3;
-        public bool rewarded_enabled = true;
-        public bool interstitial_enabled = true;
-        public int interstitial_min_rounds = 5;
-        public int interstitial_cooldown_sec = 180;
-        public string share_copy_variant = "A";
-        public int review_min_sessions = 5;
-        public bool local_daily_reminder_enabled = true;
-        public int daily_reminder_hour = 10;
-        public bool push_enabled = false;
-        public int daily_push_hour = 10;
-        public string store_offer_variant = "A";
-    }
-
-    [Serializable]
-    internal sealed class BootstrapConfigDto
-    {
-        public string serverTimeUtc;
-        public string minSupportedVersion = "0.1.0";
-        public string recommendedVersion = "0.1.0";
-        public BootstrapConfigValuesDto config = new BootstrapConfigValuesDto();
-    }
-
+    /// <summary>
+    /// Compatibility facade kept to avoid coupling Presentation to a concrete config provider.
+    /// The offline-first release delegates to Platform/RuStore/RuStoreRemoteConfigService via reflection,
+    /// so Network has no compile-time dependency on the platform assembly and performs no HTTP requests.
+    /// </summary>
     public sealed class BootstrapRemoteConfigService : IRemoteConfigService
     {
-        private readonly string _baseUrl;
-        private readonly string _cachePath;
-        private BootstrapConfigDto _snapshot;
+        private const string DefaultVersion = "0.1.0";
+        private readonly IRemoteConfigService _provider;
+        private readonly object _providerObject;
+        private readonly Type _providerType;
 
-        public string MinSupportedVersion => _snapshot.minSupportedVersion;
-        public string RecommendedVersion => _snapshot.recommendedVersion;
-        public string ServerTimeUtc => _snapshot.serverTimeUtc;
+        public string MinSupportedVersion => ReadStringProperty("MinSupportedVersion", DefaultVersion);
+        public string RecommendedVersion => ReadStringProperty("RecommendedVersion", MinSupportedVersion);
+        public string ServerTimeUtc => string.Empty;
 
-        public BootstrapRemoteConfigService(string baseUrl, string cacheFileName = "bootstrap-config.json")
+        public BootstrapRemoteConfigService(string optionalBackendBaseUrl)
         {
-            _baseUrl = (baseUrl ?? string.Empty).TrimEnd('/');
-            _cachePath = Path.Combine(Application.persistentDataPath, cacheFileName);
-            _snapshot = LoadCache() ?? CreateDefaults();
-            Normalize(_snapshot);
+            // Deliberately ignore the optional backend URL for the release runtime.
+            // Future online mode can introduce a separate provider without changing gameplay contracts.
+            try
+            {
+                _providerObject = CreateRuStoreProvider(out _providerType);
+                _provider = _providerObject as IRemoteConfigService ?? new SafeRemoteConfig();
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"RuStore Remote Config provider unavailable; using safe defaults: {error.Message}");
+                _provider = new SafeRemoteConfig();
+            }
         }
 
         public async Task<bool> RefreshAsync()
         {
-            if (string.IsNullOrWhiteSpace(_baseUrl)) return false;
-
+            if (_providerObject == null || _providerType == null) return false;
             try
             {
-                using var request = UnityWebRequest.Get(_baseUrl + "/config/bootstrap");
-                request.timeout = 8;
-                request.SetRequestHeader("Accept", "application/json");
-                UnityWebRequestAsyncOperation operation = request.SendWebRequest();
-                var completion = new TaskCompletionSource<bool>();
-                operation.completed += _ => completion.TrySetResult(true);
-                await completion.Task;
-
-                if (request.result != UnityWebRequest.Result.Success)
+                MethodInfo method = _providerType.GetMethod("RefreshAsync", BindingFlags.Public | BindingFlags.Instance);
+                if (method == null) return false;
+                object result = method.Invoke(_providerObject, null);
+                if (result is Task<bool> booleanTask) return await booleanTask;
+                if (result is Task task)
                 {
-                    Debug.Log($"Bootstrap config uses cache/defaults: HTTP {(long)request.responseCode} {request.error}");
-                    return false;
+                    await task;
+                    return true;
                 }
-
-                BootstrapConfigDto response = JsonUtility.FromJson<BootstrapConfigDto>(request.downloadHandler.text);
-                if (response == null) return false;
-                Normalize(response);
-                _snapshot = response;
-                SaveCache();
-                return true;
+                return false;
             }
             catch (Exception error)
             {
-                Debug.Log($"Bootstrap config uses cache/defaults: {error.Message}");
+                Debug.LogWarning($"RuStore Remote Config refresh failed; using cache/defaults: {Unwrap(error).Message}");
                 return false;
             }
         }
 
-        public double GetDouble(string key, double fallback) => GetInt(key, (int)Math.Round(fallback));
-
-        public int GetInt(string key, int fallback)
-        {
-            BootstrapConfigValuesDto c = _snapshot.config;
-            switch (key)
-            {
-                case "route_display_time_easy_ms": return Positive(c.route_display_time_easy_ms, fallback);
-                case "route_display_time_medium_ms": return Positive(c.route_display_time_medium_ms, fallback);
-                case "route_display_time_hard_ms": return Positive(c.route_display_time_hard_ms, fallback);
-                case "daily_route_count": return Positive(c.daily_route_count, fallback);
-                case "interstitial_min_rounds": return Positive(c.interstitial_min_rounds, fallback);
-                case "interstitial_cooldown_sec": return Positive(c.interstitial_cooldown_sec, fallback);
-                case "review_min_sessions": return Positive(c.review_min_sessions, fallback);
-                case "daily_reminder_hour": return Hour(c.daily_reminder_hour, fallback);
-                case "daily_push_hour": return Hour(c.daily_push_hour, fallback);
-                default: return fallback;
-            }
-        }
-
-        public bool GetBool(string key, bool fallback)
-        {
-            switch (key)
-            {
-                case "rewarded_enabled": return _snapshot.config.rewarded_enabled;
-                case "interstitial_enabled": return _snapshot.config.interstitial_enabled;
-                case "local_daily_reminder_enabled": return _snapshot.config.local_daily_reminder_enabled;
-                case "push_enabled": return _snapshot.config.push_enabled;
-                default: return fallback;
-            }
-        }
-
-        public string GetString(string key, string fallback)
-        {
-            string value;
-            switch (key)
-            {
-                case "share_copy_variant": value = _snapshot.config.share_copy_variant; break;
-                case "store_offer_variant": value = _snapshot.config.store_offer_variant; break;
-                default: return fallback;
-            }
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
-        }
+        public double GetDouble(string key, double fallback) => _provider.GetDouble(key, fallback);
+        public int GetInt(string key, int fallback) => _provider.GetInt(key, fallback);
+        public bool GetBool(string key, bool fallback) => _provider.GetBool(key, fallback);
+        public string GetString(string key, string fallback) => _provider.GetString(key, fallback);
 
         public bool RequiresMandatoryUpdate(string currentVersion) =>
-            VersionPolicy.Compare(currentVersion, MinSupportedVersion) < 0;
+            Compare(currentVersion, MinSupportedVersion) < 0;
 
         public bool ShouldRecommendUpdate(string currentVersion) =>
-            VersionPolicy.Compare(currentVersion, RecommendedVersion) < 0;
+            Compare(currentVersion, RecommendedVersion) < 0;
 
-        private BootstrapConfigDto LoadCache()
+        private static object CreateRuStoreProvider(out Type providerType)
         {
+            providerType = FindType("DontGetSidetracked.Platform.RuStore.RuStoreRemoteConfigService") ??
+                           throw new InvalidOperationException("RuStoreRemoteConfigService type not found.");
+            Type settingsType = FindType("DontGetSidetracked.Platform.RuStore.RuStoreRemoteConfigSettings") ??
+                                throw new InvalidOperationException("RuStoreRemoteConfigSettings type not found.");
+
+            FieldInfo appIdField = settingsType.GetField("AppId", BindingFlags.Public | BindingFlags.Static);
+            string appId = appIdField?.GetRawConstantValue()?.ToString() ?? string.Empty;
+
+            ConstructorInfo constructor = providerType.GetConstructor(new[] { typeof(string), typeof(string), typeof(string) });
+            if (constructor != null)
+                return constructor.Invoke(new object[] { appId, string.Empty, "rustore-remote-config.json" });
+
+            constructor = providerType.GetConstructor(new[] { typeof(string), typeof(string) });
+            if (constructor != null)
+                return constructor.Invoke(new object[] { appId, string.Empty });
+
+            throw new MissingMethodException(providerType.FullName, ".ctor(string,string)");
+        }
+
+        private string ReadStringProperty(string name, string fallback)
+        {
+            if (_providerObject == null || _providerType == null) return fallback;
             try
             {
-                if (!File.Exists(_cachePath)) return null;
-                return JsonUtility.FromJson<BootstrapConfigDto>(File.ReadAllText(_cachePath));
+                PropertyInfo property = _providerType.GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
+                string value = property?.GetValue(_providerObject)?.ToString();
+                return string.IsNullOrWhiteSpace(value) ? fallback : value;
             }
-            catch (Exception error)
+            catch
             {
-                Debug.LogWarning($"Bootstrap config cache ignored: {error.Message}");
-                return null;
+                return fallback;
             }
         }
 
-        private void SaveCache()
+        private static Type FindType(string fullName)
         {
-            try
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
             {
-                string temp = _cachePath + ".tmp";
-                File.WriteAllText(temp, JsonUtility.ToJson(_snapshot));
-                if (File.Exists(_cachePath)) File.Delete(_cachePath);
-                File.Move(temp, _cachePath);
+                Type type = assemblies[i].GetType(fullName, false);
+                if (type != null) return type;
             }
-            catch (Exception error)
-            {
-                Debug.LogWarning($"Bootstrap config cache save failed: {error.Message}");
-            }
+            return null;
         }
 
-        private static BootstrapConfigDto CreateDefaults() => new BootstrapConfigDto
-        {
-            serverTimeUtc = string.Empty,
-            minSupportedVersion = "0.1.0",
-            recommendedVersion = "0.1.0",
-            config = new BootstrapConfigValuesDto()
-        };
+        private static Exception Unwrap(Exception error) =>
+            error is TargetInvocationException invocation && invocation.InnerException != null
+                ? invocation.InnerException
+                : error;
 
-        private static void Normalize(BootstrapConfigDto snapshot)
-        {
-            if (snapshot.config == null) snapshot.config = new BootstrapConfigValuesDto();
-            if (string.IsNullOrWhiteSpace(snapshot.minSupportedVersion)) snapshot.minSupportedVersion = "0.1.0";
-            if (string.IsNullOrWhiteSpace(snapshot.recommendedVersion)) snapshot.recommendedVersion = snapshot.minSupportedVersion;
-        }
-
-        private static int Positive(int value, int fallback) => value > 0 ? value : fallback;
-        private static int Hour(int value, int fallback) => value >= 0 && value <= 23 ? value : fallback;
-    }
-
-    public static class VersionPolicy
-    {
         public static int Compare(string left, string right)
         {
             int[] a = Parse(left);
@@ -213,5 +148,11 @@ namespace DontGetSidetracked.Network
                 result[i] = int.TryParse(parts[i], out int parsed) && parsed >= 0 ? parsed : 0;
             return result;
         }
+    }
+
+    // Kept for existing tests and optional online-mode code that references VersionPolicy.
+    public static class VersionPolicy
+    {
+        public static int Compare(string left, string right) => BootstrapRemoteConfigService.Compare(left, right);
     }
 }
