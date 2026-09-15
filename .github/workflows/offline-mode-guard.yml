@@ -18,6 +18,8 @@ jobs:
           test -f UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs
           test -f UnityProject/Assets/Game/Gameplay/ChallengeAssistanceTracker.cs
+          test -f UnityProject/Assets/Game/Economy/CosmeticSelectionService.cs
+          test -f UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
           grep -q 'OptionalBackendBaseUrl = ""' UnityProject/Assets/Game/Presentation/GameRuntimeSettings.cs
           grep -q 'OfflineGameApi' UnityProject/Assets/Game/Network/UnityGameApi.cs
           grep -q 'SeedForDate' UnityProject/Assets/Game/Social/OfflineGameApi.cs
@@ -48,6 +50,14 @@ jobs:
             echo 'Hints must not be offered in friend Duel mode.'
             exit 1
           fi
+
+          # Cosmetic purchases must have a user-selectable local effect. Selection is persisted in SaveData,
+          # ownership is enforced by Economy, and Presentation applies it only while Drawing.
+          grep -q 'SelectedSkinId' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'IsSelectable' UnityProject/Assets/Game/Economy/CosmeticSelectionService.cs
+          grep -q 'OpenCosmetics' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'CosmeticSelectionService' UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
+          grep -q 'string.Equals(state, "Drawing"' UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
 
           # Remote Config controls session tuning but never route geometry.
           grep -q 'RuStoreRemoteConfigService' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs
