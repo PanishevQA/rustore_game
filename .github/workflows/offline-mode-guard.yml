@@ -1,0 +1,31 @@
+name: offline-mode-guard
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify offline-first runtime invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'OptionalBackendBaseUrl = ""' UnityProject/Assets/Game/Presentation/GameRuntimeSettings.cs
+          grep -q 'OfflineGameApi' UnityProject/Assets/Game/Network/UnityGameApi.cs
+          grep -q 'SeedForDate' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'BuildInstallUrl' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          if grep -RInE 'ProductionBackendBaseUrl|backend is required|configure the deployed HTTPS backend' \
+              UnityProject/Assets/Game docs README.md \
+              --exclude=UnityGameApi.cs \
+              --exclude=BootstrapRemoteConfigService.cs; then
+            echo 'Mandatory developer-backend dependency text/code detected.'
+            exit 1
+          fi
+          if grep -RInE 'https?://(localhost|127\.0\.0\.1)' UnityProject/Assets/Game; then
+            echo 'Local developer HTTP endpoint leaked into runtime.'
+            exit 1
+          fi
