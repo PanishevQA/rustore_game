@@ -45,7 +45,24 @@ namespace DontGetSidetracked.Services
 
     public interface IReviewService { Task RequestReviewAsync(); }
     public interface IUpdateService { Task CheckForUpdateAsync(bool mandatory); }
-    public interface IReferrerService { Task<string> ConsumeInstallReferrerAsync(); }
+
+    public sealed class InstallReferrerResult
+    {
+        public bool RequestSucceeded { get; }
+        public string ReferrerId { get; }
+
+        public InstallReferrerResult(bool requestSucceeded, string referrerId)
+        {
+            RequestSucceeded = requestSucceeded;
+            ReferrerId = referrerId;
+        }
+    }
+
+    public interface IReferrerService
+    {
+        Task<InstallReferrerResult> ConsumeInstallReferrerAsync();
+    }
+
     public interface IShareService { void ShareText(string text); }
 
     [Serializable]
@@ -69,11 +86,17 @@ namespace DontGetSidetracked.Services
         public string challengeId;
         public string inviterId;
         public double inviterScore;
+        public long seed;
+        public int generatorVersion;
+        public string serverTimeUtc;
 
         public string ReferralId => referralId;
         public string ChallengeId => challengeId;
         public string InviterId => inviterId;
         public double InviterScore => inviterScore;
+        public long Seed => seed;
+        public int GeneratorVersion => generatorVersion;
+        public string ServerTimeUtc => serverTimeUtc;
     }
 
     public interface IGameApi
