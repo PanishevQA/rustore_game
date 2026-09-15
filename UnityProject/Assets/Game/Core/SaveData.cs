@@ -49,13 +49,15 @@ namespace DontGetSidetracked.Core
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 5;
+        public const int CurrentVersion = 6;
 
         public int Version = CurrentVersion;
         public string AnonymousPlayerId = string.Empty;
         public int Coins;
+        public int Hints;
         public List<string> Inventory = new List<string>();
         public List<string> Entitlements = new List<string>();
+        public List<string> ProcessedPurchaseIds = new List<string>();
         public GameSettingsData Settings = new GameSettingsData();
         public int Streak;
         public double PersonalBest;
@@ -115,9 +117,15 @@ namespace DontGetSidetracked.Core
 
             if (data.Version == 4)
             {
-                // Existing installs have never consumed the one-shot Install Referrer through this app version.
                 data.InstallReferrerConsumed = false;
                 data.Version = 5;
+            }
+
+            if (data.Version == 5)
+            {
+                data.Hints = 0;
+                if (data.ProcessedPurchaseIds == null) data.ProcessedPurchaseIds = new List<string>();
+                data.Version = 6;
             }
 
             if (string.IsNullOrWhiteSpace(data.AnonymousPlayerId))
@@ -125,6 +133,7 @@ namespace DontGetSidetracked.Core
             if (data.Settings == null) data.Settings = new GameSettingsData();
             if (data.Inventory == null) data.Inventory = new List<string>();
             if (data.Entitlements == null) data.Entitlements = new List<string>();
+            if (data.ProcessedPurchaseIds == null) data.ProcessedPurchaseIds = new List<string>();
             if (data.LastDaily == null) data.LastDaily = new DailyCacheData();
             if (data.PendingAttempts == null) data.PendingAttempts = new List<PendingDailyAttemptData>();
 
