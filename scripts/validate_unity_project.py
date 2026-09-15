@@ -2,10 +2,15 @@
 import json
 import pathlib
 import sys
+import xml.etree.ElementTree as ET
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 UNITY = ROOT / "UnityProject"
 ERRORS: list[str] = []
+ANDROID_NS = "http://schemas.android.com/apk/res/android"
+ANDROID_NAME = f"{{{ANDROID_NS}}}name"
+ANDROID_SCHEME = f"{{{ANDROID_NS}}}scheme"
+ANDROID_HOST = f"{{{ANDROID_NS}}}host"
 
 
 def fail(message: str) -> None:
@@ -88,17 +93,40 @@ def validate_asmdefs() -> None:
 
 
 def validate_android_manifest() -> None:
-    text = read(UNITY / "Assets/Plugins/Android/AndroidManifest.xml")
-    required = (
-        "com.unity3d.player.UnityPlayerActivity",
-        'android:scheme="nesbeisya"',
-        'android:host="challenge"',
-    )
-    for token in required:
-        if token not in text:
-            fail(f"AndroidManifest.xml is missing {token!r}.")
-    if "GameActivity" in text:
-        fail("AndroidManifest.xml must not use GameActivity; RuStore Pay requires UnityPlayerActivity.")
+    path = UNITY / "Assets/Plugins/Android/AndroidManifest.xml"
+    text = read(path)
+    if not text:
+        return
+
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError as exc:
+        fail(f"AndroidManifest.xml is invalid XML: {exc}")
+        return
+
+    activities = list(root.findall("./application/activity"))
+    unity_activities = [
+        activity for activity in activities
+        if activity.attrib.get(ANDROID_NAME) == "com.unity3d.player.UnityPlayerActivity"
+    ]
+    if not unity_activities:
+        fail("AndroidManifest.xml must declare com.unity3d.player.UnityPlayerActivity.")
+
+    for activity in activities:
+        actual_name = activity.attrib.get(ANDROID_NAME, "")
+        if actual_name.endswith("GameActivity"):
+            fail(f"AndroidManifest.xml must not declare GameActivity ({actual_name}); RuStore Pay requires UnityPlayerActivity.")
+
+    has_challenge_deeplink = False
+    for activity in unity_activities:
+        for data in activity.findall("./intent-filter/data"):
+            if data.attrib.get(ANDROID_SCHEME) == "nesbeisya" and data.attrib.get(ANDROID_HOST) == "challenge":
+                has_challenge_deeplink = True
+                break
+        if has_challenge_deeplink:
+            break
+    if not has_challenge_deeplink:
+        fail("UnityPlayerActivity must declare the nesbeisya://challenge deeplink.")
 
 
 def validate_required_runtime_files() -> None:
