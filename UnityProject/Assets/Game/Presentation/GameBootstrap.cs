@@ -83,27 +83,12 @@ namespace DontGetSidetracked.Presentation
             BuildUi();
             if (_save.TutorialCompleted) ShowHome();
             else StartTutorial();
-
-            FlushPendingAttempts();
         }
 
         private void Update()
         {
             if (_state != RoundState.Drawing) return;
             PollPointer();
-        }
-
-        private async void FlushPendingAttempts()
-        {
-            try
-            {
-                await _dailyService.FlushPendingAsync();
-                _save = _dailyService.Save;
-            }
-            catch (Exception error)
-            {
-                Debug.Log($"Pending attempts stay queued: {error.Message}");
-            }
         }
 
         private void ShowHome()
@@ -116,10 +101,7 @@ namespace DontGetSidetracked.Presentation
             _title.text = "НЕ СБЕЙСЯ!";
 
             string best = _save.PersonalBest > 0 ? $"Лучший: {_save.PersonalBest:0.0}%" : "Лучший: --";
-            string pending = _save.PendingAttempts != null && _save.PendingAttempts.Count > 0
-                ? $"\nОжидает синхронизации: {_save.PendingAttempts.Count}"
-                : string.Empty;
-            _status.text = $"🔥 Серия: {_save.Streak} дней\n{best}{pending}";
+            _status.text = $"🔥 Серия: {_save.Streak} дней\n{best}";
 
             ConfigureButton(_primary, "ИГРАТЬ DAILY", StartDaily);
             ConfigureButton(_secondary, "ТРЕНИРОВКА", StartTraining);
@@ -134,7 +116,7 @@ namespace DontGetSidetracked.Presentation
             if (_referralOfferLoading || _mode != Mode.Home || string.IsNullOrWhiteSpace(_save.PendingReferralId)) return;
             _referralOfferLoading = true;
             string referralId = _save.PendingReferralId;
-            _status.text = "ЗАГРУЖАЕМ ВЫЗОВ ДРУГА…";
+            _status.text = "ГОТОВИМ ВЫЗОВ ДРУГА…";
 
             try
             {
@@ -189,7 +171,7 @@ namespace DontGetSidetracked.Presentation
             HideButtons();
             SetMarkersVisible(false);
             _title.text = "DAILY CHALLENGE";
-            _status.text = "ЗАГРУЖАЕМ ИСПЫТАНИЕ…";
+            _status.text = "ГОТОВИМ ИСПЫТАНИЕ…";
 
             try
             {
@@ -198,14 +180,15 @@ namespace DontGetSidetracked.Presentation
                 _daily = _dailySession.Challenge;
                 AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.DailyStart, Params(
                     "challenge_id", _daily.ChallengeId,
-                    "offline", _dailySession.FromCache));
+                    "route_count", _daily.RouteCount,
+                    "offline", true));
                 StartCoroutine(BeginRoute(_daily.Routes[0]));
             }
             catch (Exception error)
             {
                 Debug.LogWarning($"Daily unavailable: {error.Message}");
                 _state = RoundState.Idle;
-                _status.text = "Новый Daily пока недоступен.\nТренировка работает без сети.";
+                _status.text = "Не удалось подготовить Daily.\nТренировка доступна локально.";
                 ConfigureButton(_primary, "ПОВТОРИТЬ", StartDaily);
                 ConfigureButton(_secondary, "ТРЕНИРОВКА", StartTraining);
                 _share.gameObject.SetActive(false);
@@ -227,6 +210,7 @@ namespace DontGetSidetracked.Presentation
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.ChallengeOpen, Params(
                 "challenge_id", _daily.ChallengeId,
                 "referrer_id", _duelSession.Referral.ReferralId,
+                "route_count", _daily.RouteCount,
                 "source", "duel_offer"));
             StartCoroutine(BeginRoute(_daily.Routes[0]));
         }
@@ -256,12 +240,12 @@ namespace DontGetSidetracked.Presentation
 
             if (_mode == Mode.Daily)
             {
-                string offline = _dailySession != null && _dailySession.FromCache ? " • ОФЛАЙН" : string.Empty;
-                _title.text = $"DAILY {_dailyIndex + 1}/3{offline}";
+                string offline = _dailySession != null && _dailySession.FromCache ? " • КЭШ" : string.Empty;
+                _title.text = $"DAILY {_dailyIndex + 1}/{_daily.RouteCount}{offline}";
             }
             else if (_mode == Mode.Duel)
             {
-                _title.text = $"ВЫЗОВ {_dailyIndex + 1}/3 • ЦЕЛЬ {_duelSession.Referral.InviterScore:0.0}%";
+                _title.text = $"ВЫЗОВ {_dailyIndex + 1}/{_daily.RouteCount} • ЦЕЛЬ {_duelSession.Referral.InviterScore:0.0}%";
             }
             else if (_mode == Mode.Tutorial)
             {
@@ -386,7 +370,7 @@ namespace DontGetSidetracked.Presentation
             {
                 _dailyScores.Add(result.Score);
                 _dailyReplays.Add(new List<RecordedPoint>(_recording));
-                if (_dailyIndex < 2)
+                if (_dailyIndex < _daily.RouteCount - 1)
                 {
                     ConfigureButton(_primary, "СЛЕДУЮЩИЙ МАРШРУТ", NextDailyRoute);
                     ConfigureButton(_secondary, "ДОМОЙ", ShowHome);
@@ -422,10 +406,11 @@ namespace DontGetSidetracked.Presentation
 
         private async void CompleteDaily()
         {
-            if (_dailySession == null || _dailyReplays.Count != 3 || _dailyScores.Count != 3) return;
+            int expected = _dailySession?.Challenge?.RouteCount ?? 0;
+            if (expected < 1 || _dailyReplays.Count != expected || _dailyScores.Count != expected) return;
 
             double previousBest = _save.PersonalBest;
-            _status.text = $"DAILY {_lastDailyScore:0.0}%\nСинхронизация…";
+            _status.text = $"DAILY {_lastDailyScore:0.0}%\nСохраняем результат…";
             try
             {
                 DailyAttemptSubmissionResult submission = await _dailyService.CompleteAndSubmitAsync(
@@ -434,30 +419,30 @@ namespace DontGetSidetracked.Presentation
                     _dailyScores,
                     false);
                 _save = _dailyService.Save;
-                _lastDailyScore = submission.SubmittedToServer ? submission.ServerScore : submission.LocalScore;
-                _status.text = submission.SubmittedToServer
-                    ? $"DAILY {_lastDailyScore:0.0}%\n🔥 Серия: {_save.Streak}"
-                    : $"DAILY {_lastDailyScore:0.0}%\nСохранено офлайн • отправим позже";
+                _lastDailyScore = submission.ServerScore;
+                _status.text = $"DAILY {_lastDailyScore:0.0}%\n🔥 Серия: {_save.Streak}";
 
                 AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.DailyComplete, Params(
                     "challenge_id", _daily.ChallengeId,
                     "score", _lastDailyScore,
-                    "submitted", submission.SubmittedToServer));
+                    "route_count", expected,
+                    "verified_locally", true));
                 if (_save.PersonalBest > previousBest)
                     AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PersonalBest, Params("score", _save.PersonalBest));
             }
             catch (Exception error)
             {
                 Debug.LogWarning($"Daily completion failed: {error.Message}");
-                _status.text = $"DAILY {_lastDailyScore:0.0}%\nРезультат сохранён локально";
+                _status.text = $"DAILY {_lastDailyScore:0.0}%\nРезультат сохранён на устройстве";
             }
         }
 
         private async void CompleteDuel()
         {
-            if (_duelSession == null || _dailyReplays.Count != 3 || _dailyScores.Count != 3) return;
+            int expected = _duelSession?.Challenge?.RouteCount ?? 0;
+            if (expected < 1 || _dailyReplays.Count != expected || _dailyScores.Count != expected) return;
 
-            _status.text = $"ТЫ: {_lastDailyScore:0.0}%\nДРУГ: {_duelSession.Referral.InviterScore:0.0}%\nПроверяем результат…";
+            _status.text = $"ТЫ: {_lastDailyScore:0.0}%\nДРУГ: {_duelSession.Referral.InviterScore:0.0}%\nСчитаем результат…";
             try
             {
                 DuelSubmissionResult submission = await _duelService.CompleteAsync(
@@ -467,21 +452,21 @@ namespace DontGetSidetracked.Presentation
                 _save = _duelService.Save;
                 _lastDailyScore = submission.Score;
                 string outcome = submission.Tied ? "НИЧЬЯ" : submission.Won ? "ПОБЕДА" : "ПОКА НЕ ПОБЕДИЛ";
-                string sync = submission.SubmittedToServer ? string.Empty : "\nСохранено офлайн • отправим позже";
-                _status.text = $"ТЫ: {_lastDailyScore:0.0}%\nДРУГ: {submission.InviterScore:0.0}%\n{outcome}{sync}";
+                _status.text = $"ТЫ: {_lastDailyScore:0.0}%\nДРУГ: {submission.InviterScore:0.0}%\n{outcome}";
 
                 AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.ChallengeComplete, Params(
                     "challenge_id", _daily.ChallengeId,
                     "referrer_id", _duelSession.Referral.ReferralId,
                     "score", _lastDailyScore,
                     "inviter_score", submission.InviterScore,
+                    "route_count", expected,
                     "won", submission.Won,
-                    "submitted", submission.SubmittedToServer));
+                    "verified_locally", true));
             }
             catch (Exception error)
             {
                 Debug.LogWarning($"Duel completion failed: {error.Message}");
-                _status.text = $"ТЫ: {_lastDailyScore:0.0}%\nДРУГ: {_duelSession.Referral.InviterScore:0.0}%\nРезультат сохранён локально";
+                _status.text = $"ТЫ: {_lastDailyScore:0.0}%\nДРУГ: {_duelSession.Referral.InviterScore:0.0}%\nРезультат сохранён на устройстве";
             }
         }
 
