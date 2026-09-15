@@ -16,18 +16,35 @@ namespace DontGetSidetracked.Tests
             Assert.That(migrated.AnonymousPlayerId, Does.StartWith("anon_"));
             Assert.That(migrated.Entitlements, Is.Not.Null);
             Assert.That(migrated.LastDaily, Is.Not.Null);
+            Assert.That(migrated.LastDaily.RouteCount, Is.EqualTo(3));
         }
 
         [Test]
-        public void Version7MigrationClearsObsoletePendingBackendAttempts()
+        public void Version7MigrationClearsObsoletePendingBackendAttemptsAndReachesCurrentVersion()
         {
             var data = new SaveData { Version = 7 };
             data.PendingAttempts.Add(new PendingDailyAttemptData { ChallengeId = "legacy" });
 
             SaveData migrated = SaveMigrator.Migrate(data);
 
-            Assert.That(migrated.Version, Is.EqualTo(8));
+            Assert.That(migrated.Version, Is.EqualTo(SaveData.CurrentVersion));
             Assert.That(migrated.PendingAttempts, Is.Empty);
+            Assert.That(migrated.LastDaily.RouteCount, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Version8MigrationNormalizesInvalidCachedRouteCount()
+        {
+            var data = new SaveData
+            {
+                Version = 8,
+                LastDaily = new DailyCacheData { RouteCount = 0 }
+            };
+
+            SaveData migrated = SaveMigrator.Migrate(data);
+
+            Assert.That(migrated.Version, Is.EqualTo(SaveData.CurrentVersion));
+            Assert.That(migrated.LastDaily.RouteCount, Is.EqualTo(3));
         }
 
         [Test]
