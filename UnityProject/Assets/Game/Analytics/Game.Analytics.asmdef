@@ -1,0 +1,6 @@
+{
+  "name": "Game.Analytics",
+  "rootNamespace": "DontGetSidetracked.Analytics",
+  "references": ["Game.Services"],
+  "autoReferenced": true
+}
