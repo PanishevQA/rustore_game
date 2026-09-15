@@ -12,7 +12,7 @@ namespace DontGetSidetracked.Tests
     public sealed class DailySessionServiceTests
     {
         [Test]
-        public async Task LoadCurrentAsync_UsesCachedDaily_WhenProviderFails()
+        public async Task LoadCurrentAsync_UsesCachedDailyRouteCount_WhenProviderFails()
         {
             var save = SaveData.CreateNew();
             save.LastDaily = new DailyCacheData
@@ -20,6 +20,7 @@ namespace DontGetSidetracked.Tests
                 ChallengeId = "daily_2026_09_15",
                 Seed = 123456,
                 GeneratorVersion = 1,
+                RouteCount = 2,
                 ServerTimeUtc = "2026-09-15T06:30:00Z"
             };
             var repo = new MemorySaveRepository(save);
@@ -30,11 +31,29 @@ namespace DontGetSidetracked.Tests
 
             Assert.That(result.FromCache, Is.True);
             Assert.That(result.Challenge.ChallengeId, Is.EqualTo("daily_2026_09_15"));
+            Assert.That(result.Challenge.RouteCount, Is.EqualTo(2));
             Assert.That(result.ServerTimeUtc, Is.EqualTo(new DateTime(2026, 9, 15, 6, 30, 0, DateTimeKind.Utc)));
         }
 
-        [Test]
-        public void CompleteAndSubmitAsync_PersistsLocalProgressBeforeProviderFailure_WithoutQueue()
+        [TestCase(1)]
+        [TestCase(2)]
+        [TestCase(3)]
+        public async Task LoadCurrentAsync_PreservesProviderRouteCount(int routeCount)
+        {
+            var save = SaveData.CreateNew();
+            var api = new FakeGameApi { RouteCount = routeCount };
+            var service = new DailySessionService(api, new MemorySaveRepository(save), save);
+
+            DailyLoadResult result = await service.LoadCurrentAsync();
+
+            Assert.That(result.Challenge.RouteCount, Is.EqualTo(routeCount));
+            Assert.That(save.LastDaily.RouteCount, Is.EqualTo(routeCount));
+        }
+
+        [TestCase(1)]
+        [TestCase(2)]
+        [TestCase(3)]
+        public void CompleteAndSubmitAsync_PersistsLocalProgressForConfiguredRouteCount_BeforeProviderFailure(int routeCount)
         {
             var save = SaveData.CreateNew();
             save.Streak = 2;
@@ -42,10 +61,10 @@ namespace DontGetSidetracked.Tests
             var repo = new MemorySaveRepository(save);
             var api = new FakeGameApi { FailSubmit = true };
             var service = new DailySessionService(api, repo, save);
-            var challenge = new DailyChallengeFactory().Create("daily_2026_09_15", 77, 1);
+            var challenge = new DailyChallengeFactory().Create("daily_2026_09_15", 77, 1, routeCount);
             var session = new DailyLoadResult(challenge, new DateTime(2026, 9, 15, 23, 59, 0, DateTimeKind.Utc), false);
             List<IReadOnlyList<RecordedPoint>> replays = CreateReplays(challenge);
-            var scores = new List<double> { 90.1, 91.2, 92.3 };
+            List<double> scores = CreateScores(routeCount);
 
             Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await service.CompleteAndSubmitAsync(session, replays, scores, false));
@@ -54,7 +73,7 @@ namespace DontGetSidetracked.Tests
             Assert.That(save.Streak, Is.EqualTo(3));
             Assert.That(save.CompletedDailyCount, Is.EqualTo(1));
             Assert.That(save.LastCompletedDailyDateUtc.StartsWith("2026-09-15"), Is.True);
-            Assert.That(save.PersonalBest, Is.EqualTo(91.2).Within(0.001));
+            Assert.That(save.PersonalBest, Is.EqualTo(DailyChallengeFactory.DailyScore(scores)).Within(0.001));
         }
 
         [Test]
@@ -74,8 +93,8 @@ namespace DontGetSidetracked.Tests
 
         private static List<IReadOnlyList<RecordedPoint>> CreateReplays(DailyChallengeDefinition challenge)
         {
-            var result = new List<IReadOnlyList<RecordedPoint>>(3);
-            for (int i = 0; i < 3; i++)
+            var result = new List<IReadOnlyList<RecordedPoint>>(challenge.RouteCount);
+            for (int i = 0; i < challenge.RouteCount; i++)
             {
                 IReadOnlyList<FixedPoint2> route = challenge.Routes[i].ReferencePoints;
                 result.Add(new List<RecordedPoint>
@@ -85,6 +104,13 @@ namespace DontGetSidetracked.Tests
                 });
             }
             return result;
+        }
+
+        private static List<double> CreateScores(int routeCount)
+        {
+            var scores = new List<double>(routeCount);
+            for (int i = 0; i < routeCount; i++) scores.Add(90.1 + i * 1.1);
+            return scores;
         }
 
         private sealed class MemorySaveRepository : ISaveRepository
@@ -100,6 +126,7 @@ namespace DontGetSidetracked.Tests
             public bool FailGetDaily;
             public bool FailSubmit;
             public int SubmitCount;
+            public int RouteCount = 3;
 
             public Task<DailyDto> GetDailyAsync()
             {
@@ -109,6 +136,7 @@ namespace DontGetSidetracked.Tests
                     challengeId = "daily_2026_09_15",
                     seed = 123,
                     generatorVersion = 1,
+                    routeCount = RouteCount,
                     serverTimeUtc = "2026-09-15T06:00:00Z"
                 });
             }
@@ -120,7 +148,7 @@ namespace DontGetSidetracked.Tests
                 return Task.FromResult(DailyChallengeFactory.DailyScore(clientScores));
             }
 
-            public Task<string> CreateChallengeAsync(string playerId, string challengeId, double score) => Task.FromResult("https://example.test/c/test");
+            public Task<string> CreateChallengeAsync(string playerId, string challengeId, double score) => Task.FromResult("nesbeisya://challenge/test");
             public Task<ReferralDto> GetReferralAsync(string referralId) => Task.FromResult(new ReferralDto { referralId = referralId });
         }
     }
