@@ -24,6 +24,7 @@
 - [ ] В `RuStoreRemoteConfigSettings.AppId` указан реальный App ID инструмента Remote Config из RuStore Console.
 - [ ] `ru.rustore.remoteconfig` закреплён на версии, повторно проверенной перед production; на дату разработки — `10.5.1`.
 - [ ] В RuStore Console заведены ключи с корректными типами: `route_display_time_easy_ms`, `route_display_time_medium_ms`, `route_display_time_hard_ms`, `daily_route_count`, `rewarded_enabled`, `interstitial_enabled`, `interstitial_min_rounds`, `interstitial_cooldown_sec`, `share_copy_variant`, `review_min_sessions`, `local_daily_reminder_enabled`, `daily_reminder_hour`, `store_offer_variant`, `min_supported_version`, `recommended_version`.
+- [ ] Четыре gameplay-ключа Daily (`daily_route_count` и три `route_display_time_*`) настроены **глобально без audience targeting/A-B сегментации**; иначе пользователи одного UTC-дня могут получить разные условия.
 - [ ] `daily_route_count` принимает только 1–3; клиент валидирует значение и применяет безопасный default 3.
 - [ ] Display-time Remote Config меняет только время показа, но не геометрию `seed + generatorVersion`.
 - [ ] Display-time values вне 750–10000 мс не применяются; используются безопасные defaults/cache.
