@@ -7,7 +7,7 @@ namespace DontGetSidetracked.Presentation
 {
     public sealed class AnalyticsLifecycle : MonoBehaviour
     {
-        public static QueuedAnalyticsService Service { get; private set; }
+        public static LocalAnalyticsService Service { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
@@ -17,15 +17,13 @@ namespace DontGetSidetracked.Presentation
             var saveRepository = new JsonFileSaveRepository();
             SaveData save = saveRepository.Load();
             int sessionNumber = save.SessionNumber + 1;
-            Service = new QueuedAnalyticsService(
-                save.AnonymousPlayerId,
-                sessionNumber,
-                GameRuntimeSettings.BackendBaseUrl);
+            Service = new LocalAnalyticsService(save.AnonymousPlayerId, sessionNumber);
 
             Service.Track(AnalyticsEventNames.AppOpen, new Dictionary<string, object>
             {
                 ["client_version"] = Application.version,
-                ["platform"] = Application.platform.ToString()
+                ["platform"] = Application.platform.ToString(),
+                ["storage"] = "local"
             });
             Service.Track(AnalyticsEventNames.SessionStart, new Dictionary<string, object>
             {
@@ -35,7 +33,6 @@ namespace DontGetSidetracked.Presentation
             var root = new GameObject("AnalyticsLifecycle");
             DontDestroyOnLoad(root);
             root.AddComponent<AnalyticsLifecycle>();
-            _ = Service.FlushAsync();
         }
 
         private void OnApplicationPause(bool paused)
