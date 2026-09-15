@@ -2,29 +2,53 @@
 
 Мобильная hypercasual-игра для Android / RuStore: игрок несколько секунд запоминает маршрут, затем одним движением повторяет его по памяти и получает точность 0–100%.
 
-## Что уже реализовано в этом репозитории
+## Главное: свой сервер не нужен
 
-- Unity 6.3 LTS проект (зафиксирован на `6000.3.24f1`) с portrait-настройкой и `UnityPlayerActivity`.
-- Детерминированный генератор маршрутов на fixed-point координатах: `seed + generatorVersion` воспроизводит один и тот же polyline.
-- Pure C# scoring без зависимости от Unity: среднее отклонение, завершённость, попадание в END и грубые ошибки.
-- Runtime-прототип игрового цикла: показать маршрут → скрыть → нарисовать → показать обе траектории → score.
-- Daily из 3 маршрутов и Endless/Training.
-- Сервисные интерфейсы для рекламы, платежей, аналитики, Remote Config, review/update/referrer и API.
-- Изолированный слой `Game.Platform.RuStore` и таблица зафиксированных SDK-версий.
-- Минимальный FastAPI backend: bootstrap config, Daily, серверная верификация replay, leaderboard, challenge/referral и landing page.
-- Автотест backend/game-rules, включая валидацию 1000 процедурных маршрутов.
+Текущий MVP — **offline-first**. Для обычной работы игры не требуется VPS, собственная база данных, домен или постоянно работающий backend.
 
-## Быстрый запуск клиента
+На телефоне пользователя локально работают:
+
+- обучение, Daily Challenge и Training;
+- генерация маршрутов и пересчёт score;
+- streak, лучший результат, статистика, настройки и косметика;
+- friend duel: challenge-код содержит дату, `seed`, `generatorVersion` и результат друга;
+- сохранения в versioned `SaveData`;
+- локальная очередь аналитических событий (без обязательной отправки на наш сервер).
+
+Daily одинаковый на устройствах благодаря детерминированному seed из UTC-даты и `generatorVersion`. Ограничение offline-варианта: пользователь теоретически может изменить системную дату устройства, поэтому абсолютной античит-защиты без внешнего источника времени нет.
+
+Для вызова другу сервер тоже не нужен. Share содержит deeplink для установленной игры и RuStore install URL с тем же компактным `referrerId`. После новой установки RuStore Install Referrer возвращает этот токен приложению, и тот же challenge восстанавливается локально.
+
+## Что реализовано
+
+- Unity 6.3 LTS проект, зафиксированный на `6000.3.24f1`, portrait и `UnityPlayerActivity`.
+- Детерминированный fixed-point generator: `seed + generatorVersion` воспроизводит тот же маршрут.
+- Pure C# scoring: среднее отклонение, завершённость, попадание в END и грубые ошибки.
+- Полный цикл: показать маршрут → скрыть → нарисовать → показать обе траектории → score.
+- Daily из 3 маршрутов и бесконечный Training.
+- Offline friend duel без собственной БД.
+- Локальная статистика вместо обязательного глобального leaderboard.
+- Versioned save + migrations, без хранения основного прогресса только в PlayerPrefs.
+- RuStore Pay, Install Referrer, Review и Update за интерфейсами/адаптерами.
+- Магазин получает цену только из RuStore Pay SDK.
+- Rewarded/interstitial policy отделена от конкретного рекламного provider.
+- Production preflight блокирует неверные Activity/package/deeplink/RuStore dependency pins.
+
+## Быстрый запуск
 
 1. Установить Unity `6000.3.24f1` с Android Build Support.
-2. Открыть папку `UnityProject`.
-3. Дождаться Package Manager/compile. Скрипт `ProjectConfigurator` создаст `Assets/Scenes/Main.unity`, добавит её в Build Settings и выставит Android-настройки.
-4. Открыть `Main.unity` и нажать Play.
-5. Для Android сборки задать реальный package name в `ProjectConfigurator.PackageName` до публикации и сверить его с RuStore Console.
+2. Открыть `UnityProject`.
+3. Дождаться Package Manager/compile.
+4. Скрипт `ProjectConfigurator` создаст `Assets/Scenes/Main.unity`, если сцены ещё нет, и выставит Android-настройки.
+5. Открыть `Main.unity` и нажать Play.
 
-Проект запускается без backend и без RuStore: Daily использует локальный fallback, Training полностью offline. Production Daily должен получать seed и серверное время из backend.
+Для production необходимо заменить `.dev` package name на точное значение из RuStore Console и настроить RuStore PayClient. Собственный backend URL задавать **не требуется**.
 
-## Backend
+## Опциональный backend
+
+Папка `server/` сохранена как необязательный задел для будущего онлайн-режима: глобального leaderboard, server-time Daily, усиленной античит-проверки и server-side invoice verification. Текущая Android-сборка от этого кода не зависит.
+
+Если когда-нибудь понадобится онлайн-режим, backend можно запустить отдельно:
 
 ```bash
 cd server
@@ -35,18 +59,20 @@ pytest
 uvicorn app.main:app --reload
 ```
 
-По умолчанию SQLite хранится в `server/data/game.db`. Настройки задаются переменными окружения, см. `server/app/main.py`.
-
 ## RuStore
 
-Перед production-сборкой обязательно пройти `docs/RUSTORE_RELEASE_CHECKLIST.md`. Pay SDK и Activity/deeplink — релизный blocker. Значения `consoleApplicationId`, Pay deeplink scheme, Push project ID и Remote Config app ID намеренно не хранятся в репозитории.
+Перед production-сборкой пройти `docs/RUSTORE_RELEASE_CHECKLIST.md`. Pay SDK и корректная Android Activity/deeplink остаются release blocker. Значения `consoleApplicationId`, signing credentials и другие секреты не хранятся в репозитории.
 
 ## Структура
 
-- `UnityProject/Assets/Game/Core` — fixed-point типы и детерминированный RNG.
-- `UnityProject/Assets/Game/Gameplay` — generator, score, Daily.
-- `UnityProject/Assets/Game/Services` — интерфейсы внешних сервисов и безопасные fallback-реализации.
-- `UnityProject/Assets/Game/Presentation` — ввод, UI, route renderer, игровой flow.
-- `UnityProject/Assets/Game/Platform/RuStore` — граница RuStore-интеграций.
-- `server` — MVP API и server-side score verification.
-- `docs` — архитектура, SDK matrix и release checklist.
+- `UnityProject/Assets/Game/Core` — save/model/fixed-point.
+- `UnityProject/Assets/Game/Gameplay` — generator, score, Daily definitions.
+- `UnityProject/Assets/Game/Daily` — Daily flow, streak/review policy.
+- `UnityProject/Assets/Game/Social` — offline challenge codec, duel/referral flow.
+- `UnityProject/Assets/Game/Economy` — товары и entitlements.
+- `UnityProject/Assets/Game/Monetization` — ad policies.
+- `UnityProject/Assets/Game/Services` — интерфейсы внешних сервисов.
+- `UnityProject/Assets/Game/Presentation` — UI/input/runtime wiring.
+- `UnityProject/Assets/Game/Platform/RuStore` — RuStore adapters.
+- `server` — **опциональный**, не требуется текущему приложению.
+- `docs` — архитектура, SDK matrix, статус и release checklist.
