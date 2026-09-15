@@ -1,0 +1,21 @@
+name: rustore-dependency-guard
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject deprecated BillingClient and old RuStore repositories
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE 'billingclient|artifactory-external\.vkpartner\.ru' UnityProject --exclude-dir=Library; then
+            echo 'Deprecated RuStore dependency/reference found.'
+            exit 1
+          fi
+          grep -q 'UnityPlayerActivity' docs/RUSTORE_RELEASE_CHECKLIST.md
+          grep -q '11.1.0' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs

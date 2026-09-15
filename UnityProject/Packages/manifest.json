@@ -1,0 +1,22 @@
+{
+  "scopedRegistries": [
+    {
+      "name": "RuStore Nexus",
+      "url": "https://nexus-external.rustore.ru/repository/npm-unity-rustore-exposed/",
+      "scopes": [
+        "ru.rustore"
+      ]
+    }
+  ],
+  "dependencies": {
+    "com.unity.ugui": "2.0.0",
+    "com.unity.modules.androidjni": "1.0.0",
+    "com.unity.modules.jsonserialize": "1.0.0",
+    "com.unity.modules.unitywebrequest": "1.0.0",
+    "ru.rustore.pay": "11.1.0",
+    "ru.rustore.installreferrer": "10.6.1",
+    "ru.rustore.update": "10.5.1",
+    "ru.rustore.review": "10.5.1",
+    "ru.rustore.remoteconfig": "10.5.0"
+  }
+}

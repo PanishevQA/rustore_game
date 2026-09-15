@@ -1,0 +1,39 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+UserSettings/
+MemoryCaptures/
+Recordings/
+*.csproj
+*.sln
+*.user
+*.unityproj
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Android signing / local secrets
+*.keystore
+*.jks
+*.properties.local
+.env
+
+# Python backend
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/
+server/data/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
