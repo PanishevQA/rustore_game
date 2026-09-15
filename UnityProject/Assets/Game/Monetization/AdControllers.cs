@@ -59,7 +59,9 @@ namespace DontGetSidetracked.Monetization
         public async Task<bool> TryShowBetweenSessionsAsync(bool removeAdsEntitlement, bool gameplayActive)
         {
             if (!CanShowBetweenSessions(removeAdsEntitlement, gameplayActive)) return false;
-            await _ads.ShowInterstitialAsync();
+            bool shown = await _ads.ShowInterstitialAsync();
+            if (!shown) return false;
+
             _lastShownUtc = _utcNow();
             _completedRoundsSinceAd = 0;
             return true;
@@ -71,6 +73,6 @@ namespace DontGetSidetracked.Monetization
         public bool IsRewardedReady => false;
         public bool IsInterstitialReady => false;
         public Task<bool> ShowRewardedAsync(RewardPlacement placement) => Task.FromResult(false);
-        public Task ShowInterstitialAsync() => Task.CompletedTask;
+        public Task<bool> ShowInterstitialAsync() => Task.FromResult(false);
     }
 }
