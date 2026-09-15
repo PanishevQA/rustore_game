@@ -137,12 +137,39 @@ namespace DontGetSidetracked.Services
         public string ServerTimeUtc => serverTimeUtc;
     }
 
+    [Serializable]
+    public sealed class LeaderboardItemDto
+    {
+        public int rank;
+        public string playerId;
+        public double score;
+
+        public int Rank => rank;
+        public string PlayerId => playerId;
+        public double Score => score;
+    }
+
+    [Serializable]
+    public sealed class LeaderboardDto
+    {
+        public string challengeId;
+        public LeaderboardItemDto[] items;
+
+        public string ChallengeId => challengeId;
+        public IReadOnlyList<LeaderboardItemDto> Items => items ?? Array.Empty<LeaderboardItemDto>();
+    }
+
     public interface IGameApi
     {
         Task<DailyDto> GetDailyAsync();
         Task<double> SubmitDailyAttemptAsync(string playerId, DailyChallengeDefinition challenge, IReadOnlyList<IReadOnlyList<RecordedPoint>> replays, IReadOnlyList<double> clientScores, bool assisted);
         Task<string> CreateChallengeAsync(string playerId, string challengeId, double score);
         Task<ReferralDto> GetReferralAsync(string referralId);
+    }
+
+    public interface ILeaderboardApi
+    {
+        Task<LeaderboardDto> GetDailyLeaderboardAsync(string challengeId, int limit = 100);
     }
 
     public sealed class SafeRemoteConfig : IRemoteConfigService
