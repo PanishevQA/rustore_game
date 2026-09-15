@@ -151,7 +151,13 @@ namespace DontGetSidetracked.Network
 
         public async Task<string> CreateChallengeAsync(string playerId, string challengeId, double score)
         {
-            if (_offline != null) return await _offline.CreateChallengeAsync(playerId, challengeId, score);
+            if (_offline != null)
+            {
+                string deepLink = await _offline.CreateChallengeAsync(playerId, challengeId, score);
+                if (!OfflineChallengeCodec.TryExtractToken(deepLink, out string token)) return deepLink;
+                string installUrl = OfflineChallengeCodec.BuildInstallUrl(Application.identifier, token);
+                return "Открыть в игре: " + deepLink + "\nУстановить из RuStore: " + installUrl;
+            }
 
             var payload = new ChallengeRequestDto
             {
