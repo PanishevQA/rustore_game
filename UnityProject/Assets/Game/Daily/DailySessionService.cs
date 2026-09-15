@@ -24,8 +24,6 @@ namespace DontGetSidetracked.Daily
 
     public sealed class DailyAttemptSubmissionResult
     {
-        // Names kept for compatibility with the optional online provider. In offline-first runtime
-        // SubmittedToServer simply means the configured IGameApi accepted/recalculated the result locally.
         public bool SubmittedToServer { get; }
         public double ServerScore { get; }
         public double LocalScore { get; }
@@ -65,11 +63,13 @@ namespace DontGetSidetracked.Daily
                 ValidateDaily(dto);
                 DateTime serverTime = ParseServerTime(dto.ServerTimeUtc);
                 int routeCount = NormalizeRouteCount(dto.RouteCount);
+                IReadOnlyList<int> displayTimes = dto.DisplayTimesMs;
                 DailyChallengeDefinition challenge = _factory.Create(
                     dto.ChallengeId,
                     dto.Seed,
                     dto.GeneratorVersion,
-                    routeCount);
+                    routeCount,
+                    displayTimes);
 
                 _save.LastDaily = new DailyCacheData
                 {
@@ -77,6 +77,9 @@ namespace DontGetSidetracked.Daily
                     Seed = dto.Seed,
                     GeneratorVersion = dto.GeneratorVersion,
                     RouteCount = routeCount,
+                    DisplayTimeEasyMs = ProfileValue(displayTimes, 0, DailyCacheData.DefaultEasyDisplayTimeMs),
+                    DisplayTimeMediumMs = ProfileValue(displayTimes, 1, DailyCacheData.DefaultMediumDisplayTimeMs),
+                    DisplayTimeHardMs = ProfileValue(displayTimes, 2, DailyCacheData.DefaultHardDisplayTimeMs),
                     ServerTimeUtc = serverTime.ToString("O", CultureInfo.InvariantCulture)
                 };
                 _saveRepository.Save(_save);
@@ -89,11 +92,13 @@ namespace DontGetSidetracked.Daily
                     throw;
 
                 DateTime cachedServerTime = ParseServerTime(cache.ServerTimeUtc);
+                int routeCount = NormalizeRouteCount(cache.RouteCount);
                 DailyChallengeDefinition cached = _factory.Create(
                     cache.ChallengeId,
                     cache.Seed,
                     cache.GeneratorVersion,
-                    NormalizeRouteCount(cache.RouteCount));
+                    routeCount,
+                    CachedDisplayTimes(cache, routeCount));
                 return new DailyLoadResult(cached, cachedServerTime, true);
             }
         }
@@ -110,9 +115,6 @@ namespace DontGetSidetracked.Daily
             double localScore = DailyChallengeFactory.DailyScore(clientScores);
             if (localScore > _save.PersonalBest) _save.PersonalBest = localScore;
             _streakService.ApplyCompletedDaily(_save, session.ServerTimeUtc);
-
-            // Persist the meaningful local result before invoking any provider. If the provider fails,
-            // Presentation can report "saved locally" and there is no fake background-sync promise.
             _saveRepository.Save(_save);
 
             double acceptedScore = await _api.SubmitDailyAttemptAsync(
@@ -126,7 +128,6 @@ namespace DontGetSidetracked.Daily
 
         public Task<int> FlushPendingAsync()
         {
-            // Compatibility cleanup for pre-v8 saves only. The offline-first release never queues attempts.
             int removed = _save.PendingAttempts?.Count ?? 0;
             if (removed > 0)
             {
@@ -160,6 +161,17 @@ namespace DontGetSidetracked.Daily
                 if (replays[i] == null || replays[i].Count == 0)
                     throw new ArgumentException("Daily replay cannot be empty.", nameof(replays));
         }
+
+        private static IReadOnlyList<int> CachedDisplayTimes(DailyCacheData cache, int routeCount)
+        {
+            int[] all = { cache.DisplayTimeEasyMs, cache.DisplayTimeMediumMs, cache.DisplayTimeHardMs };
+            var result = new int[routeCount];
+            Array.Copy(all, result, routeCount);
+            return result;
+        }
+
+        private static int ProfileValue(IReadOnlyList<int> values, int index, int fallback) =>
+            values != null && index < values.Count ? values[index] : fallback;
 
         private static int NormalizeRouteCount(int value) => value >= 1 && value <= 3 ? value : 3;
 
