@@ -18,6 +18,7 @@ namespace DontGetSidetracked.Social
         {
             public long Seed;
             public int GeneratorVersion;
+            public int RouteCount;
         }
 
         private readonly ScoreCalculator _scorer = new ScoreCalculator();
@@ -33,7 +34,7 @@ namespace DontGetSidetracked.Social
         public Task<DailyDto> GetDailyAsync()
         {
             DailyDto dto = OfflineDaily.CreateDto(DateTime.UtcNow);
-            Remember(dto.ChallengeId, dto.Seed, dto.GeneratorVersion);
+            Remember(dto.ChallengeId, dto.Seed, dto.GeneratorVersion, dto.RouteCount);
             return Task.FromResult(dto);
         }
 
@@ -45,11 +46,13 @@ namespace DontGetSidetracked.Social
             bool assisted)
         {
             if (challenge == null) throw new ArgumentNullException(nameof(challenge));
-            if (replays == null || replays.Count != 3) throw new ArgumentException("Daily requires three replays.", nameof(replays));
+            int routeCount = challenge.RouteCount;
+            if (replays == null || replays.Count != routeCount)
+                throw new ArgumentException($"Challenge requires {routeCount} replay(s).", nameof(replays));
 
-            Remember(challenge.ChallengeId, challenge.Seed, challenge.GeneratorVersion);
-            var verified = new List<double>(3);
-            for (int i = 0; i < 3; i++)
+            Remember(challenge.ChallengeId, challenge.Seed, challenge.GeneratorVersion, routeCount);
+            var verified = new List<double>(routeCount);
+            for (int i = 0; i < routeCount; i++)
             {
                 if (replays[i] == null || replays[i].Count == 0)
                     throw new ArgumentException("Replay cannot be empty.", nameof(replays));
@@ -66,19 +69,22 @@ namespace DontGetSidetracked.Social
 
             long seed;
             int version;
+            int routeCount;
             if (_knownChallenges.TryGetValue(challengeId, out ChallengeIdentity known))
             {
                 seed = known.Seed;
                 version = known.GeneratorVersion;
+                routeCount = known.RouteCount;
             }
             else
             {
                 version = RouteGenerator.CurrentGeneratorVersion;
                 seed = OfflineDaily.SeedForDate(date, version);
-                Remember(challengeId, seed, version);
+                routeCount = RouteRuntimeTuning.DailyRouteCount;
+                Remember(challengeId, seed, version, routeCount);
             }
 
-            string token = OfflineChallengeCodec.Encode(date, seed, version, score);
+            string token = OfflineChallengeCodec.Encode(date, seed, version, routeCount, score);
             string deepLink = OfflineChallengeCodec.BuildDeepLink(token);
             if (string.IsNullOrWhiteSpace(_packageName)) return Task.FromResult(deepLink);
 
@@ -92,17 +98,19 @@ namespace DontGetSidetracked.Social
         {
             if (!OfflineChallengeCodec.TryDecode(referralId, out ReferralDto referral))
                 throw new ArgumentException("Offline challenge token is invalid.", nameof(referralId));
-            Remember(referral.ChallengeId, referral.Seed, referral.GeneratorVersion);
+            Remember(referral.ChallengeId, referral.Seed, referral.GeneratorVersion, referral.RouteCount);
             return Task.FromResult(referral);
         }
 
-        private void Remember(string challengeId, long seed, int generatorVersion)
+        private void Remember(string challengeId, long seed, int generatorVersion, int routeCount)
         {
             if (string.IsNullOrWhiteSpace(challengeId) || generatorVersion <= 0) return;
+            int count = routeCount >= 1 && routeCount <= 3 ? routeCount : 3;
             _knownChallenges[challengeId] = new ChallengeIdentity
             {
                 Seed = seed,
-                GeneratorVersion = generatorVersion
+                GeneratorVersion = generatorVersion,
+                RouteCount = count
             };
         }
     }
@@ -122,6 +130,7 @@ namespace DontGetSidetracked.Social
                 challengeId = ChallengeId(date),
                 seed = SeedForDate(date, version),
                 generatorVersion = version,
+                routeCount = RouteRuntimeTuning.DailyRouteCount,
                 serverTimeUtc = utc.ToString("O", CultureInfo.InvariantCulture)
             };
         }
@@ -152,18 +161,25 @@ namespace DontGetSidetracked.Social
 
     public static class OfflineChallengeCodec
     {
-        private const string Prefix = "L1";
-        private const int TokenLength = 23; // L1 + yyyyMMdd + seed(8 hex) + version(2 hex) + score*10(3 hex)
+        private const string LegacyPrefix = "L1";
+        private const string Prefix = "L2";
+        private const int LegacyTokenLength = 23;
+        private const int TokenLength = 24; // L2 + yyyyMMdd + seed(8 hex) + version(2 hex) + routeCount(1 hex) + score*10(3 hex)
 
-        public static string Encode(DateTime date, long seed, int generatorVersion, double score)
+        public static string Encode(DateTime date, long seed, int generatorVersion, double score) =>
+            Encode(date, seed, generatorVersion, RouteRuntimeTuning.DailyRouteCount, score);
+
+        public static string Encode(DateTime date, long seed, int generatorVersion, int routeCount, double score)
         {
             if (seed < 0 || seed > uint.MaxValue) throw new ArgumentOutOfRangeException(nameof(seed));
             if (generatorVersion <= 0 || generatorVersion > 255) throw new ArgumentOutOfRangeException(nameof(generatorVersion));
+            if (routeCount < 1 || routeCount > 3) throw new ArgumentOutOfRangeException(nameof(routeCount));
             int scoreTenths = Math.Max(0, Math.Min(1000, (int)Math.Round(score * 10.0, MidpointRounding.AwayFromZero)));
             return Prefix +
                    date.ToString("yyyyMMdd", CultureInfo.InvariantCulture) +
                    ((uint)seed).ToString("X8", CultureInfo.InvariantCulture) +
                    generatorVersion.ToString("X2", CultureInfo.InvariantCulture) +
+                   routeCount.ToString("X1", CultureInfo.InvariantCulture) +
                    scoreTenths.ToString("X3", CultureInfo.InvariantCulture);
         }
 
@@ -172,13 +188,32 @@ namespace DontGetSidetracked.Social
             referral = null;
             if (string.IsNullOrWhiteSpace(token)) return false;
             string value = token.Trim().ToUpperInvariant();
-            if (value.Length != TokenLength || !value.StartsWith(Prefix, StringComparison.Ordinal)) return false;
+
+            bool legacy = value.Length == LegacyTokenLength && value.StartsWith(LegacyPrefix, StringComparison.Ordinal);
+            bool current = value.Length == TokenLength && value.StartsWith(Prefix, StringComparison.Ordinal);
+            if (!legacy && !current) return false;
 
             if (!DateTime.TryParseExact(value.Substring(2, 8), "yyyyMMdd", CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime date)) return false;
             if (!uint.TryParse(value.Substring(10, 8), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint seed)) return false;
             if (!byte.TryParse(value.Substring(18, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out byte version) || version == 0) return false;
-            if (!int.TryParse(value.Substring(20, 3), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int scoreTenths) || scoreTenths > 1000) return false;
+
+            int routeCount;
+            int scoreOffset;
+            if (legacy)
+            {
+                routeCount = 3;
+                scoreOffset = 20;
+            }
+            else
+            {
+                if (!int.TryParse(value.Substring(20, 1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out routeCount) ||
+                    routeCount < 1 || routeCount > 3) return false;
+                scoreOffset = 21;
+            }
+
+            if (!int.TryParse(value.Substring(scoreOffset, 3), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int scoreTenths) ||
+                scoreTenths > 1000) return false;
 
             referral = new ReferralDto
             {
@@ -188,6 +223,7 @@ namespace DontGetSidetracked.Social
                 inviterScore = scoreTenths / 10.0,
                 seed = seed,
                 generatorVersion = version,
+                routeCount = routeCount,
                 serverTimeUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture)
             };
             return true;
