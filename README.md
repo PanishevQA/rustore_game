@@ -11,14 +11,14 @@
 - обучение, Daily Challenge и Training;
 - генерация маршрутов и пересчёт score;
 - streak, лучший результат, статистика, настройки и косметика;
-- friend duel: challenge-код содержит дату, `seed`, `generatorVersion`, число маршрутов и результат друга;
+- friend duel: challenge-код содержит дату, `seed`, `generatorVersion`, число маршрутов, точное время показа каждого маршрута и результат друга;
 - сохранения в versioned `SaveData`;
 - локальный журнал аналитических событий без обязательной отправки на наш сервер;
 - локальные Daily-напоминания без push-сервера.
 
 Daily одинаковый на устройствах благодаря детерминированному seed из UTC-даты и `generatorVersion`. RuStore Remote Config может менять время показа маршрута и количество Daily-маршрутов от 1 до 3, не меняя геометрию уже заданного `seed + generatorVersion`. Ограничение offline-варианта: пользователь теоретически может изменить системную дату устройства, поэтому абсолютной античит-защиты без внешнего источника времени нет.
 
-Для вызова другу сервер тоже не нужен. Share содержит deeplink для установленной игры и RuStore install URL с тем же компактным `referrerId`. Новый L2 challenge-token содержит дату, seed, generatorVersion, routeCount и score; старые L1 tokens продолжают открываться как challenge из 3 маршрутов. После новой установки RuStore Install Referrer возвращает этот токен приложению, и тот же challenge восстанавливается локально.
+Для вызова другу сервер тоже не нужен. Share содержит deeplink для установленной игры и RuStore install URL с тем же компактным `referrerId`. Новый **L3 challenge-token** содержит дату, seed, generatorVersion, routeCount, exact display-time profile и score. Поэтому друг получает то же испытание даже если Remote Config между отправкой и открытием ссылки уже изменился. Старые L1/L2 tokens продолжают открываться с безопасным legacy/default timing. После новой установки RuStore Install Referrer возвращает этот токен приложению, и challenge восстанавливается локально.
 
 ## Что реализовано
 
@@ -27,15 +27,15 @@ Daily одинаковый на устройствах благодаря дет
 - Pure C# scoring: среднее отклонение, завершённость, попадание в END и грубые ошибки.
 - Полный цикл: показать маршрут → скрыть → нарисовать → показать обе траектории → score.
 - Daily из 1–3 маршрутов через Remote Config и бесконечный Training.
-- Offline friend duel без собственной БД, сохраняющий routeCount исходного challenge.
+- Offline friend duel без собственной БД, сохраняющий routeCount и exact display times исходного challenge.
 - Локальная статистика вместо обязательного глобального leaderboard.
-- Versioned SaveData v9 + migrations, без хранения основного прогресса только в PlayerPrefs.
+- Versioned SaveData v10 + migrations, без хранения основного прогресса только в PlayerPrefs.
 - RuStore Pay, Install Referrer, Review, Update и Remote Config за интерфейсами/адаптерами.
 - Магазин получает цену только из RuStore Pay SDK.
 - Yandex Mobile Ads adapter за `IAdService`: rewarded/interstitial не зависят от gameplay-кода.
 - Unity Mobile Notifications для локального Daily reminder.
 - Safe-area/Back/pause-resume policy и локальный crash log.
-- Production preflight блокирует неверные Activity/package/deeplink/RuStore dependency pins, пустой Remote Config App ID и пустые/demo ad IDs.
+- Production preflight блокирует неверные Activity/package/deeplink/RuStore dependency pins, пустой Remote Config App ID, пустые/demo ad IDs, отсутствие custom keystore, AAB, IL2CPP/ARM64 или валидного versionCode.
 - CI проверяет pure C# rules, optional backend, offline invariants, RuStore dependency pins и статическую структуру Unity-проекта.
 
 ## Быстрый запуск
@@ -61,6 +61,8 @@ Runtime использует один shared `RuStoreRemoteConfigService` с л�
 - `local_daily_reminder_enabled`, `daily_reminder_hour`;
 - `share_copy_variant`, `store_offer_variant`;
 - `min_supported_version`, `recommended_version`.
+
+Remote Config применяется при создании нового challenge. Уже созданный/расшаренный challenge фиксирует свой routeCount/display-time profile, поэтому изменение config не меняет условия вызова задним числом.
 
 ## Реклама
 
@@ -91,7 +93,7 @@ uvicorn app.main:app --reload
 
 - `pure-csharp-tests` — generator/scoring/Daily/Duel/Economy/ad policies/offline codec/runtime tuning;
 - `backend-tests` — только опциональный future-online backend;
-- `offline-mode-guard` — запрещает вернуть обязательный backend и server-sync UX;
+- `offline-mode-guard` — запрещает вернуть обязательный backend/server-sync UX и защищает L3 fairness invariants;
 - `rustore-dependency-guard` — защищает pins/registry/UnityPlayerActivity-инварианты;
 - `unity-static-validation` — проверяет manifest, asmdef, UPM pins и обязательные runtime-файлы.
 
