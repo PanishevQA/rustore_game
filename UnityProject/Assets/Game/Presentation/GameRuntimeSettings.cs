@@ -2,19 +2,11 @@ namespace DontGetSidetracked.Presentation
 {
     public static class GameRuntimeSettings
     {
-        // Set this to the deployed HTTPS API before making a production Android build.
-        public const string ProductionBackendBaseUrl = "";
+        // Offline-first MVP: no developer-operated backend is required.
+        // A future online build may set this to an HTTPS API and the existing facade will use it.
+        public const string OptionalBackendBaseUrl = "";
 
-        public static string BackendBaseUrl
-        {
-            get
-            {
-#if UNITY_EDITOR
-                return "http://127.0.0.1:8000";
-#else
-                return ProductionBackendBaseUrl;
-#endif
-            }
-        }
+        public static string BackendBaseUrl => OptionalBackendBaseUrl;
+        public static bool UsesDeveloperBackend => !string.IsNullOrWhiteSpace(OptionalBackendBaseUrl);
     }
 }
