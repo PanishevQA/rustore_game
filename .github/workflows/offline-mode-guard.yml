@@ -20,6 +20,8 @@ jobs:
           test -f UnityProject/Assets/Game/Gameplay/ChallengeAssistanceTracker.cs
           test -f UnityProject/Assets/Game/Economy/CosmeticSelectionService.cs
           test -f UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
+          test -f UnityProject/Assets/Game/Core/GameSettingsService.cs
+          test -f UnityProject/Assets/Game/Presentation/FeedbackRuntimeCoordinator.cs
           grep -q 'OptionalBackendBaseUrl = ""' UnityProject/Assets/Game/Presentation/GameRuntimeSettings.cs
           grep -q 'OfflineGameApi' UnityProject/Assets/Game/Network/UnityGameApi.cs
           grep -q 'SeedForDate' UnityProject/Assets/Game/Social/OfflineGameApi.cs
@@ -58,6 +60,21 @@ jobs:
           grep -q 'OpenCosmetics' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           grep -q 'CosmeticSelectionService' UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
           grep -q 'string.Equals(state, "Drawing"' UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
+
+          # Sound/Haptics settings must control real feedback, not decorative toggles. Haptics use Android View
+          # feedback and therefore must not add an explicit VIBRATE permission to our custom manifest.
+          grep -q 'OpenSettings' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'SetSound' UnityProject/Assets/Game/Core/GameSettingsService.cs
+          grep -q 'SetHaptics' UnityProject/Assets/Game/Core/GameSettingsService.cs
+          grep -q 'AudioClip.Create' UnityProject/Assets/Game/Presentation/FeedbackRuntimeCoordinator.cs
+          grep -q 'performHapticFeedback' UnityProject/Assets/Game/Presentation/FeedbackRuntimeCoordinator.cs
+          grep -q 'save.Settings.Sound' UnityProject/Assets/Game/Presentation/FeedbackRuntimeCoordinator.cs
+          grep -q 'save.Settings.Haptics' UnityProject/Assets/Game/Presentation/FeedbackRuntimeCoordinator.cs
+          if grep -n 'android.permission.VIBRATE' UnityProject/Assets/Plugins/Android/AndroidManifest.xml; then
+            echo 'VIBRATE permission is unnecessary for View.performHapticFeedback and must not be requested explicitly.'
+            exit 1
+          fi
+          grep -q '"HintCanvas"' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
 
           # Remote Config controls session tuning but never route geometry.
           grep -q 'RuStoreRemoteConfigService' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs
