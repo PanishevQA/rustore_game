@@ -14,7 +14,15 @@ namespace DontGetSidetracked.Social
     /// </summary>
     public sealed class OfflineGameApi : IGameApi
     {
+        private sealed class ChallengeIdentity
+        {
+            public long Seed;
+            public int GeneratorVersion;
+        }
+
         private readonly ScoreCalculator _scorer = new ScoreCalculator();
+        private readonly Dictionary<string, ChallengeIdentity> _knownChallenges =
+            new Dictionary<string, ChallengeIdentity>(StringComparer.Ordinal);
         private readonly string _packageName;
 
         public OfflineGameApi(string packageName = null)
@@ -24,8 +32,9 @@ namespace DontGetSidetracked.Social
 
         public Task<DailyDto> GetDailyAsync()
         {
-            DateTime now = DateTime.UtcNow;
-            return Task.FromResult(OfflineDaily.CreateDto(now));
+            DailyDto dto = OfflineDaily.CreateDto(DateTime.UtcNow);
+            Remember(dto.ChallengeId, dto.Seed, dto.GeneratorVersion);
+            return Task.FromResult(dto);
         }
 
         public Task<double> SubmitDailyAttemptAsync(
@@ -38,6 +47,7 @@ namespace DontGetSidetracked.Social
             if (challenge == null) throw new ArgumentNullException(nameof(challenge));
             if (replays == null || replays.Count != 3) throw new ArgumentException("Daily requires three replays.", nameof(replays));
 
+            Remember(challenge.ChallengeId, challenge.Seed, challenge.GeneratorVersion);
             var verified = new List<double>(3);
             for (int i = 0; i < 3; i++)
             {
@@ -54,8 +64,20 @@ namespace DontGetSidetracked.Social
             if (!OfflineDaily.TryParseChallengeDate(challengeId, out DateTime date))
                 throw new ArgumentException("Only deterministic Daily challenges can be shared offline.", nameof(challengeId));
 
-            int version = RouteGenerator.CurrentGeneratorVersion;
-            long seed = OfflineDaily.SeedForDate(date, version);
+            long seed;
+            int version;
+            if (_knownChallenges.TryGetValue(challengeId, out ChallengeIdentity known))
+            {
+                seed = known.Seed;
+                version = known.GeneratorVersion;
+            }
+            else
+            {
+                version = RouteGenerator.CurrentGeneratorVersion;
+                seed = OfflineDaily.SeedForDate(date, version);
+                Remember(challengeId, seed, version);
+            }
+
             string token = OfflineChallengeCodec.Encode(date, seed, version, score);
             string deepLink = OfflineChallengeCodec.BuildDeepLink(token);
             if (string.IsNullOrWhiteSpace(_packageName)) return Task.FromResult(deepLink);
@@ -70,7 +92,18 @@ namespace DontGetSidetracked.Social
         {
             if (!OfflineChallengeCodec.TryDecode(referralId, out ReferralDto referral))
                 throw new ArgumentException("Offline challenge token is invalid.", nameof(referralId));
+            Remember(referral.ChallengeId, referral.Seed, referral.GeneratorVersion);
             return Task.FromResult(referral);
+        }
+
+        private void Remember(string challengeId, long seed, int generatorVersion)
+        {
+            if (string.IsNullOrWhiteSpace(challengeId) || generatorVersion <= 0) return;
+            _knownChallenges[challengeId] = new ChallengeIdentity
+            {
+                Seed = seed,
+                GeneratorVersion = generatorVersion
+            };
         }
     }
 
