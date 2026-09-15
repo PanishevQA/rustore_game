@@ -24,6 +24,7 @@ namespace DontGetSidetracked.Presentation
         private Rect _lastSafeArea;
         private Vector2Int _lastScreenSize;
         private float _nextCanvasScan;
+        private bool _restartTutorialOnResume;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoStart()
@@ -53,7 +54,17 @@ namespace DontGetSidetracked.Presentation
 
         private void OnApplicationPause(bool paused)
         {
-            if (paused) AbortActiveRoundToHome();
+            if (paused)
+            {
+                AbortOnlyActiveGesture();
+                return;
+            }
+
+            if (_restartTutorialOnResume)
+            {
+                _restartTutorialOnResume = false;
+                RestartTutorial();
+            }
         }
 
         private void HandleBack()
@@ -80,10 +91,32 @@ namespace DontGetSidetracked.Presentation
                 return;
             }
 
-            AbortActiveRoundToHome(bootstrap);
+            // Back is explicit navigation, so it leaves Tutorial/Daily/Duel/Training/Result immediately.
+            AbortToHome(bootstrap);
         }
 
-        private static void AbortActiveRoundToHome(GameBootstrap bootstrap = null)
+        private void AbortOnlyActiveGesture()
+        {
+            GameBootstrap bootstrap = FindFirstObjectByType<GameBootstrap>();
+            if (bootstrap == null) return;
+
+            Type type = typeof(GameBootstrap);
+            FieldInfo stateField = type.GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo modeField = type.GetField("_mode", BindingFlags.Instance | BindingFlags.NonPublic);
+            string state = stateField?.GetValue(bootstrap)?.ToString() ?? string.Empty;
+            string mode = modeField?.GetValue(bootstrap)?.ToString() ?? string.Empty;
+
+            // Result screens survive temporary backgrounding (for example Android share sheet).
+            if (!string.Equals(state, "Showing", StringComparison.Ordinal) &&
+                !string.Equals(state, "Drawing", StringComparison.Ordinal)) return;
+
+            if (string.Equals(mode, "Tutorial", StringComparison.Ordinal))
+                _restartTutorialOnResume = true;
+
+            AbortToHome(bootstrap);
+        }
+
+        private static void AbortToHome(GameBootstrap bootstrap = null)
         {
             if (bootstrap == null) bootstrap = FindFirstObjectByType<GameBootstrap>();
             if (bootstrap == null) return;
@@ -93,9 +126,20 @@ namespace DontGetSidetracked.Presentation
             object mode = modeField?.GetValue(bootstrap);
             if (mode != null && string.Equals(mode.ToString(), "Home", StringComparison.Ordinal)) return;
 
+            FieldInfo pointerField = type.GetField("_pointerDown", BindingFlags.Instance | BindingFlags.NonPublic);
+            pointerField?.SetValue(bootstrap, false);
             bootstrap.StopAllCoroutines();
             MethodInfo showHome = type.GetMethod("ShowHome", BindingFlags.Instance | BindingFlags.NonPublic);
             showHome?.Invoke(bootstrap, null);
+        }
+
+        private static void RestartTutorial()
+        {
+            GameBootstrap bootstrap = FindFirstObjectByType<GameBootstrap>();
+            if (bootstrap == null) return;
+            Type type = typeof(GameBootstrap);
+            MethodInfo startTutorial = type.GetMethod("StartTutorial", BindingFlags.Instance | BindingFlags.NonPublic);
+            startTutorial?.Invoke(bootstrap, null);
         }
 
         private static bool TryDismissNotificationPrompt(RuntimePlatformCoordinator platform)
