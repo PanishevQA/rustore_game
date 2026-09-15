@@ -12,7 +12,7 @@ using UnityEngine.UI;
 namespace DontGetSidetracked.Presentation
 {
     /// <summary>
-    /// Home-only meta UI for the offline-first MVP: local statistics, cosmetic selection and RuStore shop.
+    /// Home-only meta UI for the offline-first MVP: local statistics, settings, cosmetic selection and RuStore shop.
     /// No developer-operated backend is required.
     /// </summary>
     public sealed class MetaMenuOverlay : MonoBehaviour
@@ -28,6 +28,7 @@ namespace DontGetSidetracked.Presentation
         private SaveData _save;
         private StoreService _store;
         private CosmeticSelectionService _cosmetics;
+        private GameSettingsService _settings;
         private bool _panelOpen;
         private float _nextVisibilityCheck;
 
@@ -43,7 +44,7 @@ namespace DontGetSidetracked.Presentation
         private void Awake()
         {
             _saveRepository = new JsonFileSaveRepository();
-            RebuildStore();
+            RebuildLocalServices();
             BuildUi();
             ResolveBootstrap();
             SetHomeButtonsVisible(false);
@@ -57,7 +58,7 @@ namespace DontGetSidetracked.Presentation
             SetHomeButtonsVisible(!_panelOpen && IsHomeMode());
         }
 
-        private void RebuildStore()
+        private void RebuildLocalServices()
         {
             _save = _saveRepository.Load();
             _store = new StoreService(
@@ -65,6 +66,7 @@ namespace DontGetSidetracked.Presentation
                 _saveRepository,
                 _save);
             _cosmetics = new CosmeticSelectionService(_saveRepository, _save);
+            _settings = new GameSettingsService(_saveRepository, _save);
         }
 
         private void ResolveBootstrap()
@@ -85,8 +87,9 @@ namespace DontGetSidetracked.Presentation
         private void OpenStatistics()
         {
             _panelOpen = true;
-            RebuildStore();
+            RebuildLocalServices();
             ShowPanel("СТАТИСТИКА", BuildStatisticsText());
+            AddAction("НАСТРОЙКИ", OpenSettings);
             AddAction("КОСМЕТИКА", OpenCosmetics);
         }
 
@@ -110,10 +113,59 @@ namespace DontGetSidetracked.Presentation
                 "Все игровые результаты хранятся на этом устройстве.";
         }
 
+        private void OpenSettings()
+        {
+            _panelOpen = true;
+            RebuildLocalServices();
+            AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.SettingsOpen, Params("surface", "meta"));
+            RenderSettings();
+        }
+
+        private void RenderSettings()
+        {
+            ShowPanel(
+                "НАСТРОЙКИ",
+                "Настройки сохраняются локально. Тактильная отдача также учитывает системную настройку Android.");
+
+            AddAction($"ЗВУК: {OnOff(_settings.SoundEnabled)}", ToggleSound);
+            AddAction($"ВИБРООТКЛИК: {OnOff(_settings.HapticsEnabled)}", ToggleHaptics);
+            AddAction("НАЗАД К СТАТИСТИКЕ", OpenStatistics);
+        }
+
+        private void ToggleSound()
+        {
+            RebuildLocalServices();
+            bool next = !_settings.SoundEnabled;
+            if (_settings.SetSound(next))
+            {
+                AnalyticsLifecycle.Service?.Track(
+                    AnalyticsEventNames.SettingsChange,
+                    Params("setting", "sound", "enabled", next));
+            }
+            if (next) FeedbackRuntimeCoordinator.PreviewSound();
+            RebuildLocalServices();
+            RenderSettings();
+        }
+
+        private void ToggleHaptics()
+        {
+            RebuildLocalServices();
+            bool next = !_settings.HapticsEnabled;
+            if (_settings.SetHaptics(next))
+            {
+                AnalyticsLifecycle.Service?.Track(
+                    AnalyticsEventNames.SettingsChange,
+                    Params("setting", "haptics", "enabled", next));
+            }
+            if (next) FeedbackRuntimeCoordinator.PreviewHaptic();
+            RebuildLocalServices();
+            RenderSettings();
+        }
+
         private void OpenCosmetics()
         {
             _panelOpen = true;
-            RebuildStore();
+            RebuildLocalServices();
             RenderCosmetics();
         }
 
@@ -143,10 +195,9 @@ namespace DontGetSidetracked.Presentation
 
         private void SelectCosmetic(string skinId)
         {
-            RebuildStore();
+            RebuildLocalServices();
             if (!_cosmetics.IsSelectable(skinId))
             {
-                _panelBody.text = "Этот вариант ещё не принадлежит вам.";
                 RenderCosmetics();
                 return;
             }
@@ -170,7 +221,7 @@ namespace DontGetSidetracked.Presentation
 
             try
             {
-                RebuildStore();
+                RebuildLocalServices();
                 IReadOnlyList<StoreProduct> products = await _store.LoadCatalogAsync();
                 RenderStore(products);
             }
@@ -448,6 +499,8 @@ namespace DontGetSidetracked.Presentation
                 default: return id;
             }
         }
+
+        private static string OnOff(bool value) => value ? "ВКЛ" : "ВЫКЛ";
 
         private static Dictionary<string, object> Params(params object[] pairs)
         {
