@@ -11,6 +11,12 @@ namespace DontGetSidetracked.Tests
 {
     public sealed class OfflineModeTests
     {
+        [SetUp]
+        public void SetUp() => RouteRuntimeTuning.ResetDefaults();
+
+        [TearDown]
+        public void TearDown() => RouteRuntimeTuning.ResetDefaults();
+
         [Test]
         public void SameUtcDate_ProducesSameDailySeed()
         {
@@ -25,6 +31,7 @@ namespace DontGetSidetracked.Tests
             Assert.That(second.ChallengeId, Is.EqualTo(first.ChallengeId));
             Assert.That(second.Seed, Is.EqualTo(first.Seed));
             Assert.That(second.GeneratorVersion, Is.EqualTo(first.GeneratorVersion));
+            Assert.That(second.RouteCount, Is.EqualTo(first.RouteCount));
         }
 
         [Test]
@@ -38,17 +45,19 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public void ChallengeToken_RoundTripsWithoutBackend()
+        public void ChallengeToken_RoundTripsRouteCountWithoutBackend()
         {
             var date = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
             long seed = OfflineDaily.SeedForDate(date, RouteGenerator.CurrentGeneratorVersion);
-            string token = OfflineChallengeCodec.Encode(date, seed, RouteGenerator.CurrentGeneratorVersion, 94.7);
+            string token = OfflineChallengeCodec.Encode(date, seed, RouteGenerator.CurrentGeneratorVersion, 2, 94.7);
 
-            Assert.That(token.Length, Is.EqualTo(23));
+            Assert.That(token.Length, Is.EqualTo(24));
+            Assert.That(token, Does.StartWith("L2"));
             Assert.That(OfflineChallengeCodec.TryDecode(token, out ReferralDto referral), Is.True);
             Assert.That(referral.ChallengeId, Is.EqualTo("daily_2026_09_15"));
             Assert.That(referral.Seed, Is.EqualTo(seed));
             Assert.That(referral.GeneratorVersion, Is.EqualTo(RouteGenerator.CurrentGeneratorVersion));
+            Assert.That(referral.RouteCount, Is.EqualTo(2));
             Assert.That(referral.InviterScore, Is.EqualTo(94.7).Within(0.001));
 
             string deepLink = OfflineChallengeCodec.BuildDeepLink(token);
@@ -61,25 +70,47 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public async Task OfflineApi_WithPackageName_SharesDeepLinkAndInstallFallback()
+        public void LegacyL1Token_RemainsCompatibleAsThreeRoutes()
         {
-            var api = new OfflineGameApi("ru.example.game");
-            string share = await api.CreateChallengeAsync("anon_test", "daily_2026_09_15", 91.2);
+            var date = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
+            long seed = OfflineDaily.SeedForDate(date, RouteGenerator.CurrentGeneratorVersion);
+            string current = OfflineChallengeCodec.Encode(date, seed, RouteGenerator.CurrentGeneratorVersion, 3, 88.8);
+            string legacy = "L1" + current.Substring(2, 18) + current.Substring(21, 3);
 
-            string[] lines = share.Split('\n');
-            Assert.That(lines.Length, Is.EqualTo(2));
-            Assert.That(lines[0], Does.StartWith("nesbeisya://challenge/L1"));
-            Assert.That(lines[1], Does.StartWith("https://www.rustore.ru/catalog/app/ru.example.game?referrerId=L1"));
+            Assert.That(legacy.Length, Is.EqualTo(23));
+            Assert.That(OfflineChallengeCodec.TryDecode(legacy, out ReferralDto referral), Is.True);
+            Assert.That(referral.RouteCount, Is.EqualTo(3));
+            Assert.That(referral.InviterScore, Is.EqualTo(88.8).Within(0.001));
         }
 
         [Test]
-        public async Task ResharedOldDuel_PreservesOriginalSeedAndGeneratorVersion()
+        public async Task OfflineApi_WithPackageName_SharesDeepLinkAndInstallFallback()
+        {
+            RouteRuntimeTuning.ConfigureDailyRouteCount(2);
+            var api = new OfflineGameApi("ru.example.game");
+            DailyDto daily = await api.GetDailyAsync();
+            Assert.That(daily.RouteCount, Is.EqualTo(2));
+
+            string share = await api.CreateChallengeAsync("anon_test", daily.ChallengeId, 91.2);
+            string[] lines = share.Split('\n');
+            Assert.That(lines.Length, Is.EqualTo(2));
+            Assert.That(lines[0], Does.StartWith("nesbeisya://challenge/L2"));
+            Assert.That(lines[1], Does.StartWith("https://www.rustore.ru/catalog/app/ru.example.game?referrerId=L2"));
+
+            Assert.That(OfflineChallengeCodec.TryExtractToken(lines[0], out string token), Is.True);
+            Assert.That(OfflineChallengeCodec.TryDecode(token, out ReferralDto referral), Is.True);
+            Assert.That(referral.RouteCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public async Task ResharedOldDuel_PreservesOriginalSeedGeneratorVersionAndRouteCount()
         {
             var api = new OfflineGameApi();
             var date = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
             const long originalSeed = 0x01234567;
             const int originalVersion = 7;
-            string incoming = OfflineChallengeCodec.Encode(date, originalSeed, originalVersion, 80.0);
+            const int originalRouteCount = 1;
+            string incoming = OfflineChallengeCodec.Encode(date, originalSeed, originalVersion, originalRouteCount, 80.0);
 
             ReferralDto loaded = await api.GetReferralAsync(incoming);
             string resharedLink = await api.CreateChallengeAsync("anon_test", loaded.ChallengeId, 91.2);
@@ -88,18 +119,24 @@ namespace DontGetSidetracked.Tests
             Assert.That(OfflineChallengeCodec.TryDecode(resharedToken, out ReferralDto reshared), Is.True);
             Assert.That(reshared.Seed, Is.EqualTo(originalSeed));
             Assert.That(reshared.GeneratorVersion, Is.EqualTo(originalVersion));
+            Assert.That(reshared.RouteCount, Is.EqualTo(originalRouteCount));
             Assert.That(reshared.InviterScore, Is.EqualTo(91.2).Within(0.001));
         }
 
         [Test]
-        public async Task OfflineApi_RecalculatesReplayInsteadOfTrustingClientScore()
+        public async Task OfflineApi_RecalculatesConfiguredRouteCountInsteadOfTrustingClientScore()
         {
+            RouteRuntimeTuning.ConfigureDailyRouteCount(2);
             var api = new OfflineGameApi();
             DailyDto dto = OfflineDaily.CreateDto(new DateTime(2026, 9, 15, 12, 0, 0, DateTimeKind.Utc));
-            DailyChallengeDefinition challenge = new DailyChallengeFactory().Create(dto.ChallengeId, dto.Seed, dto.GeneratorVersion);
-            var replays = new List<IReadOnlyList<RecordedPoint>>(3);
+            DailyChallengeDefinition challenge = new DailyChallengeFactory().Create(
+                dto.ChallengeId,
+                dto.Seed,
+                dto.GeneratorVersion,
+                dto.RouteCount);
+            var replays = new List<IReadOnlyList<RecordedPoint>>(challenge.RouteCount);
 
-            for (int routeIndex = 0; routeIndex < 3; routeIndex++)
+            for (int routeIndex = 0; routeIndex < challenge.RouteCount; routeIndex++)
             {
                 RouteDefinition route = challenge.Routes[routeIndex];
                 var replay = new List<RecordedPoint>(route.ReferencePoints.Count);
@@ -112,7 +149,7 @@ namespace DontGetSidetracked.Tests
                 "anon_test",
                 challenge,
                 replays,
-                new[] { 0.0, 0.0, 0.0 },
+                new[] { 0.0, 0.0 },
                 false);
 
             Assert.That(score, Is.EqualTo(100.0));
