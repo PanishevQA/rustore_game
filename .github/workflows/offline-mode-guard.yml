@@ -14,10 +14,19 @@ jobs:
         run: |
           set -euo pipefail
           test -f UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          test -f UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
           grep -q 'OptionalBackendBaseUrl = ""' UnityProject/Assets/Game/Presentation/GameRuntimeSettings.cs
           grep -q 'OfflineGameApi' UnityProject/Assets/Game/Network/UnityGameApi.cs
           grep -q 'SeedForDate' UnityProject/Assets/Game/Social/OfflineGameApi.cs
           grep -q 'BuildInstallUrl' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'RuStoreRemoteConfigService' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs
+          grep -q 'RuStoreRemoteConfigClient' UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
+
+          # Runtime config must not fetch our own /config/bootstrap endpoint in release code.
+          if grep -nE 'UnityWebRequest|/config/bootstrap' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs; then
+            echo 'Developer-operated bootstrap config HTTP dependency detected.'
+            exit 1
+          fi
 
           # The production store must work without the optional developer backend.
           if grep -nE 'UnityGameApi|DontGetSidetracked\.Network' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs; then
