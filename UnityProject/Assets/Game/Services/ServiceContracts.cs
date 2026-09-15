@@ -138,6 +138,25 @@ namespace DontGetSidetracked.Services
 
     public interface IShareService { void ShareText(string text); }
 
+    internal static class ChallengeDtoTiming
+    {
+        public static IReadOnlyList<int> Build(int routeCount, int easyMs, int mediumMs, int hardMs)
+        {
+            int count = routeCount >= 1 && routeCount <= 3 ? routeCount : 3;
+            int[] raw = { easyMs, mediumMs, hardMs };
+            var result = new int[count];
+            for (int i = 0; i < count; i++)
+            {
+                RouteDifficulty difficulty = (RouteDifficulty)i;
+                int value = raw[i];
+                result[i] = value <= 0
+                    ? RouteRuntimeTuning.GetDefaultDisplayTimeMs(difficulty)
+                    : RouteRuntimeTuning.NormalizeDisplayTimeMs(difficulty, value);
+            }
+            return result;
+        }
+    }
+
     [Serializable]
     public sealed class DailyDto
     {
@@ -145,12 +164,16 @@ namespace DontGetSidetracked.Services
         public long seed;
         public int generatorVersion;
         public int routeCount = 3;
+        public int displayTimeEasyMs;
+        public int displayTimeMediumMs;
+        public int displayTimeHardMs;
         public string serverTimeUtc;
 
         public string ChallengeId => challengeId;
         public long Seed => seed;
         public int GeneratorVersion => generatorVersion;
         public int RouteCount => routeCount <= 0 ? 3 : routeCount;
+        public IReadOnlyList<int> DisplayTimesMs => ChallengeDtoTiming.Build(RouteCount, displayTimeEasyMs, displayTimeMediumMs, displayTimeHardMs);
         public string ServerTimeUtc => serverTimeUtc;
     }
 
@@ -164,6 +187,9 @@ namespace DontGetSidetracked.Services
         public long seed;
         public int generatorVersion;
         public int routeCount = 3;
+        public int displayTimeEasyMs;
+        public int displayTimeMediumMs;
+        public int displayTimeHardMs;
         public string serverTimeUtc;
 
         public string ReferralId => referralId;
@@ -173,6 +199,7 @@ namespace DontGetSidetracked.Services
         public long Seed => seed;
         public int GeneratorVersion => generatorVersion;
         public int RouteCount => routeCount <= 0 ? 3 : routeCount;
+        public IReadOnlyList<int> DisplayTimesMs => ChallengeDtoTiming.Build(RouteCount, displayTimeEasyMs, displayTimeMediumMs, displayTimeHardMs);
         public string ServerTimeUtc => serverTimeUtc;
     }
 
