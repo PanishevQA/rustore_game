@@ -21,7 +21,7 @@ namespace DontGetSidetracked.EditorTools
             List<string> errors = CollectErrors();
             if (errors.Count == 0)
             {
-                UnityEngine.Debug.Log("Production release preflight passed.");
+                UnityEngine.Debug.Log("Production release preflight passed (offline-first build).");
                 return;
             }
             throw new BuildFailedException("Production release preflight failed:\n- " + string.Join("\n- ", errors));
@@ -62,18 +62,8 @@ namespace DontGetSidetracked.EditorTools
                 ("\"ru.rustore.pay\": \"11.1.0\"", "RuStore Pay must remain pinned to the verified version."),
                 ("\"ru.rustore.installreferrer\": \"10.6.1\"", "RuStore Install Referrer must remain pinned to the verified version."));
 
-            if (!File.Exists(RuntimeSettingsPath))
-            {
-                errors.Add("GameRuntimeSettings.cs is missing.");
-            }
-            else
-            {
-                string runtime = File.ReadAllText(RuntimeSettingsPath);
-                if (runtime.Contains("ProductionBackendBaseUrl = \"\"", StringComparison.Ordinal))
-                    errors.Add("ProductionBackendBaseUrl is empty; configure the deployed HTTPS backend before release.");
-                if (!runtime.Contains("https://", StringComparison.OrdinalIgnoreCase))
-                    errors.Add("Production backend must use HTTPS.");
-            }
+            ValidateFileContains(RuntimeSettingsPath, errors,
+                ("OptionalBackendBaseUrl = \"\"", "Offline-first MVP must ship without a developer-operated backend URL."));
 
             string allProjectText = ReadSmallTextFiles("Assets/Game/Platform/RuStore");
             if (allProjectText.IndexOf("billingclient", StringComparison.OrdinalIgnoreCase) >= 0)
