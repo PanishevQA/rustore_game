@@ -44,7 +44,7 @@ namespace DontGetSidetracked.Gameplay
             int anchorCount = difficulty == RouteDifficulty.Easy ? 4 : difficulty == RouteDifficulty.Medium ? 6 : 8;
             int bend = difficulty == RouteDifficulty.Easy ? 150_000 : difficulty == RouteDifficulty.Medium ? 220_000 : 280_000;
             int pathWidth = difficulty == RouteDifficulty.Easy ? 55_000 : difficulty == RouteDifficulty.Medium ? 45_000 : 35_000;
-            int displayTime = difficulty == RouteDifficulty.Easy ? 3500 : difficulty == RouteDifficulty.Medium ? 3000 : 2500;
+            int displayTime = RouteRuntimeTuning.GetDisplayTimeMs(difficulty);
 
             var anchors = new List<FixedPoint2>(anchorCount);
             for (int i = 0; i < anchorCount; i++)
