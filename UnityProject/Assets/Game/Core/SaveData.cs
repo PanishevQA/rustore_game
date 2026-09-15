@@ -14,10 +14,17 @@ namespace DontGetSidetracked.Core
     [Serializable]
     public sealed class DailyCacheData
     {
+        public const int DefaultEasyDisplayTimeMs = 3500;
+        public const int DefaultMediumDisplayTimeMs = 3000;
+        public const int DefaultHardDisplayTimeMs = 2500;
+
         public string ChallengeId = string.Empty;
         public long Seed;
         public int GeneratorVersion = 1;
         public int RouteCount = 3;
+        public int DisplayTimeEasyMs = DefaultEasyDisplayTimeMs;
+        public int DisplayTimeMediumMs = DefaultMediumDisplayTimeMs;
+        public int DisplayTimeHardMs = DefaultHardDisplayTimeMs;
         public string ServerTimeUtc = string.Empty;
     }
 
@@ -50,7 +57,7 @@ namespace DontGetSidetracked.Core
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 9;
+        public const int CurrentVersion = 10;
 
         public int Version = CurrentVersion;
         public string AnonymousPlayerId = string.Empty;
@@ -91,6 +98,9 @@ namespace DontGetSidetracked.Core
 
     public static class SaveMigrator
     {
+        private const int MinDisplayTimeMs = 750;
+        private const int MaxDisplayTimeMs = 10000;
+
         public static SaveData Migrate(SaveData data)
         {
             if (data == null) return SaveData.CreateNew();
@@ -144,7 +154,6 @@ namespace DontGetSidetracked.Core
 
             if (data.Version == 7)
             {
-                // Release runtime is offline-first: there is no developer server to sync these attempts to.
                 data.PendingAttempts = new List<PendingDailyAttemptData>();
                 data.Version = 8;
             }
@@ -157,6 +166,13 @@ namespace DontGetSidetracked.Core
                 data.Version = 9;
             }
 
+            if (data.Version == 9)
+            {
+                if (data.LastDaily == null) data.LastDaily = new DailyCacheData();
+                NormalizeDailyCache(data.LastDaily);
+                data.Version = 10;
+            }
+
             if (string.IsNullOrWhiteSpace(data.AnonymousPlayerId))
                 data.AnonymousPlayerId = "anon_" + Guid.NewGuid().ToString("N");
             if (data.Settings == null) data.Settings = new GameSettingsData();
@@ -164,12 +180,23 @@ namespace DontGetSidetracked.Core
             if (data.Entitlements == null) data.Entitlements = new List<string>();
             if (data.ProcessedPurchaseIds == null) data.ProcessedPurchaseIds = new List<string>();
             if (data.LastDaily == null) data.LastDaily = new DailyCacheData();
-            if (data.LastDaily.RouteCount < 1 || data.LastDaily.RouteCount > 3) data.LastDaily.RouteCount = 3;
+            NormalizeDailyCache(data.LastDaily);
             if (data.PendingAttempts == null) data.PendingAttempts = new List<PendingDailyAttemptData>();
 
             data.Version = SaveData.CurrentVersion;
             return data;
         }
+
+        private static void NormalizeDailyCache(DailyCacheData cache)
+        {
+            if (cache.RouteCount < 1 || cache.RouteCount > 3) cache.RouteCount = 3;
+            cache.DisplayTimeEasyMs = NormalizeDisplayTime(cache.DisplayTimeEasyMs, DailyCacheData.DefaultEasyDisplayTimeMs);
+            cache.DisplayTimeMediumMs = NormalizeDisplayTime(cache.DisplayTimeMediumMs, DailyCacheData.DefaultMediumDisplayTimeMs);
+            cache.DisplayTimeHardMs = NormalizeDisplayTime(cache.DisplayTimeHardMs, DailyCacheData.DefaultHardDisplayTimeMs);
+        }
+
+        private static int NormalizeDisplayTime(int value, int fallback) =>
+            value >= MinDisplayTimeMs && value <= MaxDisplayTimeMs ? value : fallback;
     }
 
     public interface ISaveRepository
