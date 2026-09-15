@@ -58,6 +58,9 @@ namespace DontGetSidetracked.Presentation
 
         private void HandleBack()
         {
+            RuntimePlatformCoordinator platform = FindFirstObjectByType<RuntimePlatformCoordinator>();
+            if (TryDismissNotificationPrompt(platform)) return;
+
             MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
             if (TryCloseMetaPanel(meta)) return;
 
@@ -97,6 +100,18 @@ namespace DontGetSidetracked.Presentation
             showHome?.Invoke(bootstrap, null);
         }
 
+        private static bool TryDismissNotificationPrompt(RuntimePlatformCoordinator platform)
+        {
+            if (platform == null) return false;
+            Type type = typeof(RuntimePlatformCoordinator);
+            FieldInfo openField = type.GetField("_notificationPromptOpen", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (!(openField?.GetValue(platform) is bool isOpen) || !isOpen) return false;
+
+            MethodInfo decline = type.GetMethod("DeclineNotificationValuePrompt", BindingFlags.Instance | BindingFlags.NonPublic);
+            decline?.Invoke(platform, null);
+            return true;
+        }
+
         private static bool TryCloseMetaPanel(MetaMenuOverlay meta)
         {
             if (meta == null) return false;
@@ -134,7 +149,7 @@ namespace DontGetSidetracked.Presentation
                 RectTransform rect = pair.Key;
                 if (rect == null)
                 {
-                    missing.Add(rect);
+                    missing.Add(pair.Key);
                     continue;
                 }
 
@@ -173,7 +188,8 @@ namespace DontGetSidetracked.Presentation
         private static bool ShouldFitCanvas(string canvasName) =>
             string.Equals(canvasName, "GameCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "MetaCanvas", StringComparison.Ordinal) ||
-            string.Equals(canvasName, "NotificationPermissionCanvas", StringComparison.Ordinal);
+            string.Equals(canvasName, "NotificationValueCanvas", StringComparison.Ordinal) ||
+            string.Equals(canvasName, "MandatoryUpdateCanvas", StringComparison.Ordinal);
 
         private static bool Approximately(Rect a, Rect b) =>
             Mathf.Abs(a.x - b.x) < 0.5f &&
