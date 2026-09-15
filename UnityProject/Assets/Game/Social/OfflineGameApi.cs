@@ -14,6 +14,12 @@ namespace DontGetSidetracked.Social
     public sealed class OfflineGameApi : IGameApi
     {
         private readonly ScoreCalculator _scorer = new ScoreCalculator();
+        private readonly string _packageName;
+
+        public OfflineGameApi(string packageName = null)
+        {
+            _packageName = packageName ?? string.Empty;
+        }
 
         public Task<DailyDto> GetDailyAsync()
         {
@@ -47,9 +53,16 @@ namespace DontGetSidetracked.Social
             if (!OfflineDaily.TryParseChallengeDate(challengeId, out DateTime date))
                 throw new ArgumentException("Only deterministic Daily challenges can be shared offline.", nameof(challengeId));
 
-            long seed = OfflineDaily.SeedForDate(date, RouteGenerator.CurrentGeneratorVersion);
-            string token = OfflineChallengeCodec.Encode(date, seed, RouteGenerator.CurrentGeneratorVersion, score);
-            return Task.FromResult(OfflineChallengeCodec.BuildDeepLink(token));
+            int version = RouteGenerator.CurrentGeneratorVersion;
+            long seed = OfflineDaily.SeedForDate(date, version);
+            string token = OfflineChallengeCodec.Encode(date, seed, version, score);
+            string deepLink = OfflineChallengeCodec.BuildDeepLink(token);
+            if (string.IsNullOrWhiteSpace(_packageName)) return Task.FromResult(deepLink);
+
+            // Return both destinations as one share fragment. Installed users can open the deeplink;
+            // new users can install from RuStore and the same token is recovered via Install Referrer.
+            string installUrl = OfflineChallengeCodec.BuildInstallUrl(_packageName, token);
+            return Task.FromResult(deepLink + "\n" + installUrl);
         }
 
         public Task<ReferralDto> GetReferralAsync(string referralId)
