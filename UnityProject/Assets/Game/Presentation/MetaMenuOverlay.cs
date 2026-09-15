@@ -12,7 +12,7 @@ using UnityEngine.UI;
 namespace DontGetSidetracked.Presentation
 {
     /// <summary>
-    /// Home-only meta UI for the offline-first MVP: local statistics + RuStore shop.
+    /// Home-only meta UI for the offline-first MVP: local statistics, cosmetic selection and RuStore shop.
     /// No developer-operated backend is required.
     /// </summary>
     public sealed class MetaMenuOverlay : MonoBehaviour
@@ -27,6 +27,7 @@ namespace DontGetSidetracked.Presentation
         private JsonFileSaveRepository _saveRepository;
         private SaveData _save;
         private StoreService _store;
+        private CosmeticSelectionService _cosmetics;
         private bool _panelOpen;
         private float _nextVisibilityCheck;
 
@@ -63,6 +64,7 @@ namespace DontGetSidetracked.Presentation
                 new RuStorePaymentService(),
                 _saveRepository,
                 _save);
+            _cosmetics = new CosmeticSelectionService(_saveRepository, _save);
         }
 
         private void ResolveBootstrap()
@@ -85,6 +87,7 @@ namespace DontGetSidetracked.Presentation
             _panelOpen = true;
             RebuildStore();
             ShowPanel("СТАТИСТИКА", BuildStatisticsText());
+            AddAction("КОСМЕТИКА", OpenCosmetics);
         }
 
         private string BuildStatisticsText()
@@ -102,8 +105,61 @@ namespace DontGetSidetracked.Presentation
                 $"Последний Daily: {lastDaily}\n" +
                 $"Подсказки: {_save.Hints}\n" +
                 $"Косметика: {cosmetics}\n" +
+                $"Выбран след: {CosmeticLabel(_cosmetics.SelectedSkinId)}\n" +
                 $"Покупок применено: {purchases}\n\n" +
                 "Все игровые результаты хранятся на этом устройстве.";
+        }
+
+        private void OpenCosmetics()
+        {
+            _panelOpen = true;
+            RebuildStore();
+            RenderCosmetics();
+        }
+
+        private void RenderCosmetics()
+        {
+            IReadOnlyList<string> available = _cosmetics.GetAvailableSkins();
+            string selected = _cosmetics.SelectedSkinId;
+            string body = available.Count > 1
+                ? "Выберите цвет своего следа. На экране результата цвет снова показывает качество прохождения."
+                : "Пока доступен стандартный след. Дополнительные варианты можно получить в магазине.";
+            ShowPanel("КОСМЕТИКА", body);
+
+            for (int i = 0; i < available.Count; i++)
+            {
+                string skinId = available[i];
+                bool active = string.Equals(selected, skinId, StringComparison.Ordinal);
+                string label = active
+                    ? $"✓ {CosmeticLabel(skinId)}"
+                    : CosmeticLabel(skinId);
+                string captured = skinId;
+                AddAction(label, () => SelectCosmetic(captured), !active);
+            }
+
+            AddAction("В МАГАЗИН", OpenStore);
+            AddAction("НАЗАД К СТАТИСТИКЕ", OpenStatistics);
+        }
+
+        private void SelectCosmetic(string skinId)
+        {
+            RebuildStore();
+            if (!_cosmetics.IsSelectable(skinId))
+            {
+                _panelBody.text = "Этот вариант ещё не принадлежит вам.";
+                RenderCosmetics();
+                return;
+            }
+
+            bool changed = _cosmetics.Select(skinId);
+            _save = _cosmetics.Save;
+            if (changed)
+            {
+                AnalyticsLifecycle.Service?.Track(
+                    AnalyticsEventNames.CosmeticSelect,
+                    Params("skin_id", skinId));
+            }
+            RenderCosmetics();
         }
 
         private async void OpenStore()
@@ -124,6 +180,7 @@ namespace DontGetSidetracked.Presentation
                 _panelBody.text = "Магазин сейчас недоступен. Игра продолжает работать полностью локально.";
                 ClearActions();
                 AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases);
+                AddAction("КОСМЕТИКА", OpenCosmetics);
             }
         }
 
@@ -136,6 +193,7 @@ namespace DontGetSidetracked.Presentation
             {
                 _panelBody.text += "\n\nКаталог RuStore сейчас недоступен.";
                 AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases);
+                AddAction("КОСМЕТИКА", OpenCosmetics);
                 return;
             }
 
@@ -154,6 +212,7 @@ namespace DontGetSidetracked.Presentation
             }
 
             AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases);
+            AddAction("КОСМЕТИКА", OpenCosmetics);
         }
 
         private async void Purchase(string productId)
@@ -374,6 +433,18 @@ namespace DontGetSidetracked.Presentation
                 case ProductIds.SkinNeon: return "Неоновый след";
                 case ProductIds.SkinRetro: return "Ретро-след";
                 case ProductIds.Hints10: return "10 подсказок";
+                default: return id;
+            }
+        }
+
+        private static string CosmeticLabel(string id)
+        {
+            switch (id)
+            {
+                case CosmeticIds.Default: return "Стандартный след";
+                case CosmeticIds.Neon: return "Неоновый след";
+                case CosmeticIds.Retro: return "Ретро-след";
+                case CosmeticIds.Gold: return "Золотой след";
                 default: return id;
             }
         }
