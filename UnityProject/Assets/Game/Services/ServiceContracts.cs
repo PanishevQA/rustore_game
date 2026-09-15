@@ -6,7 +6,7 @@ using DontGetSidetracked.Gameplay;
 
 namespace DontGetSidetracked.Services
 {
-    public enum RewardPlacement { ExtraLook, RetryAttempt, DoubleCoins }
+    public enum RewardPlacement { ExtraLook, RetryAttempt, DoubleCoins, FreeHint }
 
     public interface IAdService
     {
