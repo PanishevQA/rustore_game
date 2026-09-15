@@ -57,7 +57,7 @@ namespace DontGetSidetracked.Core
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 10;
+        public const int CurrentVersion = 11;
 
         public int Version = CurrentVersion;
         public string AnonymousPlayerId = string.Empty;
@@ -66,6 +66,7 @@ namespace DontGetSidetracked.Core
         public List<string> Inventory = new List<string>();
         public List<string> Entitlements = new List<string>();
         public List<string> ProcessedPurchaseIds = new List<string>();
+        public string SelectedSkinId = "default";
         public GameSettingsData Settings = new GameSettingsData();
         public int Streak;
         public double PersonalBest;
@@ -91,7 +92,8 @@ namespace DontGetSidetracked.Core
             return new SaveData
             {
                 Version = CurrentVersion,
-                AnonymousPlayerId = "anon_" + Guid.NewGuid().ToString("N")
+                AnonymousPlayerId = "anon_" + Guid.NewGuid().ToString("N"),
+                SelectedSkinId = "default"
             };
         }
     }
@@ -173,12 +175,19 @@ namespace DontGetSidetracked.Core
                 data.Version = 10;
             }
 
+            if (data.Version == 10)
+            {
+                if (string.IsNullOrWhiteSpace(data.SelectedSkinId)) data.SelectedSkinId = "default";
+                data.Version = 11;
+            }
+
             if (string.IsNullOrWhiteSpace(data.AnonymousPlayerId))
                 data.AnonymousPlayerId = "anon_" + Guid.NewGuid().ToString("N");
             if (data.Settings == null) data.Settings = new GameSettingsData();
             if (data.Inventory == null) data.Inventory = new List<string>();
             if (data.Entitlements == null) data.Entitlements = new List<string>();
             if (data.ProcessedPurchaseIds == null) data.ProcessedPurchaseIds = new List<string>();
+            if (string.IsNullOrWhiteSpace(data.SelectedSkinId)) data.SelectedSkinId = "default";
             if (data.LastDaily == null) data.LastDaily = new DailyCacheData();
             NormalizeDailyCache(data.LastDaily);
             if (data.PendingAttempts == null) data.PendingAttempts = new List<PendingDailyAttemptData>();
