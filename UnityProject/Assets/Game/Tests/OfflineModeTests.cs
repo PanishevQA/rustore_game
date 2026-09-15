@@ -73,6 +73,25 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
+        public async Task ResharedOldDuel_PreservesOriginalSeedAndGeneratorVersion()
+        {
+            var api = new OfflineGameApi();
+            var date = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
+            const long originalSeed = 0x01234567;
+            const int originalVersion = 7;
+            string incoming = OfflineChallengeCodec.Encode(date, originalSeed, originalVersion, 80.0);
+
+            ReferralDto loaded = await api.GetReferralAsync(incoming);
+            string resharedLink = await api.CreateChallengeAsync("anon_test", loaded.ChallengeId, 91.2);
+
+            Assert.That(OfflineChallengeCodec.TryExtractToken(resharedLink, out string resharedToken), Is.True);
+            Assert.That(OfflineChallengeCodec.TryDecode(resharedToken, out ReferralDto reshared), Is.True);
+            Assert.That(reshared.Seed, Is.EqualTo(originalSeed));
+            Assert.That(reshared.GeneratorVersion, Is.EqualTo(originalVersion));
+            Assert.That(reshared.InviterScore, Is.EqualTo(91.2).Within(0.001));
+        }
+
+        [Test]
         public async Task OfflineApi_RecalculatesReplayInsteadOfTrustingClientScore()
         {
             var api = new OfflineGameApi();
