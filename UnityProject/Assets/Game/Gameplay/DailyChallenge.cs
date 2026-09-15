@@ -10,13 +10,16 @@ namespace DontGetSidetracked.Gameplay
         public long Seed { get; }
         public int GeneratorVersion { get; }
         public IReadOnlyList<RouteDefinition> Routes { get; }
+        public int RouteCount => Routes?.Count ?? 0;
 
         public DailyChallengeDefinition(string challengeId, long seed, int generatorVersion, IReadOnlyList<RouteDefinition> routes)
         {
             ChallengeId = challengeId;
             Seed = seed;
             GeneratorVersion = generatorVersion;
-            Routes = routes;
+            Routes = routes ?? throw new ArgumentNullException(nameof(routes));
+            if (routes.Count < 1 || routes.Count > 3)
+                throw new ArgumentOutOfRangeException(nameof(routes), "Daily challenge must contain 1 to 3 routes.");
         }
     }
 
@@ -24,15 +27,23 @@ namespace DontGetSidetracked.Gameplay
     {
         private readonly RouteGenerator _generator = new RouteGenerator();
 
-        public DailyChallengeDefinition Create(string challengeId, long seed, int generatorVersion)
+        public DailyChallengeDefinition Create(string challengeId, long seed, int generatorVersion, int routeCount = 3)
         {
+            if (routeCount < 1 || routeCount > 3)
+                throw new ArgumentOutOfRangeException(nameof(routeCount), "Daily route count must be between 1 and 3.");
+
             var seeder = new DeterministicRandom(seed, generatorVersion);
-            var routes = new List<RouteDefinition>(3)
+            var routes = new List<RouteDefinition>(routeCount);
+            RouteDifficulty[] difficulties =
             {
-                _generator.Generate(seeder.ForkSeed(0), generatorVersion, RouteDifficulty.Easy),
-                _generator.Generate(seeder.ForkSeed(1), generatorVersion, RouteDifficulty.Medium),
-                _generator.Generate(seeder.ForkSeed(2), generatorVersion, RouteDifficulty.Hard)
+                RouteDifficulty.Easy,
+                RouteDifficulty.Medium,
+                RouteDifficulty.Hard
             };
+
+            for (int i = 0; i < routeCount; i++)
+                routes.Add(_generator.Generate(seeder.ForkSeed(i), generatorVersion, difficulties[i]));
+
             return new DailyChallengeDefinition(challengeId, seed, generatorVersion, routes);
         }
 
