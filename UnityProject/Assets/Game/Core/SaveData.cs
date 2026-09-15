@@ -21,9 +21,35 @@ namespace DontGetSidetracked.Core
     }
 
     [Serializable]
+    public sealed class ReplayPointData
+    {
+        public int X;
+        public int Y;
+        public long TimestampMs;
+    }
+
+    [Serializable]
+    public sealed class PendingRouteAttemptData
+    {
+        public int RouteIndex;
+        public double ClientScore;
+        public List<ReplayPointData> Points = new List<ReplayPointData>();
+    }
+
+    [Serializable]
+    public sealed class PendingDailyAttemptData
+    {
+        public string ChallengeId = string.Empty;
+        public long Seed;
+        public int GeneratorVersion = 1;
+        public bool Assisted;
+        public List<PendingRouteAttemptData> Routes = new List<PendingRouteAttemptData>();
+    }
+
+    [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 2;
+        public const int CurrentVersion = 3;
 
         public int Version = CurrentVersion;
         public string AnonymousPlayerId = string.Empty;
@@ -39,6 +65,7 @@ namespace DontGetSidetracked.Core
         public string PendingReferralId = string.Empty;
         public int SessionNumber;
         public int CompletedDailyCount;
+        public List<PendingDailyAttemptData> PendingAttempts = new List<PendingDailyAttemptData>();
 
         public static SaveData CreateNew()
         {
@@ -70,12 +97,19 @@ namespace DontGetSidetracked.Core
                 data.Version = 2;
             }
 
+            if (data.Version == 2)
+            {
+                if (data.PendingAttempts == null) data.PendingAttempts = new List<PendingDailyAttemptData>();
+                data.Version = 3;
+            }
+
             if (string.IsNullOrWhiteSpace(data.AnonymousPlayerId))
                 data.AnonymousPlayerId = "anon_" + Guid.NewGuid().ToString("N");
             if (data.Settings == null) data.Settings = new GameSettingsData();
             if (data.Inventory == null) data.Inventory = new List<string>();
             if (data.Entitlements == null) data.Entitlements = new List<string>();
             if (data.LastDaily == null) data.LastDaily = new DailyCacheData();
+            if (data.PendingAttempts == null) data.PendingAttempts = new List<PendingDailyAttemptData>();
 
             data.Version = SaveData.CurrentVersion;
             return data;
