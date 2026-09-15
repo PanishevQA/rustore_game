@@ -13,6 +13,7 @@ namespace DontGetSidetracked.EditorTools
         private const string ManifestPath = "Assets/Plugins/Android/AndroidManifest.xml";
         private const string PackagesManifestPath = "Packages/manifest.json";
         private const string RuntimeSettingsPath = "Assets/Game/Presentation/GameRuntimeSettings.cs";
+        private const string AdsSettingsPath = "Assets/Game/Monetization/YandexMobileAdsService.cs";
         public int callbackOrder => -1000;
 
         [MenuItem("Tools/НЕ СБЕЙСЯ!/Validate Production Release")]
@@ -65,11 +66,43 @@ namespace DontGetSidetracked.EditorTools
             ValidateFileContains(RuntimeSettingsPath, errors,
                 ("OptionalBackendBaseUrl = \"\"", "Offline-first MVP must ship without a developer-operated backend URL."));
 
+            ValidateAds(errors);
+
             string allProjectText = ReadSmallTextFiles("Assets/Game/Platform/RuStore");
             if (allProjectText.IndexOf("billingclient", StringComparison.OrdinalIgnoreCase) >= 0)
                 errors.Add("Deprecated BillingClient reference detected under Platform/RuStore.");
 
             return errors;
+        }
+
+        private static void ValidateAds(List<string> errors)
+        {
+            string symbols = PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.Android) ?? string.Empty;
+            bool hasYandexSymbol = false;
+            string[] split = symbols.Split(';');
+            for (int i = 0; i < split.Length; i++)
+            {
+                if (string.Equals(split[i].Trim(), "YANDEX_MOBILE_ADS", StringComparison.Ordinal))
+                {
+                    hasYandexSymbol = true;
+                    break;
+                }
+            }
+            if (!hasYandexSymbol)
+                errors.Add("Import the official Yandex Mobile Ads Unity plugin and define YANDEX_MOBILE_ADS for Android production builds.");
+
+            if (!File.Exists(AdsSettingsPath))
+            {
+                errors.Add("YandexMobileAdsService.cs is missing.");
+                return;
+            }
+
+            string ads = File.ReadAllText(AdsSettingsPath);
+            if (ads.Contains("RewardedUnitId = \"\"", StringComparison.Ordinal) ||
+                ads.Contains("InterstitialUnitId = \"\"", StringComparison.Ordinal))
+                errors.Add("Configure production Yandex rewarded and interstitial ad unit IDs before release.");
+            if (ads.IndexOf("= \"demo-", StringComparison.OrdinalIgnoreCase) >= 0)
+                errors.Add("Demo Yandex ad unit IDs are forbidden in production builds.");
         }
 
         private static void ValidateFileContains(string path, List<string> errors, params (string Needle, string Error)[] checks)
