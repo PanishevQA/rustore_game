@@ -14,6 +14,7 @@ namespace DontGetSidetracked.EditorTools
         private const string PackagesManifestPath = "Packages/manifest.json";
         private const string RuntimeSettingsPath = "Assets/Game/Presentation/GameRuntimeSettings.cs";
         private const string AdsSettingsPath = "Assets/Game/Monetization/YandexMobileAdsService.cs";
+        private const string RemoteConfigSettingsPath = "Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs";
         public int callbackOrder => -1000;
 
         [MenuItem("Tools/НЕ СБЕЙСЯ!/Validate Production Release")]
@@ -61,11 +62,15 @@ namespace DontGetSidetracked.EditorTools
             ValidateFileContains(PackagesManifestPath, errors,
                 ("nexus-external.rustore.ru/repository/npm-unity-rustore-exposed", "Use the current RuStore npm registry."),
                 ("\"ru.rustore.pay\": \"11.1.0\"", "RuStore Pay must remain pinned to the verified version."),
-                ("\"ru.rustore.installreferrer\": \"10.6.1\"", "RuStore Install Referrer must remain pinned to the verified version."));
+                ("\"ru.rustore.installreferrer\": \"10.6.1\"", "RuStore Install Referrer must remain pinned to the verified version."),
+                ("\"ru.rustore.update\": \"10.5.1\"", "RuStore Update must remain pinned to the verified version."),
+                ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."),
+                ("\"ru.rustore.remoteconfig\": \"10.5.1\"", "RuStore Remote Config must remain pinned to the verified version."));
 
             ValidateFileContains(RuntimeSettingsPath, errors,
                 ("OptionalBackendBaseUrl = \"\"", "Offline-first MVP must ship without a developer-operated backend URL."));
 
+            ValidateRemoteConfig(errors);
             ValidateAds(errors);
 
             string allProjectText = ReadSmallTextFiles("Assets/Game/Platform/RuStore");
@@ -73,6 +78,21 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Deprecated BillingClient reference detected under Platform/RuStore.");
 
             return errors;
+        }
+
+        private static void ValidateRemoteConfig(List<string> errors)
+        {
+            if (!File.Exists(RemoteConfigSettingsPath))
+            {
+                errors.Add("RuStoreRemoteConfigService.cs is missing.");
+                return;
+            }
+
+            string config = File.ReadAllText(RemoteConfigSettingsPath);
+            if (config.Contains("AppId = \"\"", StringComparison.Ordinal))
+                errors.Add("Configure the production RuStore Remote Config AppId from RuStore Console before release.");
+            if (!config.Contains("RuStoreRemoteConfigClient", StringComparison.Ordinal))
+                errors.Add("RuStore Remote Config runtime adapter is not wired.");
         }
 
         private static void ValidateAds(List<string> errors)
