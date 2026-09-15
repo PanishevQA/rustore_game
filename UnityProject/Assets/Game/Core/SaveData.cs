@@ -49,7 +49,7 @@ namespace DontGetSidetracked.Core
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 7;
+        public const int CurrentVersion = 8;
 
         public int Version = CurrentVersion;
         public string AnonymousPlayerId = string.Empty;
@@ -68,7 +68,11 @@ namespace DontGetSidetracked.Core
         public bool InstallReferrerConsumed;
         public int SessionNumber;
         public int CompletedDailyCount;
+
+        // Kept only for backward-compatible deserialization of pre-offline saves.
+        // Version 8 migration clears this obsolete developer-backend sync queue.
         public List<PendingDailyAttemptData> PendingAttempts = new List<PendingDailyAttemptData>();
+
         public int LastReviewRequestSession;
         public int ReviewRequestCount;
         public bool NotificationValuePromptShown;
@@ -135,6 +139,13 @@ namespace DontGetSidetracked.Core
                 data.NotificationValuePromptShown = false;
                 data.NotificationPermissionGranted = false;
                 data.Version = 7;
+            }
+
+            if (data.Version == 7)
+            {
+                // Release runtime is offline-first: there is no developer server to sync these attempts to.
+                data.PendingAttempts = new List<PendingDailyAttemptData>();
+                data.Version = 8;
             }
 
             if (string.IsNullOrWhiteSpace(data.AnonymousPlayerId))
