@@ -28,7 +28,7 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public async Task CompleteAsync_QueuesOfflineWithoutChangingStreak_AndClearsReferral()
+        public async Task CompleteAsync_PersistsLocalProgressBeforeProviderFailure_WithoutQueue()
         {
             var save = SaveData.CreateNew();
             save.PendingReferralId = "ABC123";
@@ -41,15 +41,32 @@ namespace DontGetSidetracked.Tests
             List<IReadOnlyList<RecordedPoint>> replays = CreateReplays(session.Challenge);
             var scores = new List<double> { 95.0, 96.0, 97.0 };
 
-            DuelSubmissionResult result = await service.CompleteAsync(session, replays, scores);
+            Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await service.CompleteAsync(session, replays, scores));
 
-            Assert.That(result.SubmittedToServer, Is.False);
-            Assert.That(result.Score, Is.EqualTo(96.0));
-            Assert.That(result.Won, Is.True);
-            Assert.That(save.PendingAttempts.Count, Is.EqualTo(1));
+            Assert.That(save.PendingAttempts, Is.Empty);
             Assert.That(save.PendingReferralId, Is.Empty);
+            Assert.That(save.PersonalBest, Is.EqualTo(96.0).Within(0.001));
             Assert.That(save.Streak, Is.EqualTo(7));
             Assert.That(save.CompletedDailyCount, Is.EqualTo(4));
+        }
+
+        [Test]
+        public async Task CompleteAsync_WithAcceptedProvider_ReturnsComparisonResult()
+        {
+            var save = SaveData.CreateNew();
+            save.PendingReferralId = "ABC123";
+            var api = new FakeApi();
+            var service = new DuelSessionService(api, new MemorySaveRepository(save), save);
+            DuelSession session = await service.LoadAsync("ABC123");
+            List<IReadOnlyList<RecordedPoint>> replays = CreateReplays(session.Challenge);
+            var scores = new List<double> { 95.0, 96.0, 97.0 };
+
+            DuelSubmissionResult result = await service.CompleteAsync(session, replays, scores);
+
+            Assert.That(result.SubmittedToServer, Is.True);
+            Assert.That(result.Score, Is.EqualTo(96.0));
+            Assert.That(result.Won, Is.True);
         }
 
         private static List<IReadOnlyList<RecordedPoint>> CreateReplays(DailyChallengeDefinition challenge)
