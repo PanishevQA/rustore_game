@@ -1,4 +1,5 @@
 using System;
+using DontGetSidetracked.Core;
 using UnityEngine;
 using Unity.Notifications.Android;
 
@@ -27,20 +28,8 @@ namespace DontGetSidetracked.Platform.Android
 #endif
         }
 
-        public DateTime CalculateNextFireTime(DateTime localNow, int localHour)
-        {
-            int hour = Math.Max(0, Math.Min(23, localHour));
-            DateTime next = new DateTime(
-                localNow.Year,
-                localNow.Month,
-                localNow.Day,
-                hour,
-                0,
-                0,
-                DateTimeKind.Local);
-            if (next <= localNow) next = next.AddDays(1);
-            return next;
-        }
+        public DateTime CalculateNextFireTime(DateTime localNow, int localHour) =>
+            DailyReminderPolicy.NextLocalFireTime(localNow, localHour);
 
         public bool ScheduleNext(int localHour)
         {
@@ -52,7 +41,7 @@ namespace DontGetSidetracked.Platform.Android
             {
                 Title = "НЕ СБЕЙСЯ!",
                 Text = "Новое Daily Challenge уже ждёт. Сможешь повторить маршрут точнее?",
-                FireTime = CalculateNextFireTime(DateTime.Now, localHour),
+                FireTime = DailyReminderPolicy.NextLocalFireTime(DateTime.Now, localHour),
                 ShouldAutoCancel = true
             };
             AndroidNotificationCenter.SendNotificationWithExplicitID(notification, ChannelId, NotificationId);
