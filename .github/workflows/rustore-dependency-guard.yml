@@ -13,9 +13,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RInE 'billingclient|artifactory-external\.vkpartner\.ru' UnityProject --exclude-dir=Library; then
+          if grep -RInE 'billingclient|artifactory-external\.vkpartner\.ru|nexus-external\.vkteam\.ru' UnityProject --exclude-dir=Library; then
             echo 'Deprecated RuStore dependency/reference found.'
             exit 1
           fi
           grep -q 'UnityPlayerActivity' docs/RUSTORE_RELEASE_CHECKLIST.md
           grep -q '11.1.0' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
+          grep -q '10.6.1' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
+          grep -q 'nexus-external.rustore.ru/repository/npm-unity-rustore-exposed' UnityProject/Packages/manifest.json
