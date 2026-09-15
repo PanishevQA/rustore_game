@@ -10,7 +10,7 @@ namespace DontGetSidetracked.Tests
     public sealed class StoreServiceTests
     {
         [Test]
-        public async Task HintsPurchase_IsGrantedOncePerVerifiedPurchaseId()
+        public async Task HintsPurchase_WithBackendVerification_IsGrantedOncePerPurchaseId()
         {
             var save = SaveData.CreateNew();
             var repo = new MemorySaveRepository(save);
@@ -37,7 +37,31 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public async Task CompletedPaymentWithoutVerification_DoesNotGrantEntitlement()
+        public async Task OfflineConsumable_SuccessfulRuStoreResult_IsGrantedOnce()
+        {
+            var save = SaveData.CreateNew();
+            var payments = new FakePayments
+            {
+                PurchaseResult = new PaymentPurchaseResult(
+                    PurchaseOutcome.Completed,
+                    ProductIds.Hints10,
+                    "purchase_local_1",
+                    "200001")
+            };
+            var store = new StoreService(payments, new MemorySaveRepository(save), save);
+
+            StorePurchaseResult first = await store.PurchaseAsync(ProductIds.Hints10);
+            StorePurchaseResult second = await store.PurchaseAsync(ProductIds.Hints10);
+
+            Assert.That(first.Verified, Is.True);
+            Assert.That(first.Verification.Status, Is.EqualTo("RUSTORE_PURCHASE_RESULT"));
+            Assert.That(first.GrantApplied, Is.True);
+            Assert.That(second.GrantApplied, Is.False);
+            Assert.That(save.Hints, Is.EqualTo(10));
+        }
+
+        [Test]
+        public async Task OfflineNonConsumable_WhenRuStoreConfirmsOwnership_GrantsEntitlement()
         {
             var save = SaveData.CreateNew();
             var payments = new FakePayments
@@ -46,7 +70,32 @@ namespace DontGetSidetracked.Tests
                     PurchaseOutcome.Completed,
                     ProductIds.RemoveAds,
                     "purchase_2",
-                    "100002")
+                    "200002"),
+                Restored = new[] { ProductIds.RemoveAds }
+            };
+            var store = new StoreService(payments, new MemorySaveRepository(save), save);
+
+            StorePurchaseResult result = await store.PurchaseAsync(ProductIds.RemoveAds);
+
+            Assert.That(result.Payment.IsSuccess, Is.True);
+            Assert.That(result.Verified, Is.True);
+            Assert.That(result.Verification.Status, Is.EqualTo("RUSTORE_CONFIRMED_OWNERSHIP"));
+            Assert.That(result.GrantApplied, Is.True);
+            Assert.That(store.InterstitialsRemoved, Is.True);
+        }
+
+        [Test]
+        public async Task OfflineNonConsumable_WhenRuStoreDoesNotConfirmOwnership_DoesNotGrant()
+        {
+            var save = SaveData.CreateNew();
+            var payments = new FakePayments
+            {
+                PurchaseResult = new PaymentPurchaseResult(
+                    PurchaseOutcome.Completed,
+                    ProductIds.RemoveAds,
+                    "purchase_3",
+                    "200003"),
+                Restored = new string[0]
             };
             var store = new StoreService(payments, new MemorySaveRepository(save), save);
 
