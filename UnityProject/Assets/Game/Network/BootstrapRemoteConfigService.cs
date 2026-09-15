@@ -26,16 +26,22 @@ namespace DontGetSidetracked.Network
         {
             // Deliberately ignore the optional backend URL for the release runtime.
             // Future online mode can introduce a separate provider without changing gameplay contracts.
+            object providerObject = null;
+            Type providerType = null;
+            IRemoteConfigService provider = null;
             try
             {
-                _providerObject = CreateRuStoreProvider(out _providerType);
-                _provider = _providerObject as IRemoteConfigService ?? new SafeRemoteConfig();
+                providerObject = CreateRuStoreProvider(out providerType);
+                provider = providerObject as IRemoteConfigService;
             }
             catch (Exception error)
             {
                 Debug.LogWarning($"RuStore Remote Config provider unavailable; using safe defaults: {error.Message}");
-                _provider = new SafeRemoteConfig();
             }
+
+            _providerObject = providerObject;
+            _providerType = providerType;
+            _provider = provider ?? new SafeRemoteConfig();
         }
 
         public async Task<bool> RefreshAsync()
