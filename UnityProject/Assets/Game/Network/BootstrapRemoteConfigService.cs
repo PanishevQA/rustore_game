@@ -7,13 +7,14 @@ using UnityEngine;
 namespace DontGetSidetracked.Network
 {
     /// <summary>
-    /// Compatibility facade kept so existing presentation code depends only on IRemoteConfigService-style APIs.
-    /// The offline-first release delegates directly to Platform/RuStore/RuStoreRemoteConfigService and performs
+    /// Compatibility facade kept so presentation code depends on a stable config surface.
+    /// All runtime instances share one RuStore provider/snapshot. The offline-first release performs
     /// no requests to a developer-operated backend.
     /// </summary>
     public sealed class BootstrapRemoteConfigService : IRemoteConfigService
     {
         private const string DefaultVersion = "0.1.0";
+        private static RuStoreRemoteConfigService _sharedProvider;
         private readonly RuStoreRemoteConfigService _provider;
 
         public string MinSupportedVersion =>
@@ -28,10 +29,19 @@ namespace DontGetSidetracked.Network
         {
             // Deliberately ignore the optional backend URL for the release runtime.
             // A future online mode should use a separate provider instead of changing gameplay contracts.
-            _provider = new RuStoreRemoteConfigService(
-                RuStoreRemoteConfigSettings.AppId,
-                account: string.Empty,
-                cacheFileName: "rustore-remote-config.json");
+            _provider = GetSharedProvider();
+        }
+
+        private static RuStoreRemoteConfigService GetSharedProvider()
+        {
+            if (_sharedProvider == null)
+            {
+                _sharedProvider = new RuStoreRemoteConfigService(
+                    RuStoreRemoteConfigSettings.AppId,
+                    account: string.Empty,
+                    cacheFileName: "rustore-remote-config.json");
+            }
+            return _sharedProvider;
         }
 
         public async Task<bool> RefreshAsync()
@@ -84,7 +94,6 @@ namespace DontGetSidetracked.Network
         }
     }
 
-    // Kept for existing tests and optional online-mode code that references VersionPolicy.
     public static class VersionPolicy
     {
         public static int Compare(string left, string right) => BootstrapRemoteConfigService.Compare(left, right);
