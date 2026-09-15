@@ -1,6 +1,6 @@
 {
   "name": "Game.Platform.Android",
   "rootNamespace": "DontGetSidetracked.Platform.Android",
-  "references": ["Game.Services", "Unity.Notifications.Android"],
+  "references": ["Game.Core", "Game.Services", "Unity.Notifications.Android"],
   "autoReferenced": true
 }
