@@ -24,6 +24,7 @@
     <Compile Include="../UnityProject/Assets/Game/Monetization/*.cs" Link="Monetization/%(Filename)%(Extension)" />
 
     <Compile Include="../UnityProject/Assets/Game/Tests/GameplayRulesTests.cs" Link="Tests/GameplayRulesTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/RouteRuntimeTuningTests.cs" Link="Tests/RouteRuntimeTuningTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/SaveAndStreakTests.cs" Link="Tests/SaveAndStreakTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/DailySessionServiceTests.cs" Link="Tests/DailySessionServiceTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/DailyReminderPolicyTests.cs" Link="Tests/DailyReminderPolicyTests.cs" />
