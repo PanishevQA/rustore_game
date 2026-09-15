@@ -8,7 +8,10 @@ namespace DontGetSidetracked.Platform.RuStore
         public const string Review = "10.5.1";
         public const string GameCenter = "10.5.2";
         public const string RemoteConfig = "10.5.1";
-        public const string Push = "7.4.0";
+
+        // Verified against the official Unity Push documentation on 2026-09-15.
+        // Do not confuse this with the Kotlin/Java Push SDK 7.4.0 branch.
+        public const string Push = "6.3.0";
 
         // Current official Unity SDK repository setup (verified 2026-09-15).
         public const string NpmRegistry = "https://nexus-external.rustore.ru/repository/npm-unity-rustore-exposed/";
