@@ -5,9 +5,9 @@ using DontGetSidetracked.Services;
 
 namespace DontGetSidetracked.Platform.RuStore
 {
-    // Production SDK calls live only in this assembly. The foundation intentionally keeps
-    // credentials and generated PayClientSettings assets out of git. These adapters fail
-    // closed until the corresponding SDK client is wired/configured in the Unity Editor.
+    // Production SDK calls live only in this assembly. Credentials and generated
+    // PayClientSettings assets stay out of git. These fallbacks keep gameplay usable
+    // when a platform service is unavailable or has not been configured yet.
     public sealed class UnconfiguredRuStorePaymentService : IPaymentService
     {
         public Task<IReadOnlyList<StoreProduct>> GetProductsAsync(IReadOnlyList<string> productIds) =>
@@ -19,6 +19,7 @@ namespace DontGetSidetracked.Platform.RuStore
 
     public sealed class UnconfiguredRuStoreReferrerService : IReferrerService
     {
-        public Task<string> ConsumeInstallReferrerAsync() => Task.FromResult<string>(null);
+        public Task<InstallReferrerResult> ConsumeInstallReferrerAsync() =>
+            Task.FromResult(new InstallReferrerResult(false, null));
     }
 }
