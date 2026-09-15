@@ -20,6 +20,7 @@ namespace DontGetSidetracked.Tests
             DailyDto second = OfflineDaily.CreateDto(b);
 
             Assert.That(first.ChallengeId, Is.EqualTo("daily_2026_09_15"));
+            Assert.That(first.Seed, Is.EqualTo(970244546L)); // Golden seed for generatorVersion 1.
             Assert.That(second.ChallengeId, Is.EqualTo(first.ChallengeId));
             Assert.That(second.Seed, Is.EqualTo(first.Seed));
             Assert.That(second.GeneratorVersion, Is.EqualTo(first.GeneratorVersion));
@@ -56,6 +57,18 @@ namespace DontGetSidetracked.Tests
             string install = OfflineChallengeCodec.BuildInstallUrl("ru.example.game", token);
             Assert.That(install, Does.Contain("rustore.ru/catalog/app/ru.example.game"));
             Assert.That(install, Does.Contain("referrerId=" + token));
+        }
+
+        [Test]
+        public async Task OfflineApi_WithPackageName_SharesDeepLinkAndInstallFallback()
+        {
+            var api = new OfflineGameApi("ru.example.game");
+            string share = await api.CreateChallengeAsync("anon_test", "daily_2026_09_15", 91.2);
+
+            string[] lines = share.Split('\n');
+            Assert.That(lines.Length, Is.EqualTo(2));
+            Assert.That(lines[0], Does.StartWith("nesbeisya://challenge/L1"));
+            Assert.That(lines[1], Does.StartWith("https://www.rustore.ru/catalog/app/ru.example.game?referrerId=L1"));
         }
 
         [Test]
