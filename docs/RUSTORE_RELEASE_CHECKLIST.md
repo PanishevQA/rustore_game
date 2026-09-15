@@ -14,17 +14,26 @@
 - [ ] BillingClient packages отсутствуют.
 - [ ] Старые Maven/Artifactory/NPM URL отсутствуют.
 - [ ] `OptionalBackendBaseUrl` остаётся пустым: production MVP не требует собственного backend/DB.
-- [ ] Production preflight проходит без placeholder package name и без demo ad IDs.
+- [ ] Production preflight проходит без placeholder package name, пустого Remote Config App ID и demo ad IDs.
+
+## Remote Config — RuStore, без собственного backend
+
+- [ ] В `RuStoreRemoteConfigSettings.AppId` указан реальный App ID инструмента Remote Config из RuStore Console.
+- [ ] `ru.rustore.remoteconfig` закреплён на версии, повторно проверенной перед production; на дату разработки — `10.5.1`.
+- [ ] В RuStore Console заведены ключи с корректными типами: `route_display_time_easy_ms`, `route_display_time_medium_ms`, `route_display_time_hard_ms`, `daily_route_count`, `rewarded_enabled`, `interstitial_enabled`, `interstitial_min_rounds`, `interstitial_cooldown_sec`, `share_copy_variant`, `review_min_sessions`, `local_daily_reminder_enabled`, `daily_reminder_hour`, `store_offer_variant`, `min_supported_version`, `recommended_version`.
+- [ ] Значения за пределами безопасных диапазонов не ломают runtime: клиент валидирует snapshot и использует defaults/cache.
+- [ ] Без сети/без RuStore Remote Config основной gameplay, Training, сохранения и магазин продолжают запускаться.
+- [ ] Проверено, что runtime config не обращается к developer-owned `/config/bootstrap`.
 
 ## Pay / economy — без собственного сервера
 
 - [ ] Покупки идут только через актуальный RuStore Pay SDK.
-- [ ] Успешная локальная выдача требует completed-result SDK с непустыми `purchaseId`/`invoiceId`.
+- [ ] Consumable выдаётся только после completed-result RuStore с непустым `purchaseId`; `ProcessedPurchaseIds` защищает от повторной локальной выдачи.
+- [ ] Non-consumable после покупки выдаётся только когда `GetPurchases` подтверждает ownership.
 - [ ] `GetPurchases` восстанавливает non-consumable entitlements после переустановки/очистки локального save.
-- [ ] `ProcessedPurchaseIds` не позволяет дважды выдать consumable в рамках сохранённого локального состояния.
 - [ ] Протестированы success/cancel/error и restore.
 - [ ] Проверено, что отсутствие RuStore/сети не блокирует основной gameplay.
-- [ ] Принят риск offline-MVP: без собственного backend защита покупок и результатов от модифицированного клиента слабее, чем при server-side verification.
+- [ ] Принят риск offline-MVP: без собственного backend защита consumable-покупок и игровых результатов от модифицированного клиента слабее, чем при server-side verification.
 
 ## Advertising
 
@@ -35,6 +44,7 @@
 - [ ] Demo IDs отсутствуют в production build.
 - [ ] Rewarded выдаёт награду только после `OnRewarded`.
 - [ ] Interstitial невозможен во время route display/drawing/result/share/store/purchase.
+- [ ] Ошибка показа interstitial не сбрасывает frequency cap и не запускает cooldown.
 - [ ] `remove_ads` и `starter_pack` отключают interstitial.
 - [ ] Frequency cap проверен на реальном устройстве.
 
@@ -58,13 +68,14 @@
 - [ ] Streak, personal best, статистика, settings и косметика работают без сети.
 - [ ] Offline Training работает без RuStore и сети.
 
-## Push / notifications
+## Notifications
 
-- [ ] Перед включением Push повторно сверена актуальная **Unity** версия SDK; не использовать Kotlin/Java version number как Unity package version.
-- [ ] `push_enabled` остаётся false, пока RuStore Push project/signature не настроены и не проверены.
-- [ ] Совместно протестированы Activity, Pay, push tap и challenge deeplink на реальном устройстве.
-- [ ] POST_NOTIFICATIONS на Android 13+ запрашивается только после завершённого Daily и value prompt.
+- [ ] `com.unity.mobile.notifications` закреплён на проверенной released-версии; на дату разработки — `2.4.3`.
+- [ ] Daily reminder планируется локально на устройстве и не требует Push/backend.
+- [ ] `POST_NOTIFICATIONS` на Android 13+ запрашивается только после завершённого Daily и value prompt.
 - [ ] Отказ от notification permission не блокирует игру и не вызывает повторный системный prompt автоматически.
+- [ ] После разрешения следующий reminder рассчитывается через общий `DailyReminderPolicy`.
+- [ ] Если `local_daily_reminder_enabled=false`, запланированный reminder отменяется.
 
 ## UX / reliability
 
