@@ -43,6 +43,15 @@ class Store:
                 );
                 CREATE INDEX IF NOT EXISTS idx_analytics_event_name ON analytics_events(event_name, received_at);
                 CREATE INDEX IF NOT EXISTS idx_analytics_player ON analytics_events(player_id, session_number);
+                CREATE TABLE IF NOT EXISTS purchase_claims (
+                    invoice_id TEXT PRIMARY KEY,
+                    purchase_id TEXT NOT NULL UNIQUE,
+                    product_id TEXT NOT NULL,
+                    player_id TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS idx_purchase_claims_player ON purchase_claims(player_id, product_id);
                 """
             )
 
@@ -117,3 +126,41 @@ class Store:
                 )
                 inserted += cursor.rowcount
         return inserted
+
+    def claim_purchase(
+        self,
+        invoice_id: str,
+        purchase_id: str,
+        product_id: str,
+        player_id: str,
+        status: str,
+    ) -> bool:
+        """Persist a verified RuStore purchase.
+
+        Returns True for the first claim. Repeating the exact same claim is idempotent and
+        returns False. Reusing an invoice/purchase for another player or product is rejected.
+        """
+        with self.lock, self._connect() as db:
+            row = db.execute(
+                "SELECT * FROM purchase_claims WHERE invoice_id=? OR purchase_id=? LIMIT 1",
+                (invoice_id, purchase_id),
+            ).fetchone()
+            if row:
+                same = (
+                    row["invoice_id"] == invoice_id
+                    and row["purchase_id"] == purchase_id
+                    and row["product_id"] == product_id
+                    and row["player_id"] == player_id
+                )
+                if same:
+                    return False
+                raise ValueError("purchase is already claimed by another player or product")
+
+            db.execute(
+                """
+                INSERT INTO purchase_claims(invoice_id, purchase_id, product_id, player_id, status)
+                VALUES(?,?,?,?,?)
+                """,
+                (invoice_id, purchase_id, product_id, player_id, status),
+            )
+            return True
