@@ -46,5 +46,43 @@ namespace DontGetSidetracked.Tests
                 RouteRuntimeTuning.ResetDefaults();
             }
         }
+
+        [TestCase(1)]
+        [TestCase(2)]
+        [TestCase(3)]
+        public void DailyRouteCount_AcceptsSupportedRange(int count)
+        {
+            try
+            {
+                RouteRuntimeTuning.ConfigureDailyRouteCount(count);
+                Assert.That(RouteRuntimeTuning.DailyRouteCount, Is.EqualTo(count));
+                DailyChallengeDefinition challenge = new DailyChallengeFactory().Create(
+                    "daily_test",
+                    12345,
+                    RouteGenerator.CurrentGeneratorVersion,
+                    RouteRuntimeTuning.DailyRouteCount);
+                Assert.That(challenge.RouteCount, Is.EqualTo(count));
+            }
+            finally
+            {
+                RouteRuntimeTuning.ResetDefaults();
+            }
+        }
+
+        [TestCase(0)]
+        [TestCase(4)]
+        [TestCase(99)]
+        public void DailyRouteCount_RejectsUnsupportedValuesToDefault(int count)
+        {
+            try
+            {
+                RouteRuntimeTuning.ConfigureDailyRouteCount(count);
+                Assert.That(RouteRuntimeTuning.DailyRouteCount, Is.EqualTo(RouteRuntimeTuning.DefaultDailyRouteCount));
+            }
+            finally
+            {
+                RouteRuntimeTuning.ResetDefaults();
+            }
+        }
     }
 }
