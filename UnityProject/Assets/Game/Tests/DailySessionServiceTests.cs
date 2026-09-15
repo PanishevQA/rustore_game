@@ -11,6 +11,12 @@ namespace DontGetSidetracked.Tests
 {
     public sealed class DailySessionServiceTests
     {
+        [SetUp]
+        public void SetUp() => ChallengeAssistanceTracker.ResetAllForTests();
+
+        [TearDown]
+        public void TearDown() => ChallengeAssistanceTracker.ResetAllForTests();
+
         [Test]
         public async Task LoadCurrentAsync_UsesCachedDailyRouteCountAndTiming_WhenProviderFails()
         {
@@ -88,6 +94,40 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
+        public async Task CompleteAndSubmitAsync_PropagatesHintAssistanceAndClearsTracker()
+        {
+            var save = SaveData.CreateNew();
+            var api = new FakeGameApi();
+            var service = new DailySessionService(api, new MemorySaveRepository(save), save);
+            var challenge = new DailyChallengeFactory().Create("daily_2026_09_15", 77, 1, 1);
+            var session = new DailyLoadResult(challenge, new DateTime(2026, 9, 15, 12, 0, 0, DateTimeKind.Utc), false);
+            List<IReadOnlyList<RecordedPoint>> replays = CreateReplays(challenge);
+            List<double> scores = CreateScores(1);
+
+            ChallengeAssistanceTracker.MarkAssisted(challenge.ChallengeId);
+            Assert.That(ChallengeAssistanceTracker.IsAssisted(challenge.ChallengeId), Is.True);
+
+            await service.CompleteAndSubmitAsync(session, replays, scores, false);
+
+            Assert.That(api.LastAssisted, Is.True);
+            Assert.That(ChallengeAssistanceTracker.IsAssisted(challenge.ChallengeId), Is.False);
+        }
+
+        [Test]
+        public async Task LoadCurrentAsync_ClearsStaleAssistanceForNewAttempt()
+        {
+            ChallengeAssistanceTracker.MarkAssisted("daily_2026_09_15");
+            var save = SaveData.CreateNew();
+            var api = new FakeGameApi();
+            var service = new DailySessionService(api, new MemorySaveRepository(save), save);
+
+            DailyLoadResult loaded = await service.LoadCurrentAsync();
+
+            Assert.That(loaded.Challenge.ChallengeId, Is.EqualTo("daily_2026_09_15"));
+            Assert.That(ChallengeAssistanceTracker.IsAssisted(loaded.Challenge.ChallengeId), Is.False);
+        }
+
+        [Test]
         public async Task FlushPendingAsync_OnlyRemovesLegacyQueue()
         {
             var save = SaveData.CreateNew();
@@ -136,6 +176,7 @@ namespace DontGetSidetracked.Tests
         {
             public bool FailGetDaily;
             public bool FailSubmit;
+            public bool LastAssisted;
             public int SubmitCount;
             public int RouteCount = 3;
             public int EasyMs = 4100;
@@ -161,6 +202,7 @@ namespace DontGetSidetracked.Tests
             public Task<double> SubmitDailyAttemptAsync(string playerId, DailyChallengeDefinition challenge, IReadOnlyList<IReadOnlyList<RecordedPoint>> replays, IReadOnlyList<double> clientScores, bool assisted)
             {
                 SubmitCount++;
+                LastAssisted = assisted;
                 if (FailSubmit) throw new InvalidOperationException("offline");
                 return Task.FromResult(DailyChallengeFactory.DailyScore(clientScores));
             }
