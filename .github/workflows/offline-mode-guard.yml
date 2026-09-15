@@ -15,16 +15,28 @@ jobs:
           set -euo pipefail
           test -f UnityProject/Assets/Game/Social/OfflineGameApi.cs
           test -f UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
+          test -f UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
           grep -q 'OptionalBackendBaseUrl = ""' UnityProject/Assets/Game/Presentation/GameRuntimeSettings.cs
           grep -q 'OfflineGameApi' UnityProject/Assets/Game/Network/UnityGameApi.cs
           grep -q 'SeedForDate' UnityProject/Assets/Game/Social/OfflineGameApi.cs
           grep -q 'BuildInstallUrl' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'private const string Prefix = "L2"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'routeCount' UnityProject/Assets/Game/Social/OfflineGameApi.cs
           grep -q 'RuStoreRemoteConfigService' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs
           grep -q 'RuStoreRemoteConfigClient' UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
+          grep -q 'daily_route_count' UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
+          grep -q 'RouteCount' UnityProject/Assets/Game/Presentation/GameBootstrap.cs
 
           # Runtime config must not fetch our own /config/bootstrap endpoint in release code.
           if grep -nE 'UnityWebRequest|/config/bootstrap' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs; then
             echo 'Developer-operated bootstrap config HTTP dependency detected.'
+            exit 1
+          fi
+
+          # Local release UI must not promise background server synchronization.
+          if grep -nE 'FlushPendingAttempts|Синхронизац|отправим позже|Ожидает синхронизации' \
+              UnityProject/Assets/Game/Presentation/GameBootstrap.cs; then
+            echo 'Legacy server-sync UX detected in offline-first GameBootstrap.'
             exit 1
           fi
 
