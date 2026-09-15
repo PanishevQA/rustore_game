@@ -8,10 +8,6 @@ using DontGetSidetracked.Services;
 
 namespace DontGetSidetracked.Social
 {
-    /// <summary>
-    /// Fully local replacement for the MVP backend. Daily content is derived from UTC date + generatorVersion,
-    /// replay scores are recalculated locally, and friend challenges carry all data required to restore a duel.
-    /// </summary>
     public sealed class OfflineGameApi : IGameApi
     {
         private sealed class ChallengeIdentity
@@ -192,6 +188,7 @@ namespace DontGetSidetracked.Social
         private const string Prefix = "L3";
         private const int LegacyV1TokenLength = 23;
         private const int LegacyV2TokenLength = 24;
+        private const int MinL3TokenLength = 28;
 
         public static string Encode(DateTime date, long seed, int generatorVersion, double score) =>
             Encode(
@@ -247,6 +244,7 @@ namespace DontGetSidetracked.Social
             bool v2 = value.Length == LegacyV2TokenLength && value.StartsWith(LegacyV2Prefix, StringComparison.Ordinal);
             bool v3 = value.StartsWith(Prefix, StringComparison.Ordinal);
             if (!v1 && !v2 && !v3) return false;
+            if (v3 && value.Length < MinL3TokenLength) return false;
 
             if (!DateTime.TryParseExact(value.Substring(2, 8), "yyyyMMdd", CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime date)) return false;
@@ -265,8 +263,7 @@ namespace DontGetSidetracked.Social
             }
             else
             {
-                if (value.Length < 21 ||
-                    !int.TryParse(value.Substring(20, 1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out routeCount) ||
+                if (!int.TryParse(value.Substring(20, 1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out routeCount) ||
                     routeCount < 1 || routeCount > 3) return false;
 
                 if (v2)
@@ -293,6 +290,7 @@ namespace DontGetSidetracked.Social
                 }
             }
 
+            if (scoreOffset < 0 || scoreOffset + 3 != value.Length) return false;
             if (!int.TryParse(value.Substring(scoreOffset, 3), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int scoreTenths) ||
                 scoreTenths > 1000) return false;
 
