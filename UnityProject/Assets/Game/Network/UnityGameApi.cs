@@ -10,7 +10,7 @@ using UnityEngine.Networking;
 
 namespace DontGetSidetracked.Network
 {
-    public sealed class UnityGameApi : IGameApi, ILeaderboardApi
+    public sealed class UnityGameApi : IGameApi, ILeaderboardApi, IPurchaseVerificationApi
     {
         private readonly string _baseUrl;
         private readonly int _timeoutSeconds;
@@ -34,6 +34,37 @@ namespace DontGetSidetracked.Network
             string path = "/leaderboard/daily?challengeId=" + UnityWebRequest.EscapeURL(challengeId) + "&limit=" + limit;
             string json = await SendAsync("GET", path, null);
             return JsonUtility.FromJson<LeaderboardDto>(json);
+        }
+
+        public async Task<PurchaseVerificationResult> VerifyPurchaseAsync(
+            string playerId,
+            string productId,
+            string invoiceId,
+            string purchaseId)
+        {
+            if (string.IsNullOrWhiteSpace(playerId)) throw new ArgumentException("Player id is required.", nameof(playerId));
+            if (string.IsNullOrWhiteSpace(productId)) throw new ArgumentException("Product id is required.", nameof(productId));
+            if (string.IsNullOrWhiteSpace(invoiceId)) throw new ArgumentException("Invoice id is required.", nameof(invoiceId));
+
+            var payload = new PurchaseVerifyRequestDto
+            {
+                playerId = playerId,
+                productId = productId,
+                invoiceId = invoiceId,
+                purchaseId = purchaseId
+            };
+            string json = await SendAsync("POST", "/purchase/verify", JsonUtility.ToJson(payload));
+            PurchaseVerifyResponseDto response = JsonUtility.FromJson<PurchaseVerifyResponseDto>(json);
+            if (response == null)
+                return new PurchaseVerificationResult(false, productId, purchaseId, invoiceId, string.Empty, "Empty verification response.");
+
+            return new PurchaseVerificationResult(
+                response.verified,
+                response.productId,
+                response.purchaseId,
+                response.invoiceId,
+                response.status,
+                response.errorMessage);
         }
 
         public async Task<double> SubmitDailyAttemptAsync(
@@ -177,6 +208,26 @@ namespace DontGetSidetracked.Network
         private sealed class ChallengeResponseDto
         {
             public string shareUrl;
+        }
+
+        [Serializable]
+        private sealed class PurchaseVerifyRequestDto
+        {
+            public string playerId;
+            public string productId;
+            public string invoiceId;
+            public string purchaseId;
+        }
+
+        [Serializable]
+        private sealed class PurchaseVerifyResponseDto
+        {
+            public bool verified;
+            public string productId;
+            public string purchaseId;
+            public string invoiceId;
+            public string status;
+            public string errorMessage;
         }
     }
 }
