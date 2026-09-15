@@ -11,7 +11,7 @@ namespace DontGetSidetracked.Platform.RuStore
         public bool IsUpdateInProgress { get; private set; }
         public long AvailableVersionCode { get; private set; }
 
-        public Task CheckForUpdateAsync()
+        public async Task CheckForUpdateAsync(bool mandatory)
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
             var completion = new TaskCompletionSource<bool>();
@@ -37,12 +37,18 @@ namespace DontGetSidetracked.Platform.RuStore
             {
                 completion.TrySetException(error);
             }
-            return completion.Task;
+
+            await completion.Task;
+            if (!IsUpdateAvailable) return;
+
+            // Called only from a safe UI point (home/bootstrap), never during drawing.
+            if (mandatory) await StartImmediateAsync();
+            else await StartFlexibleAsync();
 #else
             IsUpdateAvailable = false;
             IsUpdateInProgress = false;
             AvailableVersionCode = 0;
-            return Task.CompletedTask;
+            await Task.CompletedTask;
 #endif
         }
 
@@ -57,26 +63,12 @@ namespace DontGetSidetracked.Platform.RuStore
             return StartFlowAsync(UpdateType.IMMEDIATE);
         }
 
-        public Task CompleteFlexibleAsync()
+        public void CompleteFlexibleUpdate()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
-            var completion = new TaskCompletionSource<bool>();
-            try
-            {
-                RuStoreAppUpdateManager.Instance.CompleteUpdate(
-                    UpdateType.FLEXIBLE,
-                    error => completion.TrySetException(
-                        new InvalidOperationException($"RuStore update completion failed: {error}")));
-                // CompleteUpdate has no success callback. Reaching this call means it was handed to the SDK.
-                completion.TrySetResult(true);
-            }
-            catch (Exception error)
-            {
-                completion.TrySetException(error);
-            }
-            return completion.Task;
-#else
-            return Task.CompletedTask;
+            RuStoreAppUpdateManager.Instance.CompleteUpdate(
+                UpdateType.FLEXIBLE,
+                error => UnityEngine.Debug.LogWarning($"RuStore update completion failed: {error}"));
 #endif
         }
 
