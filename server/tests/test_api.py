@@ -5,8 +5,10 @@ from uuid import uuid4
 os.environ["GAME_DB_PATH"] = str(Path(__file__).parent / "test.db")
 
 from fastapi.testclient import TestClient
+import app.main as main_module
 from app.game_rules import RecordedPoint, create_daily_routes, score_route
 from app.main import app
+from app.rustore_pay import VerifiedPurchase
 
 client = TestClient(app)
 
@@ -86,4 +88,50 @@ def test_analytics_rejects_unknown_event():
         }]
     })
 
+    assert response.status_code == 400
+
+
+def test_purchase_verification_claim_is_idempotent_and_bound_to_player(monkeypatch):
+    invoice_id = str(int(uuid4().hex[:12], 16))
+    purchase_id = str(uuid4())
+
+    def fake_verify(invoice, product, expected_purchase):
+        assert invoice == invoice_id
+        assert product == "remove_ads"
+        assert expected_purchase == purchase_id
+        return VerifiedPurchase(
+            product_id=product,
+            purchase_id=purchase_id,
+            invoice_id=invoice_id,
+            status="CONFIRMED",
+            app_id=123,
+        )
+
+    monkeypatch.setattr(main_module, "verify_rustore_purchase", fake_verify)
+    payload = {
+        "playerId": "anon_purchase_a",
+        "productId": "remove_ads",
+        "invoiceId": invoice_id,
+        "purchaseId": purchase_id,
+    }
+
+    first = client.post("/purchase/verify", json=payload)
+    second = client.post("/purchase/verify", json=payload)
+    stolen = client.post("/purchase/verify", json={**payload, "playerId": "anon_purchase_b"})
+
+    assert first.status_code == 200, first.text
+    assert first.json()["verified"] is True
+    assert first.json()["firstClaim"] is True
+    assert second.status_code == 200, second.text
+    assert second.json()["firstClaim"] is False
+    assert stolen.status_code == 409
+
+
+def test_purchase_verification_rejects_unknown_product():
+    response = client.post("/purchase/verify", json={
+        "playerId": "anon_purchase",
+        "productId": "unknown_product",
+        "invoiceId": "123456",
+        "purchaseId": str(uuid4()),
+    })
     assert response.status_code == 400
