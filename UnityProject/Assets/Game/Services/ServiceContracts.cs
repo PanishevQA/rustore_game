@@ -13,7 +13,7 @@ namespace DontGetSidetracked.Services
         bool IsRewardedReady { get; }
         bool IsInterstitialReady { get; }
         Task<bool> ShowRewardedAsync(RewardPlacement placement);
-        Task ShowInterstitialAsync();
+        Task<bool> ShowInterstitialAsync();
     }
 
     public sealed class StoreProduct
