@@ -26,6 +26,7 @@
     <Compile Include="../UnityProject/Assets/Game/Tests/GameplayRulesTests.cs" Link="Tests/GameplayRulesTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/SaveAndStreakTests.cs" Link="Tests/SaveAndStreakTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/DailySessionServiceTests.cs" Link="Tests/DailySessionServiceTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/DailyReminderPolicyTests.cs" Link="Tests/DailyReminderPolicyTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/ReferralLinkParserTests.cs" Link="Tests/ReferralLinkParserTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/DuelSessionServiceTests.cs" Link="Tests/DuelSessionServiceTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/ReviewPolicyTests.cs" Link="Tests/ReviewPolicyTests.cs" />
