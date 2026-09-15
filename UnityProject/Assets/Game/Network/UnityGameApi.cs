@@ -5,24 +5,34 @@ using System.Threading.Tasks;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Gameplay;
 using DontGetSidetracked.Services;
+using DontGetSidetracked.Social;
 using UnityEngine;
 using UnityEngine.Networking;
 
 namespace DontGetSidetracked.Network
 {
+    /// <summary>
+    /// Compatibility facade. With an empty base URL all gameplay/social operations stay on-device.
+    /// A backend URL can still be supplied in a future build without changing gameplay code.
+    /// </summary>
     public sealed class UnityGameApi : IGameApi, ILeaderboardApi, IPurchaseVerificationApi
     {
         private readonly string _baseUrl;
         private readonly int _timeoutSeconds;
+        private readonly OfflineGameApi _offline;
+
+        public bool IsOfflineOnly => _offline != null;
 
         public UnityGameApi(string baseUrl, int timeoutSeconds = 8)
         {
             _baseUrl = (baseUrl ?? string.Empty).TrimEnd('/');
             _timeoutSeconds = Math.Max(2, timeoutSeconds);
+            if (string.IsNullOrWhiteSpace(_baseUrl)) _offline = new OfflineGameApi();
         }
 
         public async Task<DailyDto> GetDailyAsync()
         {
+            if (_offline != null) return await _offline.GetDailyAsync();
             string json = await SendAsync("GET", "/daily", null);
             return JsonUtility.FromJson<DailyDto>(json);
         }
@@ -30,6 +40,15 @@ namespace DontGetSidetracked.Network
         public async Task<LeaderboardDto> GetDailyLeaderboardAsync(string challengeId, int limit = 100)
         {
             if (string.IsNullOrWhiteSpace(challengeId)) throw new ArgumentException("Challenge id is required.", nameof(challengeId));
+            if (_offline != null)
+            {
+                return new LeaderboardDto
+                {
+                    challengeId = challengeId,
+                    items = Array.Empty<LeaderboardItemDto>()
+                };
+            }
+
             limit = Math.Max(1, Math.Min(100, limit));
             string path = "/leaderboard/daily?challengeId=" + UnityWebRequest.EscapeURL(challengeId) + "&limit=" + limit;
             string json = await SendAsync("GET", path, null);
@@ -45,6 +64,18 @@ namespace DontGetSidetracked.Network
             if (string.IsNullOrWhiteSpace(playerId)) throw new ArgumentException("Player id is required.", nameof(playerId));
             if (string.IsNullOrWhiteSpace(productId)) throw new ArgumentException("Product id is required.", nameof(productId));
             if (string.IsNullOrWhiteSpace(invoiceId)) throw new ArgumentException("Invoice id is required.", nameof(invoiceId));
+
+            if (_offline != null)
+            {
+                bool valid = !string.IsNullOrWhiteSpace(purchaseId);
+                return new PurchaseVerificationResult(
+                    valid,
+                    productId,
+                    purchaseId,
+                    invoiceId,
+                    valid ? "SDK_CONFIRMED_LOCAL" : "INVALID_LOCAL_PURCHASE",
+                    valid ? string.Empty : "RuStore purchase result has no purchaseId.");
+            }
 
             var payload = new PurchaseVerifyRequestDto
             {
@@ -74,6 +105,9 @@ namespace DontGetSidetracked.Network
             IReadOnlyList<double> clientScores,
             bool assisted)
         {
+            if (_offline != null)
+                return await _offline.SubmitDailyAttemptAsync(playerId, challenge, replays, clientScores, assisted);
+
             if (challenge == null) throw new ArgumentNullException(nameof(challenge));
             if (replays == null || replays.Count != 3) throw new ArgumentException("Daily requires three replays.", nameof(replays));
             if (clientScores == null || clientScores.Count != 3) throw new ArgumentException("Daily requires three scores.", nameof(clientScores));
@@ -117,6 +151,8 @@ namespace DontGetSidetracked.Network
 
         public async Task<string> CreateChallengeAsync(string playerId, string challengeId, double score)
         {
+            if (_offline != null) return await _offline.CreateChallengeAsync(playerId, challengeId, score);
+
             var payload = new ChallengeRequestDto
             {
                 inviterId = playerId,
@@ -129,6 +165,7 @@ namespace DontGetSidetracked.Network
 
         public async Task<ReferralDto> GetReferralAsync(string referralId)
         {
+            if (_offline != null) return await _offline.GetReferralAsync(referralId);
             string encoded = UnityWebRequest.EscapeURL(referralId ?? string.Empty);
             string json = await SendAsync("GET", "/referral/" + encoded, null);
             return JsonUtility.FromJson<ReferralDto>(json);
@@ -136,7 +173,7 @@ namespace DontGetSidetracked.Network
 
         private async Task<string> SendAsync(string method, string path, string json)
         {
-            if (string.IsNullOrWhiteSpace(_baseUrl)) throw new InvalidOperationException("Backend base URL is not configured.");
+            if (string.IsNullOrWhiteSpace(_baseUrl)) throw new InvalidOperationException("Remote backend is disabled for this build.");
 
             using var request = new UnityWebRequest(_baseUrl + path, method);
             request.downloadHandler = new DownloadHandlerBuffer();
@@ -164,12 +201,7 @@ namespace DontGetSidetracked.Network
         }
 
         [Serializable]
-        private sealed class ReplayPointDto
-        {
-            public int x;
-            public int y;
-            public long timestampMs;
-        }
+        private sealed class ReplayPointDto { public int x; public int y; public long timestampMs; }
 
         [Serializable]
         private sealed class RouteAttemptRequestDto
@@ -191,10 +223,7 @@ namespace DontGetSidetracked.Network
         }
 
         [Serializable]
-        private sealed class AttemptResponseDto
-        {
-            public double score;
-        }
+        private sealed class AttemptResponseDto { public double score; }
 
         [Serializable]
         private sealed class ChallengeRequestDto
@@ -205,10 +234,7 @@ namespace DontGetSidetracked.Network
         }
 
         [Serializable]
-        private sealed class ChallengeResponseDto
-        {
-            public string shareUrl;
-        }
+        private sealed class ChallengeResponseDto { public string shareUrl; }
 
         [Serializable]
         private sealed class PurchaseVerifyRequestDto
