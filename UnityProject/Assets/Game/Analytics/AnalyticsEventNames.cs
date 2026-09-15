@@ -21,6 +21,8 @@ namespace DontGetSidetracked.Analytics
         public const string ChallengeComplete = "challenge_complete";
         public const string HintUsed = "hint_used";
         public const string CosmeticSelect = "cosmetic_select";
+        public const string SettingsOpen = "settings_open";
+        public const string SettingsChange = "settings_change";
         public const string RewardedOffer = "rewarded_offer";
         public const string RewardedStart = "rewarded_start";
         public const string RewardedComplete = "rewarded_complete";
@@ -39,9 +41,9 @@ namespace DontGetSidetracked.Analytics
             AppOpen, SessionStart, TutorialStart, TutorialComplete, DailyStart, DailyComplete,
             RoundStart, RoundComplete, RoundFailed, ScoreGenerated, PersonalBest, ShareClick,
             ShareComplete, ChallengeOpen, ChallengeComplete, HintUsed, CosmeticSelect,
-            RewardedOffer, RewardedStart, RewardedComplete, InterstitialShow, StoreOpen,
-            PurchaseStart, PurchaseSuccess, PurchaseCancel, PurchaseError, ReviewFlowRequest,
-            PushPermissionRequest, PushPermissionResult
+            SettingsOpen, SettingsChange, RewardedOffer, RewardedStart, RewardedComplete,
+            InterstitialShow, StoreOpen, PurchaseStart, PurchaseSuccess, PurchaseCancel,
+            PurchaseError, ReviewFlowRequest, PushPermissionRequest, PushPermissionResult
         };
 
         public static bool IsKnown(string eventName) => eventName != null && Known.Contains(eventName);
