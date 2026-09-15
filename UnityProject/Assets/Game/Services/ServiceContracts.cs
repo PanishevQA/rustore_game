@@ -20,14 +20,52 @@ namespace DontGetSidetracked.Services
     {
         public string Id { get; set; }
         public string Title { get; set; }
+        public string Description { get; set; }
         public string PriceLabel { get; set; }
+        public string Type { get; set; }
+        public bool IsConsumable => string.Equals(Type, "CONSUMABLE_PRODUCT", StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(Type, "CONSUMABLE", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public enum PurchaseOutcome
+    {
+        Completed,
+        Cancelled,
+        Failed
+    }
+
+    public sealed class PaymentPurchaseResult
+    {
+        public PurchaseOutcome Outcome { get; }
+        public string ProductId { get; }
+        public string PurchaseId { get; }
+        public string InvoiceId { get; }
+        public string SubscriptionToken { get; }
+        public string ErrorMessage { get; }
+        public bool IsSuccess => Outcome == PurchaseOutcome.Completed;
+
+        public PaymentPurchaseResult(
+            PurchaseOutcome outcome,
+            string productId,
+            string purchaseId = null,
+            string invoiceId = null,
+            string subscriptionToken = null,
+            string errorMessage = null)
+        {
+            Outcome = outcome;
+            ProductId = productId;
+            PurchaseId = purchaseId;
+            InvoiceId = invoiceId;
+            SubscriptionToken = subscriptionToken;
+            ErrorMessage = errorMessage;
+        }
     }
 
     public interface IPaymentService
     {
         Task<IReadOnlyList<StoreProduct>> GetProductsAsync(IReadOnlyList<string> productIds);
-        Task<bool> PurchaseAsync(string productId);
-        Task RestoreEntitlementsAsync();
+        Task<PaymentPurchaseResult> PurchaseAsync(string productId);
+        Task<IReadOnlyList<string>> RestoreEntitlementsAsync();
     }
 
     public interface IAnalyticsService
