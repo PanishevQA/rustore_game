@@ -12,7 +12,7 @@ namespace DontGetSidetracked.Tests
     public sealed class DailySessionServiceTests
     {
         [Test]
-        public async Task LoadCurrentAsync_UsesCachedDailyRouteCount_WhenProviderFails()
+        public async Task LoadCurrentAsync_UsesCachedDailyRouteCountAndTiming_WhenProviderFails()
         {
             var save = SaveData.CreateNew();
             save.LastDaily = new DailyCacheData
@@ -21,6 +21,9 @@ namespace DontGetSidetracked.Tests
                 Seed = 123456,
                 GeneratorVersion = 1,
                 RouteCount = 2,
+                DisplayTimeEasyMs = 4800,
+                DisplayTimeMediumMs = 3900,
+                DisplayTimeHardMs = 2800,
                 ServerTimeUtc = "2026-09-15T06:30:00Z"
             };
             var repo = new MemorySaveRepository(save);
@@ -32,13 +35,15 @@ namespace DontGetSidetracked.Tests
             Assert.That(result.FromCache, Is.True);
             Assert.That(result.Challenge.ChallengeId, Is.EqualTo("daily_2026_09_15"));
             Assert.That(result.Challenge.RouteCount, Is.EqualTo(2));
+            Assert.That(result.Challenge.Routes[0].DisplayTimeMs, Is.EqualTo(4800));
+            Assert.That(result.Challenge.Routes[1].DisplayTimeMs, Is.EqualTo(3900));
             Assert.That(result.ServerTimeUtc, Is.EqualTo(new DateTime(2026, 9, 15, 6, 30, 0, DateTimeKind.Utc)));
         }
 
         [TestCase(1)]
         [TestCase(2)]
         [TestCase(3)]
-        public async Task LoadCurrentAsync_PreservesProviderRouteCount(int routeCount)
+        public async Task LoadCurrentAsync_PreservesProviderRouteCountAndTiming(int routeCount)
         {
             var save = SaveData.CreateNew();
             var api = new FakeGameApi { RouteCount = routeCount };
@@ -47,7 +52,13 @@ namespace DontGetSidetracked.Tests
             DailyLoadResult result = await service.LoadCurrentAsync();
 
             Assert.That(result.Challenge.RouteCount, Is.EqualTo(routeCount));
+            Assert.That(result.Challenge.Routes[0].DisplayTimeMs, Is.EqualTo(api.EasyMs));
+            if (routeCount > 1) Assert.That(result.Challenge.Routes[1].DisplayTimeMs, Is.EqualTo(api.MediumMs));
+            if (routeCount > 2) Assert.That(result.Challenge.Routes[2].DisplayTimeMs, Is.EqualTo(api.HardMs));
             Assert.That(save.LastDaily.RouteCount, Is.EqualTo(routeCount));
+            Assert.That(save.LastDaily.DisplayTimeEasyMs, Is.EqualTo(api.EasyMs));
+            Assert.That(save.LastDaily.DisplayTimeMediumMs, Is.EqualTo(routeCount > 1 ? api.MediumMs : DailyCacheData.DefaultMediumDisplayTimeMs));
+            Assert.That(save.LastDaily.DisplayTimeHardMs, Is.EqualTo(routeCount > 2 ? api.HardMs : DailyCacheData.DefaultHardDisplayTimeMs));
         }
 
         [TestCase(1)]
@@ -127,6 +138,9 @@ namespace DontGetSidetracked.Tests
             public bool FailSubmit;
             public int SubmitCount;
             public int RouteCount = 3;
+            public int EasyMs = 4100;
+            public int MediumMs = 3500;
+            public int HardMs = 2700;
 
             public Task<DailyDto> GetDailyAsync()
             {
@@ -137,6 +151,9 @@ namespace DontGetSidetracked.Tests
                     seed = 123,
                     generatorVersion = 1,
                     routeCount = RouteCount,
+                    displayTimeEasyMs = EasyMs,
+                    displayTimeMediumMs = MediumMs,
+                    displayTimeHardMs = HardMs,
                     serverTimeUtc = "2026-09-15T06:00:00Z"
                 });
             }
