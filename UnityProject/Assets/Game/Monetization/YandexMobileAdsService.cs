@@ -111,11 +111,11 @@ namespace DontGetSidetracked.Monetization
 #endif
         }
 
-        public async Task ShowInterstitialAsync()
+        public async Task<bool> ShowInterstitialAsync()
         {
 #if YANDEX_MOBILE_ADS
-            if (_interstitial == null && !await PreloadInterstitialAsync()) return;
-            if (_interstitial == null) return;
+            if (_interstitial == null && !await PreloadInterstitialAsync()) return false;
+            if (_interstitial == null) return false;
 
             Interstitial ad = _interstitial;
             _interstitial = null;
@@ -129,7 +129,7 @@ namespace DontGetSidetracked.Monetization
             try
             {
                 ad.Show();
-                await completion.Task;
+                return await completion.Task;
             }
             finally
             {
@@ -140,6 +140,7 @@ namespace DontGetSidetracked.Monetization
             }
 #else
             await Task.CompletedTask;
+            return false;
 #endif
         }
 
