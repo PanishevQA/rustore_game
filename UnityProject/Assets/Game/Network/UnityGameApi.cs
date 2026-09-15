@@ -27,7 +27,8 @@ namespace DontGetSidetracked.Network
         {
             _baseUrl = (baseUrl ?? string.Empty).TrimEnd('/');
             _timeoutSeconds = Math.Max(2, timeoutSeconds);
-            if (string.IsNullOrWhiteSpace(_baseUrl)) _offline = new OfflineGameApi();
+            if (string.IsNullOrWhiteSpace(_baseUrl))
+                _offline = new OfflineGameApi(Application.identifier);
         }
 
         public async Task<DailyDto> GetDailyAsync()
@@ -151,13 +152,7 @@ namespace DontGetSidetracked.Network
 
         public async Task<string> CreateChallengeAsync(string playerId, string challengeId, double score)
         {
-            if (_offline != null)
-            {
-                string deepLink = await _offline.CreateChallengeAsync(playerId, challengeId, score);
-                if (!OfflineChallengeCodec.TryExtractToken(deepLink, out string token)) return deepLink;
-                string installUrl = OfflineChallengeCodec.BuildInstallUrl(Application.identifier, token);
-                return "Открыть в игре: " + deepLink + "\nУстановить из RuStore: " + installUrl;
-            }
+            if (_offline != null) return await _offline.CreateChallengeAsync(playerId, challengeId, score);
 
             var payload = new ChallengeRequestDto
             {
