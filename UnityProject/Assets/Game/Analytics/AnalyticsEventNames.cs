@@ -19,6 +19,7 @@ namespace DontGetSidetracked.Analytics
         public const string ShareComplete = "share_complete";
         public const string ChallengeOpen = "challenge_open";
         public const string ChallengeComplete = "challenge_complete";
+        public const string HintUsed = "hint_used";
         public const string RewardedOffer = "rewarded_offer";
         public const string RewardedStart = "rewarded_start";
         public const string RewardedComplete = "rewarded_complete";
@@ -36,7 +37,7 @@ namespace DontGetSidetracked.Analytics
         {
             AppOpen, SessionStart, TutorialStart, TutorialComplete, DailyStart, DailyComplete,
             RoundStart, RoundComplete, RoundFailed, ScoreGenerated, PersonalBest, ShareClick,
-            ShareComplete, ChallengeOpen, ChallengeComplete, RewardedOffer, RewardedStart,
+            ShareComplete, ChallengeOpen, ChallengeComplete, HintUsed, RewardedOffer, RewardedStart,
             RewardedComplete, InterstitialShow, StoreOpen, PurchaseStart, PurchaseSuccess,
             PurchaseCancel, PurchaseError, ReviewFlowRequest, PushPermissionRequest,
             PushPermissionResult
