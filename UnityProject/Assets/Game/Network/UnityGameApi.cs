@@ -1,0 +1,173 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+using DontGetSidetracked.Core;
+using DontGetSidetracked.Gameplay;
+using DontGetSidetracked.Services;
+using UnityEngine;
+using UnityEngine.Networking;
+
+namespace DontGetSidetracked.Network
+{
+    public sealed class UnityGameApi : IGameApi
+    {
+        private readonly string _baseUrl;
+        private readonly int _timeoutSeconds;
+
+        public UnityGameApi(string baseUrl, int timeoutSeconds = 8)
+        {
+            _baseUrl = (baseUrl ?? string.Empty).TrimEnd('/');
+            _timeoutSeconds = Math.Max(2, timeoutSeconds);
+        }
+
+        public async Task<DailyDto> GetDailyAsync()
+        {
+            string json = await SendAsync("GET", "/daily", null);
+            return JsonUtility.FromJson<DailyDto>(json);
+        }
+
+        public async Task<double> SubmitDailyAttemptAsync(
+            string playerId,
+            DailyChallengeDefinition challenge,
+            IReadOnlyList<IReadOnlyList<RecordedPoint>> replays,
+            IReadOnlyList<double> clientScores,
+            bool assisted)
+        {
+            if (challenge == null) throw new ArgumentNullException(nameof(challenge));
+            if (replays == null || replays.Count != 3) throw new ArgumentException("Daily requires three replays.", nameof(replays));
+            if (clientScores == null || clientScores.Count != 3) throw new ArgumentException("Daily requires three scores.", nameof(clientScores));
+
+            var request = new AttemptRequestDto
+            {
+                playerId = playerId,
+                challengeId = challenge.ChallengeId,
+                generatorVersion = challenge.GeneratorVersion,
+                assisted = assisted,
+                routes = new RouteAttemptRequestDto[3]
+            };
+
+            for (int i = 0; i < 3; i++)
+            {
+                IReadOnlyList<RecordedPoint> source = replays[i];
+                var points = new ReplayPointDto[source.Count];
+                for (int p = 0; p < source.Count; p++)
+                {
+                    points[p] = new ReplayPointDto
+                    {
+                        x = source[p].Position.X,
+                        y = source[p].Position.Y,
+                        timestampMs = source[p].TimestampMs
+                    };
+                }
+
+                long duration = source.Count == 0 ? 1 : Math.Max(1, source[source.Count - 1].TimestampMs);
+                request.routes[i] = new RouteAttemptRequestDto
+                {
+                    routeIndex = i,
+                    durationMs = duration,
+                    clientScore = clientScores[i],
+                    points = points
+                };
+            }
+
+            string json = await SendAsync("POST", "/attempt", JsonUtility.ToJson(request));
+            return JsonUtility.FromJson<AttemptResponseDto>(json).score;
+        }
+
+        public async Task<string> CreateChallengeAsync(string playerId, string challengeId, double score)
+        {
+            var payload = new ChallengeRequestDto
+            {
+                inviterId = playerId,
+                challengeId = challengeId,
+                score = score
+            };
+            string json = await SendAsync("POST", "/challenge", JsonUtility.ToJson(payload));
+            return JsonUtility.FromJson<ChallengeResponseDto>(json).shareUrl;
+        }
+
+        public async Task<ReferralDto> GetReferralAsync(string referralId)
+        {
+            string encoded = UnityWebRequest.EscapeURL(referralId ?? string.Empty);
+            string json = await SendAsync("GET", "/referral/" + encoded, null);
+            return JsonUtility.FromJson<ReferralDto>(json);
+        }
+
+        private async Task<string> SendAsync(string method, string path, string json)
+        {
+            if (string.IsNullOrWhiteSpace(_baseUrl)) throw new InvalidOperationException("Backend base URL is not configured.");
+
+            using var request = new UnityWebRequest(_baseUrl + path, method);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.timeout = _timeoutSeconds;
+            request.SetRequestHeader("Accept", "application/json");
+
+            if (json != null)
+            {
+                request.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+                request.SetRequestHeader("Content-Type", "application/json");
+            }
+
+            UnityWebRequestAsyncOperation operation = request.SendWebRequest();
+            var completion = new TaskCompletionSource<bool>();
+            operation.completed += _ => completion.TrySetResult(true);
+            await completion.Task;
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                string body = request.downloadHandler?.text ?? string.Empty;
+                throw new InvalidOperationException($"HTTP {(long)request.responseCode}: {request.error} {body}".Trim());
+            }
+
+            return request.downloadHandler.text;
+        }
+
+        [Serializable]
+        private sealed class ReplayPointDto
+        {
+            public int x;
+            public int y;
+            public long timestampMs;
+        }
+
+        [Serializable]
+        private sealed class RouteAttemptRequestDto
+        {
+            public int routeIndex;
+            public long durationMs;
+            public double clientScore;
+            public ReplayPointDto[] points;
+        }
+
+        [Serializable]
+        private sealed class AttemptRequestDto
+        {
+            public string playerId;
+            public string challengeId;
+            public int generatorVersion;
+            public bool assisted;
+            public RouteAttemptRequestDto[] routes;
+        }
+
+        [Serializable]
+        private sealed class AttemptResponseDto
+        {
+            public double score;
+        }
+
+        [Serializable]
+        private sealed class ChallengeRequestDto
+        {
+            public string inviterId;
+            public string challengeId;
+            public double score;
+        }
+
+        [Serializable]
+        private sealed class ChallengeResponseDto
+        {
+            public string shareUrl;
+        }
+    }
+}

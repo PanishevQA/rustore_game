@@ -48,12 +48,32 @@ namespace DontGetSidetracked.Services
     public interface IReferrerService { Task<string> ConsumeInstallReferrerAsync(); }
     public interface IShareService { void ShareText(string text); }
 
+    [Serializable]
     public sealed class DailyDto
     {
-        public string ChallengeId;
-        public long Seed;
-        public int GeneratorVersion;
-        public string ServerTimeUtc;
+        public string challengeId;
+        public long seed;
+        public int generatorVersion;
+        public string serverTimeUtc;
+
+        public string ChallengeId => challengeId;
+        public long Seed => seed;
+        public int GeneratorVersion => generatorVersion;
+        public string ServerTimeUtc => serverTimeUtc;
+    }
+
+    [Serializable]
+    public sealed class ReferralDto
+    {
+        public string referralId;
+        public string challengeId;
+        public string inviterId;
+        public double inviterScore;
+
+        public string ReferralId => referralId;
+        public string ChallengeId => challengeId;
+        public string InviterId => inviterId;
+        public double InviterScore => inviterScore;
     }
 
     public interface IGameApi
@@ -61,6 +81,7 @@ namespace DontGetSidetracked.Services
         Task<DailyDto> GetDailyAsync();
         Task<double> SubmitDailyAttemptAsync(string playerId, DailyChallengeDefinition challenge, IReadOnlyList<IReadOnlyList<RecordedPoint>> replays, IReadOnlyList<double> clientScores, bool assisted);
         Task<string> CreateChallengeAsync(string playerId, string challengeId, double score);
+        Task<ReferralDto> GetReferralAsync(string referralId);
     }
 
     public sealed class SafeRemoteConfig : IRemoteConfigService
