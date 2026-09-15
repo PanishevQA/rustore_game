@@ -1,0 +1,6 @@
+{
+  "name": "Game.Platform.RuStore",
+  "rootNamespace": "DontGetSidetracked.Platform.RuStore",
+  "references": ["Game.Services"],
+  "autoReferenced": true
+}

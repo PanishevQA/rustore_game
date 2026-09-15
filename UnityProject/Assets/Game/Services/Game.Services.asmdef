@@ -1,0 +1,6 @@
+{
+  "name": "Game.Services",
+  "rootNamespace": "DontGetSidetracked.Services",
+  "references": ["Game.Core", "Game.Gameplay"],
+  "autoReferenced": true
+}
