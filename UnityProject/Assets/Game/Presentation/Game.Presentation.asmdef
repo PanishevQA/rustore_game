@@ -1,6 +1,6 @@
 {
   "name": "Game.Presentation",
   "rootNamespace": "DontGetSidetracked.Presentation",
-  "references": ["Game.Core", "Game.Gameplay", "Game.Daily", "Game.Services", "Game.Network", "Game.Platform.RuStore", "UnityEngine.UI"],
+  "references": ["Game.Core", "Game.Gameplay", "Game.Daily", "Game.Services", "Game.Network", "Game.Platform.RuStore", "Game.Analytics", "UnityEngine.UI"],
   "autoReferenced": true
 }
