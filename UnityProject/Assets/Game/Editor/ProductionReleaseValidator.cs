@@ -23,7 +23,7 @@ namespace DontGetSidetracked.EditorTools
             List<string> errors = CollectErrors();
             if (errors.Count == 0)
             {
-                UnityEngine.Debug.Log("Production release preflight passed (offline-first build).");
+                UnityEngine.Debug.Log("Production release preflight passed (offline-first signed AAB build).");
                 return;
             }
             throw new BuildFailedException("Production release preflight failed:\n- " + string.Join("\n- ", errors));
@@ -46,6 +46,11 @@ namespace DontGetSidetracked.EditorTools
             if (string.IsNullOrWhiteSpace(packageName) || packageName.EndsWith(".dev", StringComparison.OrdinalIgnoreCase))
                 errors.Add("Replace the development Android package name with the exact RuStore Console package name.");
 
+            if (string.IsNullOrWhiteSpace(PlayerSettings.bundleVersion))
+                errors.Add("Set a non-empty public application version before release.");
+            if (PlayerSettings.Android.bundleVersionCode <= 0)
+                errors.Add("Android bundleVersionCode must be greater than zero for release.");
+
             if (PlayerSettings.Android.applicationEntry != AndroidApplicationEntry.Activity)
                 errors.Add("Android Application Entry must be Activity (UnityPlayerActivity), never GameActivity for RuStore Pay.");
             if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel24)
@@ -53,6 +58,15 @@ namespace DontGetSidetracked.EditorTools
             if (PlayerSettings.Android.targetSdkVersion != AndroidSdkVersions.AndroidApiLevel34 &&
                 PlayerSettings.Android.targetSdkVersion != AndroidSdkVersions.AndroidApiLevelAuto)
                 errors.Add("Target Android API must match the currently verified RuStore SDK baseline (34) or use highest installed.");
+
+            if (PlayerSettings.GetScriptingBackend(NamedBuildTarget.Android) != ScriptingImplementation.IL2CPP)
+                errors.Add("Android production build must use IL2CPP.");
+            if ((PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARM64) == 0)
+                errors.Add("Android production build must include ARM64.");
+
+            ValidateSigning(errors);
+            if (!EditorUserBuildSettings.buildAppBundle)
+                errors.Add("Production release profile requires Android App Bundle (AAB). Enable Build App Bundle before release.");
 
             ValidateFileContains(ManifestPath, errors,
                 ("com.unity3d.player.UnityPlayerActivity", "Custom AndroidManifest must use UnityPlayerActivity."),
@@ -78,6 +92,20 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Deprecated BillingClient reference detected under Platform/RuStore.");
 
             return errors;
+        }
+
+        private static void ValidateSigning(List<string> errors)
+        {
+            if (!PlayerSettings.Android.useCustomKeystore)
+            {
+                errors.Add("Enable a custom production Android keystore before release.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(PlayerSettings.Android.keystoreName))
+                errors.Add("Production Android keystore path/name is empty.");
+            if (string.IsNullOrWhiteSpace(PlayerSettings.Android.keyaliasName))
+                errors.Add("Production Android key alias is empty.");
         }
 
         private static void ValidateRemoteConfig(List<string> errors)
