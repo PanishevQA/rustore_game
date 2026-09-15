@@ -1,0 +1,6 @@
+{
+  "name": "Game.Gameplay",
+  "rootNamespace": "DontGetSidetracked.Gameplay",
+  "references": ["Game.Core"],
+  "autoReferenced": true
+}
