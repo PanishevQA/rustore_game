@@ -19,6 +19,14 @@ jobs:
           grep -q 'SeedForDate' UnityProject/Assets/Game/Social/OfflineGameApi.cs
           grep -q 'BuildInstallUrl' UnityProject/Assets/Game/Social/OfflineGameApi.cs
 
+          # The production store must work without the optional developer backend.
+          if grep -nE 'UnityGameApi|DontGetSidetracked\.Network' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs; then
+            echo 'Store UI is wired to developer backend/network code.'
+            exit 1
+          fi
+          grep -q 'RUSTORE_CONFIRMED_OWNERSHIP' UnityProject/Assets/Game/Economy/StoreService.cs
+          grep -q 'RUSTORE_PURCHASE_RESULT' UnityProject/Assets/Game/Economy/StoreService.cs
+
           # Reject concrete release wiring to a mandatory developer backend. Do not match prose such as
           # "no backend is required", because that would be a self-defeating false positive.
           if grep -RInE 'ProductionBackendBaseUrl|configure the deployed HTTPS backend|REQUIRED_BACKEND_URL' \
