@@ -12,7 +12,7 @@ namespace DontGetSidetracked.Tests
     public sealed class DailySessionServiceTests
     {
         [Test]
-        public async Task LoadCurrentAsync_UsesCachedServerDaily_WhenNetworkFails()
+        public async Task LoadCurrentAsync_UsesCachedDaily_WhenProviderFails()
         {
             var save = SaveData.CreateNew();
             save.LastDaily = new DailyCacheData
@@ -34,7 +34,7 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public async Task CompleteAndSubmitAsync_QueuesReplayOffline_AndUsesServerDateForStreak()
+        public void CompleteAndSubmitAsync_PersistsLocalProgressBeforeProviderFailure_WithoutQueue()
         {
             var save = SaveData.CreateNew();
             save.Streak = 2;
@@ -47,10 +47,10 @@ namespace DontGetSidetracked.Tests
             List<IReadOnlyList<RecordedPoint>> replays = CreateReplays(challenge);
             var scores = new List<double> { 90.1, 91.2, 92.3 };
 
-            DailyAttemptSubmissionResult result = await service.CompleteAndSubmitAsync(session, replays, scores, false);
+            Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await service.CompleteAndSubmitAsync(session, replays, scores, false));
 
-            Assert.That(result.SubmittedToServer, Is.False);
-            Assert.That(save.PendingAttempts.Count, Is.EqualTo(1));
+            Assert.That(save.PendingAttempts, Is.Empty);
             Assert.That(save.Streak, Is.EqualTo(3));
             Assert.That(save.CompletedDailyCount, Is.EqualTo(1));
             Assert.That(save.LastCompletedDailyDateUtc.StartsWith("2026-09-15"), Is.True);
@@ -58,26 +58,18 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public async Task FlushPendingAsync_SubmitsAndRemovesQueuedAttempt()
+        public async Task FlushPendingAsync_OnlyRemovesLegacyQueue()
         {
             var save = SaveData.CreateNew();
-            var repo = new MemorySaveRepository(save);
-            var api = new FakeGameApi { FailSubmit = true };
-            var service = new DailySessionService(api, repo, save);
-            var challenge = new DailyChallengeFactory().Create("daily_2026_09_15", 88, 1);
-            var session = new DailyLoadResult(challenge, new DateTime(2026, 9, 15, 12, 0, 0, DateTimeKind.Utc), false);
-            List<IReadOnlyList<RecordedPoint>> replays = CreateReplays(challenge);
-            var scores = new List<double> { 80, 81, 82 };
+            save.PendingAttempts.Add(new PendingDailyAttemptData { ChallengeId = "legacy" });
+            var api = new FakeGameApi();
+            var service = new DailySessionService(api, new MemorySaveRepository(save), save);
 
-            await service.CompleteAndSubmitAsync(session, replays, scores, false);
-            Assert.That(save.PendingAttempts.Count, Is.EqualTo(1));
+            int removed = await service.FlushPendingAsync();
 
-            api.FailSubmit = false;
-            int flushed = await service.FlushPendingAsync();
-
-            Assert.That(flushed, Is.EqualTo(1));
+            Assert.That(removed, Is.EqualTo(1));
             Assert.That(save.PendingAttempts, Is.Empty);
-            Assert.That(api.SubmitCount, Is.EqualTo(2));
+            Assert.That(api.SubmitCount, Is.EqualTo(0));
         }
 
         private static List<IReadOnlyList<RecordedPoint>> CreateReplays(DailyChallengeDefinition challenge)
