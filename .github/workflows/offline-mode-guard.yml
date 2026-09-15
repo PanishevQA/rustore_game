@@ -20,12 +20,28 @@ jobs:
           grep -q 'OfflineGameApi' UnityProject/Assets/Game/Network/UnityGameApi.cs
           grep -q 'SeedForDate' UnityProject/Assets/Game/Social/OfflineGameApi.cs
           grep -q 'BuildInstallUrl' UnityProject/Assets/Game/Social/OfflineGameApi.cs
-          grep -q 'private const string Prefix = "L2"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
-          grep -q 'routeCount' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+
+          # Friend challenges must remain self-contained. L3 carries route count + exact display-time profile,
+          # while legacy L1/L2 tokens stay readable for backward compatibility.
+          grep -q 'private const string Prefix = "L3"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'private const string LegacyV1Prefix = "L1"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'private const string LegacyV2Prefix = "L2"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'GetCurrentDisplayTimes' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'displayTimeEasyMs' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'displayTimeMediumMs' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'displayTimeHardMs' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'DisplayTimeEasyMs' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'DisplayTimeMediumMs' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'DisplayTimeHardMs' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'RouteCount' UnityProject/Assets/Game/Presentation/GameBootstrap.cs
+
+          # Remote Config controls session tuning but never route geometry.
           grep -q 'RuStoreRemoteConfigService' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs
           grep -q 'RuStoreRemoteConfigClient' UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
           grep -q 'daily_route_count' UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
-          grep -q 'RouteCount' UnityProject/Assets/Game/Presentation/GameBootstrap.cs
+          grep -q 'route_display_time_easy_ms' UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
+          grep -q 'route_display_time_medium_ms' UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
+          grep -q 'route_display_time_hard_ms' UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
 
           # Runtime config must not fetch our own /config/bootstrap endpoint in release code.
           if grep -nE 'UnityWebRequest|/config/bootstrap' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs; then
