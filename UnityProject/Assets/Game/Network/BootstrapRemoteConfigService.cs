@@ -1,68 +1,48 @@
 using System;
-using System.Reflection;
 using System.Threading.Tasks;
+using DontGetSidetracked.Platform.RuStore;
 using DontGetSidetracked.Services;
 using UnityEngine;
 
 namespace DontGetSidetracked.Network
 {
     /// <summary>
-    /// Compatibility facade kept to avoid coupling Presentation to a concrete config provider.
-    /// The offline-first release delegates to Platform/RuStore/RuStoreRemoteConfigService via reflection,
-    /// so Network has no compile-time dependency on the platform assembly and performs no HTTP requests.
+    /// Compatibility facade kept so existing presentation code depends only on IRemoteConfigService-style APIs.
+    /// The offline-first release delegates directly to Platform/RuStore/RuStoreRemoteConfigService and performs
+    /// no requests to a developer-operated backend.
     /// </summary>
     public sealed class BootstrapRemoteConfigService : IRemoteConfigService
     {
         private const string DefaultVersion = "0.1.0";
-        private readonly IRemoteConfigService _provider;
-        private readonly object _providerObject;
-        private readonly Type _providerType;
+        private readonly RuStoreRemoteConfigService _provider;
 
-        public string MinSupportedVersion => ReadStringProperty("MinSupportedVersion", DefaultVersion);
-        public string RecommendedVersion => ReadStringProperty("RecommendedVersion", MinSupportedVersion);
+        public string MinSupportedVersion =>
+            string.IsNullOrWhiteSpace(_provider.MinSupportedVersion) ? DefaultVersion : _provider.MinSupportedVersion;
+
+        public string RecommendedVersion =>
+            string.IsNullOrWhiteSpace(_provider.RecommendedVersion) ? MinSupportedVersion : _provider.RecommendedVersion;
+
         public string ServerTimeUtc => string.Empty;
 
         public BootstrapRemoteConfigService(string optionalBackendBaseUrl)
         {
             // Deliberately ignore the optional backend URL for the release runtime.
-            // Future online mode can introduce a separate provider without changing gameplay contracts.
-            object providerObject = null;
-            Type providerType = null;
-            IRemoteConfigService provider = null;
-            try
-            {
-                providerObject = CreateRuStoreProvider(out providerType);
-                provider = providerObject as IRemoteConfigService;
-            }
-            catch (Exception error)
-            {
-                Debug.LogWarning($"RuStore Remote Config provider unavailable; using safe defaults: {error.Message}");
-            }
-
-            _providerObject = providerObject;
-            _providerType = providerType;
-            _provider = provider ?? new SafeRemoteConfig();
+            // A future online mode should use a separate provider instead of changing gameplay contracts.
+            _provider = new RuStoreRemoteConfigService(
+                RuStoreRemoteConfigSettings.AppId,
+                account: string.Empty,
+                cacheFileName: "rustore-remote-config.json");
         }
 
         public async Task<bool> RefreshAsync()
         {
-            if (_providerObject == null || _providerType == null) return false;
             try
             {
-                MethodInfo method = _providerType.GetMethod("RefreshAsync", BindingFlags.Public | BindingFlags.Instance);
-                if (method == null) return false;
-                object result = method.Invoke(_providerObject, null);
-                if (result is Task<bool> booleanTask) return await booleanTask;
-                if (result is Task task)
-                {
-                    await task;
-                    return true;
-                }
-                return false;
+                return await _provider.RefreshAsync();
             }
             catch (Exception error)
             {
-                Debug.LogWarning($"RuStore Remote Config refresh failed; using cache/defaults: {Unwrap(error).Message}");
+                Debug.LogWarning($"RuStore Remote Config refresh failed; using cache/defaults: {error.Message}");
                 return false;
             }
         }
@@ -77,58 +57,6 @@ namespace DontGetSidetracked.Network
 
         public bool ShouldRecommendUpdate(string currentVersion) =>
             Compare(currentVersion, RecommendedVersion) < 0;
-
-        private static object CreateRuStoreProvider(out Type providerType)
-        {
-            providerType = FindType("DontGetSidetracked.Platform.RuStore.RuStoreRemoteConfigService") ??
-                           throw new InvalidOperationException("RuStoreRemoteConfigService type not found.");
-            Type settingsType = FindType("DontGetSidetracked.Platform.RuStore.RuStoreRemoteConfigSettings") ??
-                                throw new InvalidOperationException("RuStoreRemoteConfigSettings type not found.");
-
-            FieldInfo appIdField = settingsType.GetField("AppId", BindingFlags.Public | BindingFlags.Static);
-            string appId = appIdField?.GetRawConstantValue()?.ToString() ?? string.Empty;
-
-            ConstructorInfo constructor = providerType.GetConstructor(new[] { typeof(string), typeof(string), typeof(string) });
-            if (constructor != null)
-                return constructor.Invoke(new object[] { appId, string.Empty, "rustore-remote-config.json" });
-
-            constructor = providerType.GetConstructor(new[] { typeof(string), typeof(string) });
-            if (constructor != null)
-                return constructor.Invoke(new object[] { appId, string.Empty });
-
-            throw new MissingMethodException(providerType.FullName, ".ctor(string,string)");
-        }
-
-        private string ReadStringProperty(string name, string fallback)
-        {
-            if (_providerObject == null || _providerType == null) return fallback;
-            try
-            {
-                PropertyInfo property = _providerType.GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
-                string value = property?.GetValue(_providerObject)?.ToString();
-                return string.IsNullOrWhiteSpace(value) ? fallback : value;
-            }
-            catch
-            {
-                return fallback;
-            }
-        }
-
-        private static Type FindType(string fullName)
-        {
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            for (int i = 0; i < assemblies.Length; i++)
-            {
-                Type type = assemblies[i].GetType(fullName, false);
-                if (type != null) return type;
-            }
-            return null;
-        }
-
-        private static Exception Unwrap(Exception error) =>
-            error is TargetInvocationException invocation && invocation.InnerException != null
-                ? invocation.InnerException
-                : error;
 
         public static int Compare(string left, string right)
         {
