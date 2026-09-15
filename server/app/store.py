@@ -32,6 +32,17 @@ class Store:
                     opened_count INTEGER NOT NULL DEFAULT 0,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
+                CREATE TABLE IF NOT EXISTS analytics_events (
+                    event_id TEXT PRIMARY KEY,
+                    player_id TEXT NOT NULL,
+                    session_number INTEGER NOT NULL,
+                    event_name TEXT NOT NULL,
+                    occurred_at_utc TEXT NOT NULL,
+                    parameters_json TEXT NOT NULL,
+                    received_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS idx_analytics_event_name ON analytics_events(event_name, received_at);
+                CREATE INDEX IF NOT EXISTS idx_analytics_player ON analytics_events(player_id, session_number);
                 """
             )
 
@@ -82,3 +93,27 @@ class Store:
                 "inviterId": row["inviter_id"],
                 "inviterScore": row["inviter_score"],
             }
+
+    def save_analytics_events(self, events: list[dict]) -> int:
+        if not events:
+            return 0
+        inserted = 0
+        with self.lock, self._connect() as db:
+            for event in events:
+                cursor = db.execute(
+                    """
+                    INSERT OR IGNORE INTO analytics_events(
+                        event_id, player_id, session_number, event_name, occurred_at_utc, parameters_json
+                    ) VALUES(?,?,?,?,?,?)
+                    """,
+                    (
+                        event["eventId"],
+                        event["playerId"],
+                        event["sessionNumber"],
+                        event["eventName"],
+                        event["occurredAtUtc"],
+                        json.dumps(event.get("parameters", []), separators=(",", ":"), ensure_ascii=False),
+                    ),
+                )
+                inserted += cursor.rowcount
+        return inserted
