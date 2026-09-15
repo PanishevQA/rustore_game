@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using DontGetSidetracked.Core;
+using DontGetSidetracked.Daily;
 using DontGetSidetracked.Gameplay;
+using DontGetSidetracked.Network;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -11,13 +13,14 @@ namespace DontGetSidetracked.Presentation
 {
     public sealed class GameBootstrap : MonoBehaviour
     {
-        private enum Mode { Home, Daily, Training }
+        private enum Mode { Tutorial, Home, Daily, Training }
         private enum RoundState { Idle, Showing, Drawing, Result }
 
         private readonly RouteGenerator _generator = new RouteGenerator();
         private readonly ScoreCalculator _scorer = new ScoreCalculator();
         private readonly List<RecordedPoint> _recording = new List<RecordedPoint>(256);
         private readonly List<double> _dailyScores = new List<double>(3);
+        private readonly List<IReadOnlyList<RecordedPoint>> _dailyReplays = new List<IReadOnlyList<RecordedPoint>>(3);
 
         private RouteGraphic _referenceGraphic;
         private RouteGraphic _playerGraphic;
@@ -27,6 +30,14 @@ namespace DontGetSidetracked.Presentation
         private Button _secondary;
         private Button _share;
         private RectTransform _playArea;
+        private Image _startMarker;
+        private Image _endMarker;
+
+        private JsonFileSaveRepository _saveRepository;
+        private SaveData _save;
+        private UnityGameApi _api;
+        private DailySessionService _dailyService;
+        private DailyLoadResult _dailySession;
 
         private Mode _mode = Mode.Home;
         private RoundState _state = RoundState.Idle;
@@ -36,6 +47,9 @@ namespace DontGetSidetracked.Presentation
         private long _gestureStartMs;
         private bool _pointerDown;
         private int _trainingIndex;
+        private double _lastResultScore;
+        private double _lastDailyScore;
+        private bool _dailyCompleted;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoStart()
@@ -50,8 +64,20 @@ namespace DontGetSidetracked.Presentation
         {
             Application.targetFrameRate = 60;
             Screen.orientation = ScreenOrientation.Portrait;
+
+            _saveRepository = new JsonFileSaveRepository();
+            _save = _saveRepository.Load();
+            _save.SessionNumber++;
+            _saveRepository.Save(_save);
+
+            _api = new UnityGameApi(GameRuntimeSettings.BackendBaseUrl);
+            _dailyService = new DailySessionService(_api, _saveRepository, _save);
+
             BuildUi();
-            ShowHome();
+            if (_save.TutorialCompleted) ShowHome();
+            else StartTutorial();
+
+            FlushPendingAttempts();
         }
 
         private void Update()
@@ -60,49 +86,116 @@ namespace DontGetSidetracked.Presentation
             PollPointer();
         }
 
+        private async void FlushPendingAttempts()
+        {
+            try
+            {
+                await _dailyService.FlushPendingAsync();
+                _save = _dailyService.Save;
+            }
+            catch (Exception error)
+            {
+                Debug.Log($"Pending attempts stay queued: {error.Message}");
+            }
+        }
+
         private void ShowHome()
         {
             _mode = Mode.Home;
             _state = RoundState.Idle;
             _referenceGraphic.Clear();
             _playerGraphic.Clear();
+            SetMarkersVisible(false);
             _title.text = "НЕ СБЕЙСЯ!";
-            _status.text = "Запомни линию. Проведи по памяти.";
-            ConfigureButton(_primary, "DAILY CHALLENGE", StartDaily);
+
+            string best = _save.PersonalBest > 0 ? $"Лучший: {_save.PersonalBest:0.0}%" : "Лучший: --";
+            string pending = _save.PendingAttempts != null && _save.PendingAttempts.Count > 0
+                ? $"\nОжидает синхронизации: {_save.PendingAttempts.Count}"
+                : string.Empty;
+            _status.text = $"🔥 Серия: {_save.Streak} дней\n{best}{pending}";
+
+            ConfigureButton(_primary, "ИГРАТЬ DAILY", StartDaily);
             ConfigureButton(_secondary, "ТРЕНИРОВКА", StartTraining);
             _share.gameObject.SetActive(false);
         }
 
-        private void StartDaily()
+        private void StartTutorial()
         {
+            _mode = Mode.Tutorial;
+            _dailyCompleted = false;
+            RouteDefinition tutorialRoute = _generator.Generate(24051990, RouteGenerator.CurrentGeneratorVersion, RouteDifficulty.Easy);
+            StartCoroutine(BeginRoute(tutorialRoute));
+        }
+
+        private async void StartDaily()
+        {
+            if (_state == RoundState.Showing || _state == RoundState.Drawing) return;
+
             _mode = Mode.Daily;
+            _state = RoundState.Idle;
             _dailyIndex = 0;
             _dailyScores.Clear();
-            DateTime utc = DateTime.UtcNow;
-            string id = $"daily_{utc:yyyy_MM_dd}";
-            long seed = StableDateSeed(utc.Date);
-            _daily = new DailyChallengeFactory().Create(id, seed, RouteGenerator.CurrentGeneratorVersion);
-            StartCoroutine(BeginRoute(_daily.Routes[0]));
+            _dailyReplays.Clear();
+            _dailyCompleted = false;
+            HideButtons();
+            SetMarkersVisible(false);
+            _title.text = "DAILY CHALLENGE";
+            _status.text = "ЗАГРУЖАЕМ ИСПЫТАНИЕ…";
+
+            try
+            {
+                _dailySession = await _dailyService.LoadCurrentAsync();
+                _save = _dailyService.Save;
+                _daily = _dailySession.Challenge;
+                StartCoroutine(BeginRoute(_daily.Routes[0]));
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"Daily unavailable: {error.Message}");
+                _state = RoundState.Idle;
+                _status.text = "Новый Daily пока недоступен.\nТренировка работает без сети.";
+                ConfigureButton(_primary, "ПОВТОРИТЬ", StartDaily);
+                ConfigureButton(_secondary, "ТРЕНИРОВКА", StartTraining);
+                _share.gameObject.SetActive(false);
+            }
         }
 
         private void StartTraining()
         {
             _mode = Mode.Training;
+            _dailyCompleted = false;
             _trainingIndex++;
-            long seed = DateTime.UtcNow.Ticks ^ (_trainingIndex * 7919L);
+            long seed = (DateTime.UtcNow.Ticks ^ (_trainingIndex * 7919L)) & 0x7FFFFFFF;
             RouteDifficulty difficulty = (RouteDifficulty)(_trainingIndex % 3);
-            StartCoroutine(BeginRoute(_generator.Generate(seed & 0x7FFFFFFF, RouteGenerator.CurrentGeneratorVersion, difficulty)));
+            StartCoroutine(BeginRoute(_generator.Generate(seed, RouteGenerator.CurrentGeneratorVersion, difficulty)));
         }
 
         private IEnumerator BeginRoute(RouteDefinition route)
         {
             _route = route;
             _recording.Clear();
+            _pointerDown = false;
             _playerGraphic.Clear();
             _referenceGraphic.color = new Color(0.1f, 0.9f, 1f, 1f);
             _referenceGraphic.Thickness = Mathf.Max(8f, route.PathWidth / (float)FixedPoint2.Scale * _playArea.rect.width);
             _referenceGraphic.SetPoints(route.ReferencePoints);
-            _title.text = _mode == Mode.Daily ? $"DAILY {_dailyIndex + 1}/3" : "ТРЕНИРОВКА";
+            PositionMarkers(route);
+            SetMarkersVisible(true);
+
+            if (_mode == Mode.Daily)
+            {
+                string offline = _dailySession != null && _dailySession.FromCache ? " • ОФЛАЙН" : string.Empty;
+                _title.text = $"DAILY {_dailyIndex + 1}/3{offline}";
+            }
+            else if (_mode == Mode.Tutorial)
+            {
+                _title.text = "ОБУЧЕНИЕ";
+            }
+            else
+            {
+                _title.text = "ТРЕНИРОВКА";
+            }
+
             _status.text = "ЗАПОМНИ ЛИНИЮ";
             _state = RoundState.Showing;
             HideButtons();
@@ -112,7 +205,7 @@ namespace DontGetSidetracked.Presentation
             _status.text = "2"; yield return new WaitForSecondsRealtime(0.35f);
             _status.text = "1"; yield return new WaitForSecondsRealtime(0.35f);
             _referenceGraphic.Clear();
-            _status.text = "ТЕПЕРЬ ПОВТОРИ";
+            _status.text = "ТЕПЕРЬ ПОВТОРИ\nНачни с зелёной точки";
             _state = RoundState.Drawing;
         }
 
@@ -139,10 +232,19 @@ namespace DontGetSidetracked.Presentation
 
             if (pressed && TryScreenToFixed(screenPosition, out FixedPoint2 start))
             {
+                FixedPoint2 expectedStart = _route.ReferencePoints[0];
+                const long startRadius = 75_000;
+                if (expectedStart.DistanceSquared(start) > startRadius * startRadius)
+                {
+                    _status.text = "НАЧНИ С ЗЕЛЁНОЙ ТОЧКИ";
+                    return;
+                }
+
                 _pointerDown = true;
                 _gestureStartMs = NowMs();
                 _recording.Clear();
                 AddPoint(start);
+                _status.text = "ВЕДИ ПО ПАМЯТИ";
             }
 
             bool held = Input.touchCount > 0 || Input.GetMouseButton(0);
@@ -159,7 +261,7 @@ namespace DontGetSidetracked.Presentation
         private void AddPoint(FixedPoint2 point)
         {
             long ts = NowMs() - _gestureStartMs;
-            if (_recording.Count > 0 && _recording[_recording.Count - 1].Position.DistanceSquared(point) < 700L * 700L) return;
+            if (_recording.Count > 0 && _recording[_recording.Count - 1].Position.DistanceSquared(point) < 7_000L * 7_000L) return;
             _recording.Add(new RecordedPoint(point, ts));
             var positions = new List<FixedPoint2>(_recording.Count);
             for (int i = 0; i < _recording.Count; i++) positions.Add(_recording[i].Position);
@@ -170,27 +272,76 @@ namespace DontGetSidetracked.Presentation
         {
             _state = RoundState.Result;
             ScoreBreakdown result = _scorer.Calculate(_route, _recording);
+            _lastResultScore = result.Score;
             _referenceGraphic.SetPoints(_route.ReferencePoints);
             _referenceGraphic.color = new Color(0.1f, 0.9f, 1f, 0.65f);
             _playerGraphic.color = result.Score >= 90 ? new Color(0.2f, 1f, 0.45f, 1f) : new Color(1f, 0.75f, 0.15f, 1f);
             _status.text = $"ТОЧНОСТЬ {result.Score:0.0}%";
 
+            if (_mode == Mode.Tutorial)
+            {
+                _save.TutorialCompleted = true;
+                _saveRepository.Save(_save);
+                _status.text = $"{result.Score:0.0}% — отлично!\nТеперь настоящий Daily.";
+                ConfigureButton(_primary, "ИГРАТЬ DAILY", StartDaily);
+                ConfigureButton(_secondary, "ТРЕНИРОВКА", StartTraining);
+                _share.gameObject.SetActive(false);
+                return;
+            }
+
             if (_mode == Mode.Daily)
             {
                 _dailyScores.Add(result.Score);
+                _dailyReplays.Add(new List<RecordedPoint>(_recording));
                 if (_dailyIndex < 2)
+                {
                     ConfigureButton(_primary, "СЛЕДУЮЩИЙ МАРШРУТ", NextDailyRoute);
+                    ConfigureButton(_secondary, "ДОМОЙ", ShowHome);
+                    _share.gameObject.SetActive(false);
+                }
                 else
-                    ConfigureButton(_primary, $"ИТОГ {DailyChallengeFactory.DailyScore(_dailyScores):0.0}%", ShowHome);
+                {
+                    _lastDailyScore = DailyChallengeFactory.DailyScore(_dailyScores);
+                    _dailyCompleted = true;
+                    ConfigureButton(_primary, $"ИТОГ {_lastDailyScore:0.0}%", StartDaily);
+                    ConfigureButton(_secondary, "ДОМОЙ", ShowHome);
+                    ConfigureButton(_share, "БРОСИТЬ ВЫЗОВ", ShareCurrentResult);
+                    _share.gameObject.SetActive(true);
+                    CompleteDaily();
+                }
             }
             else
             {
                 ConfigureButton(_primary, "ЕЩЁ РАЗ", StartTraining);
+                ConfigureButton(_secondary, "ДОМОЙ", ShowHome);
+                ConfigureButton(_share, "ПОДЕЛИТЬСЯ", ShareCurrentResult);
+                _share.gameObject.SetActive(true);
             }
+        }
 
-            ConfigureButton(_secondary, "ДОМОЙ", ShowHome);
-            ConfigureButton(_share, "БРОСИТЬ ВЫЗОВ", ShareCurrentResult);
-            _share.gameObject.SetActive(true);
+        private async void CompleteDaily()
+        {
+            if (_dailySession == null || _dailyReplays.Count != 3 || _dailyScores.Count != 3) return;
+
+            _status.text = $"DAILY {_lastDailyScore:0.0}%\nСинхронизация…";
+            try
+            {
+                DailyAttemptSubmissionResult submission = await _dailyService.CompleteAndSubmitAsync(
+                    _dailySession,
+                    _dailyReplays,
+                    _dailyScores,
+                    false);
+                _save = _dailyService.Save;
+                _lastDailyScore = submission.SubmittedToServer ? submission.ServerScore : submission.LocalScore;
+                _status.text = submission.SubmittedToServer
+                    ? $"DAILY {_lastDailyScore:0.0}%\n🔥 Серия: {_save.Streak}"
+                    : $"DAILY {_lastDailyScore:0.0}%\nСохранено офлайн • отправим позже";
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"Daily completion failed: {error.Message}");
+                _status.text = $"DAILY {_lastDailyScore:0.0}%\nРезультат сохранён локально";
+            }
         }
 
         private void NextDailyRoute()
@@ -199,10 +350,32 @@ namespace DontGetSidetracked.Presentation
             StartCoroutine(BeginRoute(_daily.Routes[_dailyIndex]));
         }
 
-        private void ShareCurrentResult()
+        private async void ShareCurrentResult()
         {
-            double score = _mode == Mode.Daily && _dailyScores.Count == 3 ? DailyChallengeFactory.DailyScore(_dailyScores) : (_dailyScores.Count > 0 ? _dailyScores[_dailyScores.Count - 1] : 0);
-            string text = $"Я прошёл НЕ СБЕЙСЯ! на {score:0.0}%. Сможешь точнее?";
+            double score = _dailyCompleted ? _lastDailyScore : _lastResultScore;
+            string challengeUrl = string.Empty;
+
+            if (_dailyCompleted && _daily != null)
+            {
+                try
+                {
+                    challengeUrl = await _api.CreateChallengeAsync(_save.AnonymousPlayerId, _daily.ChallengeId, score);
+                }
+                catch (Exception error)
+                {
+                    Debug.Log($"Challenge link unavailable: {error.Message}");
+                }
+            }
+
+            string text = _dailyCompleted
+                ? $"Я прошёл сегодняшний НЕ СБЕЙСЯ! на {score:0.0}%. Сможешь точнее?"
+                : $"Я прошёл НЕ СБЕЙСЯ! на {score:0.0}%. Сможешь точнее?";
+            if (!string.IsNullOrWhiteSpace(challengeUrl)) text += "\n" + challengeUrl;
+            ShareText(text);
+        }
+
+        private static void ShareText(string text)
+        {
 #if UNITY_ANDROID && !UNITY_EDITOR
             using (var intentClass = new AndroidJavaClass("android.content.Intent"))
             using (var intent = new AndroidJavaObject("android.content.Intent"))
@@ -250,20 +423,42 @@ namespace DontGetSidetracked.Presentation
             scaler.matchWidthOrHeight = 0.5f;
 
             _title = CreateText(canvasGo.transform, "Title", 64, TextAnchor.MiddleCenter, new Vector2(0.05f, 0.88f), new Vector2(0.95f, 0.98f));
-            _status = CreateText(canvasGo.transform, "Status", 50, TextAnchor.MiddleCenter, new Vector2(0.05f, 0.76f), new Vector2(0.95f, 0.86f));
+            _status = CreateText(canvasGo.transform, "Status", 50, TextAnchor.MiddleCenter, new Vector2(0.05f, 0.75f), new Vector2(0.95f, 0.87f));
 
             var play = new GameObject("PlayArea", typeof(RectTransform), typeof(Image));
             play.transform.SetParent(canvasGo.transform, false);
             _playArea = play.GetComponent<RectTransform>();
-            SetAnchors(_playArea, new Vector2(0.06f, 0.25f), new Vector2(0.94f, 0.75f));
+            SetAnchors(_playArea, new Vector2(0.06f, 0.25f), new Vector2(0.94f, 0.74f));
             play.GetComponent<Image>().color = new Color(0.035f, 0.045f, 0.07f, 1f);
 
             _referenceGraphic = CreateRouteGraphic(play.transform, "Reference", new Color(0.1f, 0.9f, 1f, 1f));
             _playerGraphic = CreateRouteGraphic(play.transform, "Player", new Color(1f, 0.75f, 0.15f, 1f));
+            _startMarker = CreateMarker(play.transform, "Start", new Color(0.2f, 1f, 0.45f, 1f));
+            _endMarker = CreateMarker(play.transform, "End", new Color(1f, 0.35f, 0.35f, 1f));
 
             _primary = CreateButton(canvasGo.transform, "Primary", new Vector2(0.08f, 0.12f), new Vector2(0.92f, 0.20f));
             _secondary = CreateButton(canvasGo.transform, "Secondary", new Vector2(0.08f, 0.035f), new Vector2(0.48f, 0.105f));
             _share = CreateButton(canvasGo.transform, "Share", new Vector2(0.52f, 0.035f), new Vector2(0.92f, 0.105f));
+        }
+
+        private void PositionMarkers(RouteDefinition route)
+        {
+            PositionMarker(_startMarker.rectTransform, route.ReferencePoints[0]);
+            PositionMarker(_endMarker.rectTransform, route.ReferencePoints[route.ReferencePoints.Count - 1]);
+        }
+
+        private static void PositionMarker(RectTransform marker, FixedPoint2 point)
+        {
+            Vector2 anchor = new Vector2((float)point.NormalizedX, (float)point.NormalizedY);
+            marker.anchorMin = anchor;
+            marker.anchorMax = anchor;
+            marker.anchoredPosition = Vector2.zero;
+        }
+
+        private void SetMarkersVisible(bool visible)
+        {
+            if (_startMarker != null) _startMarker.gameObject.SetActive(visible);
+            if (_endMarker != null) _endMarker.gameObject.SetActive(visible);
         }
 
         private void HideButtons()
@@ -283,6 +478,18 @@ namespace DontGetSidetracked.Presentation
             graphic.color = color;
             graphic.raycastTarget = false;
             return graphic;
+        }
+
+        private static Image CreateMarker(Transform parent, string name, Color color)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(46, 46);
+            var image = go.GetComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+            return image;
         }
 
         private static Text CreateText(Transform parent, string name, int size, TextAnchor anchor, Vector2 min, Vector2 max)
@@ -326,15 +533,6 @@ namespace DontGetSidetracked.Presentation
             rt.anchorMax = max;
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
-        }
-
-        private static long StableDateSeed(DateTime date)
-        {
-            unchecked
-            {
-                int value = date.Year * 10000 + date.Month * 100 + date.Day;
-                return (value * 1103515245L + 12345L) & 0x7FFFFFFF;
-            }
         }
 
         private static long NowMs() => (long)(Time.realtimeSinceStartupAsDouble * 1000.0);
