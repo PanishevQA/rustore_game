@@ -1,6 +1,6 @@
 {
   "name": "Game.Network",
   "rootNamespace": "DontGetSidetracked.Network",
-  "references": ["Game.Core", "Game.Gameplay", "Game.Services", "Game.Social"],
+  "references": ["Game.Core", "Game.Gameplay", "Game.Services", "Game.Social", "Game.Platform.RuStore"],
   "autoReferenced": true
 }
