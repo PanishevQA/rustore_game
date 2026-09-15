@@ -8,7 +8,7 @@ namespace DontGetSidetracked.Tests
     public sealed class SaveAndStreakTests
     {
         [Test]
-        public void MigrationCreatesRequiredCollectionsIdAndDailyProfile()
+        public void MigrationCreatesRequiredCollectionsIdDailyProfileAndCosmeticSelection()
         {
             var data = new SaveData { Version = 1, AnonymousPlayerId = string.Empty, Entitlements = null, LastDaily = null };
             SaveData migrated = SaveMigrator.Migrate(data);
@@ -20,6 +20,7 @@ namespace DontGetSidetracked.Tests
             Assert.That(migrated.LastDaily.DisplayTimeEasyMs, Is.EqualTo(DailyCacheData.DefaultEasyDisplayTimeMs));
             Assert.That(migrated.LastDaily.DisplayTimeMediumMs, Is.EqualTo(DailyCacheData.DefaultMediumDisplayTimeMs));
             Assert.That(migrated.LastDaily.DisplayTimeHardMs, Is.EqualTo(DailyCacheData.DefaultHardDisplayTimeMs));
+            Assert.That(migrated.SelectedSkinId, Is.EqualTo("default"));
         }
 
         [Test]
@@ -33,6 +34,7 @@ namespace DontGetSidetracked.Tests
             Assert.That(migrated.Version, Is.EqualTo(SaveData.CurrentVersion));
             Assert.That(migrated.PendingAttempts, Is.Empty);
             Assert.That(migrated.LastDaily.RouteCount, Is.EqualTo(3));
+            Assert.That(migrated.SelectedSkinId, Is.EqualTo("default"));
         }
 
         [Test]
@@ -72,6 +74,21 @@ namespace DontGetSidetracked.Tests
             Assert.That(migrated.LastDaily.DisplayTimeEasyMs, Is.EqualTo(DailyCacheData.DefaultEasyDisplayTimeMs));
             Assert.That(migrated.LastDaily.DisplayTimeMediumMs, Is.EqualTo(DailyCacheData.DefaultMediumDisplayTimeMs));
             Assert.That(migrated.LastDaily.DisplayTimeHardMs, Is.EqualTo(900));
+        }
+
+        [Test]
+        public void Version10MigrationAddsDefaultCosmeticSelection()
+        {
+            var data = new SaveData
+            {
+                Version = 10,
+                SelectedSkinId = string.Empty
+            };
+
+            SaveData migrated = SaveMigrator.Migrate(data);
+
+            Assert.That(migrated.Version, Is.EqualTo(SaveData.CurrentVersion));
+            Assert.That(migrated.SelectedSkinId, Is.EqualTo("default"));
         }
 
         [Test]
