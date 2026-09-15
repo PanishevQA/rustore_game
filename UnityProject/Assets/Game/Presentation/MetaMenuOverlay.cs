@@ -63,7 +63,12 @@ namespace DontGetSidetracked.Presentation
         private void RebuildServices()
         {
             _save = _saveRepository.Load();
-            _store = new StoreService(new RuStorePaymentService(), _saveRepository, _save);
+            _store = new StoreService(
+                new RuStorePaymentService(),
+                _saveRepository,
+                _save,
+                _api,
+                _save.AnonymousPlayerId);
             _leaderboard = new LeaderboardService(_api, _save.AnonymousPlayerId);
         }
 
@@ -181,17 +186,27 @@ namespace DontGetSidetracked.Presentation
             {
                 StorePurchaseResult result = await _store.PurchaseAsync(productId);
                 _save = _store.Save;
-                if (result?.Payment?.Outcome == PurchaseOutcome.Completed)
+                if (result?.Payment?.Outcome == PurchaseOutcome.Completed && result.Verified)
                 {
-                    AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseSuccess, Params("product_id", productId));
+                    AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseSuccess, Params(
+                        "product_id", productId,
+                        "purchase_id", result.Verification?.PurchaseId ?? string.Empty));
                     _panelBody.text = result.GrantApplied
-                        ? "Покупка подтверждена и применена."
+                        ? "Покупка проверена сервером и применена."
                         : "Покупка уже была применена ранее.";
                 }
                 else if (result?.Payment?.Outcome == PurchaseOutcome.Cancelled)
                 {
                     AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseCancel, Params("product_id", productId));
                     _panelBody.text = "Покупка отменена.";
+                }
+                else if (result?.Payment?.Outcome == PurchaseOutcome.Completed)
+                {
+                    string verificationError = result.Verification?.ErrorMessage ?? "verification_failed";
+                    AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseError, Params(
+                        "product_id", productId,
+                        "error", verificationError));
+                    _panelBody.text = "Оплата получена, но серверная проверка пока не завершена. Товар не выдан. Попробуйте восстановление позже.";
                 }
                 else
                 {
