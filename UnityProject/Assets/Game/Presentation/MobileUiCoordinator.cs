@@ -93,8 +93,6 @@ namespace DontGetSidetracked.Presentation
             object mode = modeField?.GetValue(bootstrap);
             if (mode != null && string.Equals(mode.ToString(), "Home", StringComparison.Ordinal)) return;
 
-            // A route reveal/countdown is coroutine-driven. Stop it before switching state,
-            // otherwise it could resume later and put a Home screen back into Drawing mode.
             bootstrap.StopAllCoroutines();
             MethodInfo showHome = type.GetMethod("ShowHome", BindingFlags.Instance | BindingFlags.NonPublic);
             showHome?.Invoke(bootstrap, null);
@@ -188,6 +186,7 @@ namespace DontGetSidetracked.Presentation
         private static bool ShouldFitCanvas(string canvasName) =>
             string.Equals(canvasName, "GameCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "MetaCanvas", StringComparison.Ordinal) ||
+            string.Equals(canvasName, "RewardedCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "NotificationValueCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "MandatoryUpdateCanvas", StringComparison.Ordinal);
 
