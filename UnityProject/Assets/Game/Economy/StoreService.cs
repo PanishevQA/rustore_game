@@ -79,43 +79,9 @@ namespace DontGetSidetracked.Economy
             if (payment == null || !payment.IsSuccess)
                 return new StorePurchaseResult(payment, null, false);
 
-            if (_verificationApi == null)
-            {
-                return new StorePurchaseResult(
-                    payment,
-                    new PurchaseVerificationResult(false, productId, payment.PurchaseId, payment.InvoiceId, string.Empty,
-                        "Server purchase verification is not configured."),
-                    false);
-            }
-
-            if (string.IsNullOrWhiteSpace(payment.InvoiceId))
-            {
-                return new StorePurchaseResult(
-                    payment,
-                    new PurchaseVerificationResult(false, productId, payment.PurchaseId, payment.InvoiceId, string.Empty,
-                        "RuStore purchase result has no invoiceId."),
-                    false);
-            }
-
-            PurchaseVerificationResult verification;
-            try
-            {
-                verification = await _verificationApi.VerifyPurchaseAsync(
-                    _playerId,
-                    productId,
-                    payment.InvoiceId,
-                    payment.PurchaseId);
-            }
-            catch (Exception error)
-            {
-                verification = new PurchaseVerificationResult(
-                    false,
-                    productId,
-                    payment.PurchaseId,
-                    payment.InvoiceId,
-                    string.Empty,
-                    error.Message);
-            }
+            PurchaseVerificationResult verification = _verificationApi != null
+                ? await VerifyWithBackendAsync(productId, payment)
+                : await VerifyWithRuStoreAsync(productId, payment);
 
             if (verification == null || !verification.Verified ||
                 !string.Equals(verification.ProductId, productId, StringComparison.Ordinal))
@@ -146,7 +112,7 @@ namespace DontGetSidetracked.Economy
 
         public async Task<int> RestoreAsync()
         {
-            // RuStore GetPurchases is itself an authoritative source for previously confirmed non-consumables.
+            // RuStore GetPurchases is the authoritative restore source for confirmed non-consumables.
             IReadOnlyList<string> owned = await _payments.RestoreEntitlementsAsync();
             int changed = 0;
             if (owned != null)
@@ -164,6 +130,96 @@ namespace DontGetSidetracked.Economy
 
         public bool OwnsSkin(string skinId) =>
             _save.Inventory != null && _save.Inventory.Contains(skinId);
+
+        private async Task<PurchaseVerificationResult> VerifyWithBackendAsync(
+            string productId,
+            PaymentPurchaseResult payment)
+        {
+            if (string.IsNullOrWhiteSpace(payment.InvoiceId))
+            {
+                return new PurchaseVerificationResult(false, productId, payment.PurchaseId, payment.InvoiceId, string.Empty,
+                    "RuStore purchase result has no invoiceId.");
+            }
+
+            try
+            {
+                return await _verificationApi.VerifyPurchaseAsync(
+                    _playerId,
+                    productId,
+                    payment.InvoiceId,
+                    payment.PurchaseId);
+            }
+            catch (Exception error)
+            {
+                return new PurchaseVerificationResult(
+                    false,
+                    productId,
+                    payment.PurchaseId,
+                    payment.InvoiceId,
+                    string.Empty,
+                    error.Message);
+            }
+        }
+
+        private async Task<PurchaseVerificationResult> VerifyWithRuStoreAsync(
+            string productId,
+            PaymentPurchaseResult payment)
+        {
+            if (string.IsNullOrWhiteSpace(payment.PurchaseId))
+            {
+                return new PurchaseVerificationResult(
+                    false,
+                    productId,
+                    null,
+                    payment.InvoiceId,
+                    string.Empty,
+                    "RuStore purchase result has no purchaseId.");
+            }
+
+            // Consumables cannot be restored as durable entitlements. A successful RuStore purchase result,
+            // combined with a unique purchaseId persisted in SaveData, is the local replay-protection boundary.
+            if (string.Equals(productId, ProductIds.Hints10, StringComparison.Ordinal))
+            {
+                return new PurchaseVerificationResult(
+                    true,
+                    productId,
+                    payment.PurchaseId,
+                    payment.InvoiceId,
+                    "RUSTORE_PURCHASE_RESULT");
+            }
+
+            try
+            {
+                IReadOnlyList<string> owned = await _payments.RestoreEntitlementsAsync();
+                if (Contains(owned, productId))
+                {
+                    return new PurchaseVerificationResult(
+                        true,
+                        productId,
+                        payment.PurchaseId,
+                        payment.InvoiceId,
+                        "RUSTORE_CONFIRMED_OWNERSHIP");
+                }
+
+                return new PurchaseVerificationResult(
+                    false,
+                    productId,
+                    payment.PurchaseId,
+                    payment.InvoiceId,
+                    string.Empty,
+                    "Purchase succeeded, but RuStore has not returned the item as a confirmed owned non-consumable yet.");
+            }
+            catch (Exception error)
+            {
+                return new PurchaseVerificationResult(
+                    false,
+                    productId,
+                    payment.PurchaseId,
+                    payment.InvoiceId,
+                    string.Empty,
+                    error.Message);
+            }
+        }
 
         private bool ApplyPurchase(PaymentPurchaseResult purchase)
         {
@@ -235,6 +291,14 @@ namespace DontGetSidetracked.Economy
             if (string.IsNullOrWhiteSpace(productId)) return false;
             for (int i = 0; i < ProductIds.Mvp.Length; i++)
                 if (string.Equals(ProductIds.Mvp[i], productId, StringComparison.Ordinal)) return true;
+            return false;
+        }
+
+        private static bool Contains(IReadOnlyList<string> values, string expected)
+        {
+            if (values == null || string.IsNullOrWhiteSpace(expected)) return false;
+            for (int i = 0; i < values.Count; i++)
+                if (string.Equals(values[i], expected, StringComparison.Ordinal)) return true;
             return false;
         }
 
