@@ -24,6 +24,8 @@ namespace DontGetSidetracked.Daily
 
     public sealed class DailyAttemptSubmissionResult
     {
+        // Name kept for presentation/API compatibility. In the offline-first release this means
+        // that the configured IGameApi provider accepted the result; the provider is local.
         public bool SubmittedToServer { get; }
         public double ServerScore { get; }
         public double LocalScore { get; }
@@ -99,132 +101,29 @@ namespace DontGetSidetracked.Daily
             if (localScore > _save.PersonalBest) _save.PersonalBest = localScore;
             _streakService.ApplyCompletedDaily(_save, session.ServerTimeUtc);
 
-            try
+            // Persist the meaningful local result before invoking any provider. If the provider fails,
+            // Presentation can report "saved locally" and there is no fake background-sync promise.
+            _saveRepository.Save(_save);
+
+            double acceptedScore = await _api.SubmitDailyAttemptAsync(
+                _save.AnonymousPlayerId,
+                session.Challenge,
+                replays,
+                clientScores,
+                assisted);
+            return new DailyAttemptSubmissionResult(true, acceptedScore, localScore);
+        }
+
+        public Task<int> FlushPendingAsync()
+        {
+            // Compatibility cleanup for pre-v8 saves only. The offline-first release never queues attempts.
+            int removed = _save.PendingAttempts?.Count ?? 0;
+            if (removed > 0)
             {
-                double serverScore = await _api.SubmitDailyAttemptAsync(
-                    _save.AnonymousPlayerId,
-                    session.Challenge,
-                    replays,
-                    clientScores,
-                    assisted);
+                _save.PendingAttempts.Clear();
                 _saveRepository.Save(_save);
-                return new DailyAttemptSubmissionResult(true, serverScore, localScore);
             }
-            catch
-            {
-                _save.PendingAttempts.Add(ToPendingAttempt(session.Challenge, replays, clientScores, assisted));
-                _saveRepository.Save(_save);
-                return new DailyAttemptSubmissionResult(false, localScore, localScore);
-            }
-        }
-
-        public async Task<int> FlushPendingAsync()
-        {
-            if (_save.PendingAttempts == null || _save.PendingAttempts.Count == 0) return 0;
-
-            int flushed = 0;
-            int index = 0;
-            while (index < _save.PendingAttempts.Count)
-            {
-                PendingDailyAttemptData pending = _save.PendingAttempts[index];
-                if (!TryRestorePending(pending, out DailyChallengeDefinition challenge, out List<IReadOnlyList<RecordedPoint>> replays, out List<double> scores))
-                {
-                    _save.PendingAttempts.RemoveAt(index);
-                    _saveRepository.Save(_save);
-                    continue;
-                }
-
-                try
-                {
-                    await _api.SubmitDailyAttemptAsync(
-                        _save.AnonymousPlayerId,
-                        challenge,
-                        replays,
-                        scores,
-                        pending.Assisted);
-                    _save.PendingAttempts.RemoveAt(index);
-                    flushed++;
-                    _saveRepository.Save(_save);
-                }
-                catch
-                {
-                    break;
-                }
-            }
-
-            return flushed;
-        }
-
-        private static PendingDailyAttemptData ToPendingAttempt(
-            DailyChallengeDefinition challenge,
-            IReadOnlyList<IReadOnlyList<RecordedPoint>> replays,
-            IReadOnlyList<double> clientScores,
-            bool assisted)
-        {
-            var pending = new PendingDailyAttemptData
-            {
-                ChallengeId = challenge.ChallengeId,
-                Seed = challenge.Seed,
-                GeneratorVersion = challenge.GeneratorVersion,
-                Assisted = assisted
-            };
-
-            for (int i = 0; i < 3; i++)
-            {
-                var route = new PendingRouteAttemptData
-                {
-                    RouteIndex = i,
-                    ClientScore = clientScores[i]
-                };
-                IReadOnlyList<RecordedPoint> replay = replays[i];
-                for (int p = 0; p < replay.Count; p++)
-                {
-                    route.Points.Add(new ReplayPointData
-                    {
-                        X = replay[p].Position.X,
-                        Y = replay[p].Position.Y,
-                        TimestampMs = replay[p].TimestampMs
-                    });
-                }
-                pending.Routes.Add(route);
-            }
-
-            return pending;
-        }
-
-        private static bool TryRestorePending(
-            PendingDailyAttemptData pending,
-            out DailyChallengeDefinition challenge,
-            out List<IReadOnlyList<RecordedPoint>> replays,
-            out List<double> scores)
-        {
-            challenge = null;
-            replays = null;
-            scores = null;
-            if (pending == null || string.IsNullOrWhiteSpace(pending.ChallengeId) || pending.GeneratorVersion <= 0)
-                return false;
-            if (pending.Routes == null || pending.Routes.Count != 3) return false;
-
-            pending.Routes.Sort((a, b) => a.RouteIndex.CompareTo(b.RouteIndex));
-            replays = new List<IReadOnlyList<RecordedPoint>>(3);
-            scores = new List<double>(3);
-
-            for (int i = 0; i < 3; i++)
-            {
-                PendingRouteAttemptData route = pending.Routes[i];
-                if (route == null || route.RouteIndex != i || route.Points == null || route.Points.Count == 0) return false;
-                var replay = new List<RecordedPoint>(route.Points.Count);
-                for (int p = 0; p < route.Points.Count; p++)
-                {
-                    ReplayPointData point = route.Points[p];
-                    replay.Add(new RecordedPoint(new FixedPoint2(point.X, point.Y), point.TimestampMs));
-                }
-                replays.Add(replay);
-                scores.Add(route.ClientScore);
-            }
-
-            challenge = new DailyChallengeFactory().Create(pending.ChallengeId, pending.Seed, pending.GeneratorVersion);
-            return true;
+            return Task.FromResult(removed);
         }
 
         private static void ValidateDaily(DailyDto dto)
