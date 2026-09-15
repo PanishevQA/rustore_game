@@ -4,7 +4,6 @@ using System.Reflection;
 using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Economy;
-using DontGetSidetracked.Network;
 using DontGetSidetracked.Platform.RuStore;
 using DontGetSidetracked.Services;
 using UnityEngine;
@@ -60,13 +59,10 @@ namespace DontGetSidetracked.Presentation
         private void RebuildStore()
         {
             _save = _saveRepository.Load();
-            var localApi = new UnityGameApi(GameRuntimeSettings.BackendBaseUrl);
             _store = new StoreService(
                 new RuStorePaymentService(),
                 _saveRepository,
-                _save,
-                localApi,
-                _save.AnonymousPlayerId);
+                _save);
         }
 
         private void ResolveBootstrap()
@@ -187,7 +183,10 @@ namespace DontGetSidetracked.Presentation
                     AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseError, Params(
                         "product_id", productId,
                         "error", result?.Verification?.ErrorMessage ?? result?.Payment?.ErrorMessage ?? "unknown"));
-                    _panelBody.text = "Покупка не завершена. Товар не выдан.";
+
+                    _panelBody.text = result?.Payment?.Outcome == PurchaseOutcome.Completed
+                        ? "RuStore принял покупку, но товар ещё не появился среди подтверждённых. Нажмите «Восстановить покупки»."
+                        : "Покупка не завершена. Товар не выдан.";
                 }
             }
             catch (Exception error)
