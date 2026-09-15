@@ -34,14 +34,19 @@ def test_daily_and_verified_attempt():
     assert response.json()["score"] == 100.0
 
 
-def test_challenge_referral_roundtrip():
+def test_challenge_referral_roundtrip_restores_exact_daily():
     daily = client.get("/daily").json()
     created = client.post("/challenge", json={"inviterId": "anon_a", "challengeId": daily["challengeId"], "score": 94.7})
     assert created.status_code == 200
     ref = created.json()["referralId"]
     restored = client.get(f"/referral/{ref}")
     assert restored.status_code == 200
-    assert restored.json()["inviterScore"] == 94.7
+    payload = restored.json()
+    assert payload["inviterScore"] == 94.7
+    assert payload["challengeId"] == daily["challengeId"]
+    assert payload["seed"] == daily["seed"]
+    assert payload["generatorVersion"] == daily["generatorVersion"]
+    assert payload["serverTimeUtc"]
 
 
 def test_analytics_batch_is_idempotent():
