@@ -1,0 +1,6 @@
+{
+  "name": "Game.Monetization",
+  "rootNamespace": "DontGetSidetracked.Monetization",
+  "references": ["Game.Services"],
+  "autoReferenced": true
+}
