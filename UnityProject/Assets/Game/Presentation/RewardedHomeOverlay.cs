@@ -108,7 +108,7 @@ namespace DontGetSidetracked.Presentation
         {
             if (_label == null) return;
             SaveData save = _saveRepository.Load();
-            _label.text = $"🎁 РЕКЛАМА → +1 ПОДСКАЗКА   •   {save.Hints}";
+            _label.text = $"🎁 +1 ПОДСКАЗКА ЗА РЕКЛАМУ   •   {save.Hints}";
         }
 
         private bool IsSafeHome()
@@ -158,8 +158,9 @@ namespace DontGetSidetracked.Presentation
             var go = new GameObject("RewardedHint", typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(_canvas.transform, false);
             RectTransform rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.18f, 0.205f);
-            rect.anchorMax = new Vector2(0.82f, 0.245f);
+            // Dedicated strip between the Home hero (ends around .305) and the Levels CTA (ends at .270).
+            rect.anchorMin = new Vector2(0.20f, 0.276f);
+            rect.anchorMax = new Vector2(0.80f, 0.301f);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             go.GetComponent<Image>().color = new Color(0.10f, 0.18f, 0.27f, 0.96f);
@@ -175,12 +176,12 @@ namespace DontGetSidetracked.Presentation
             textRect.offsetMax = Vector2.zero;
             _label = textGo.GetComponent<Text>();
             _label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            _label.fontSize = 28;
+            _label.fontSize = 24;
             _label.alignment = TextAnchor.MiddleCenter;
             _label.color = Color.white;
             _label.resizeTextForBestFit = true;
-            _label.resizeTextMinSize = 16;
-            _label.resizeTextMaxSize = 28;
+            _label.resizeTextMinSize = 15;
+            _label.resizeTextMaxSize = 24;
             _label.raycastTarget = false;
             RefreshLabel();
         }
