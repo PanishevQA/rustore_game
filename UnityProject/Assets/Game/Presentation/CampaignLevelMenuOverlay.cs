@@ -29,6 +29,8 @@ namespace DontGetSidetracked.Presentation
         private CampaignProgressService _progress;
         private int _chapter = 1;
 
+        public bool IsOpen => _panel != null && _panel.activeSelf;
+
         public static void OpenFor(GameBootstrap bootstrap)
         {
             if (bootstrap == null) return;
@@ -166,7 +168,7 @@ namespace DontGetSidetracked.Presentation
             CampaignRuntimeCoordinator.ReturnHome(_bootstrap);
         }
 
-        private void Close() => SetVisible(false);
+        public void Close() => SetVisible(false);
 
         private void SetVisible(bool visible)
         {
