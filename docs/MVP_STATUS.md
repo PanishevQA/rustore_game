@@ -1,111 +1,127 @@
 # Состояние проекта — 2026-09-16
 
-> Этот файл больше не использует один общий процент «готовности игры». Предыдущая оценка смешивала почти готовое техническое ядро с ещё не реализованным игровым контентом и поэтому создавала неверное впечатление о полном продукте.
+> Проект больше не оценивается одним процентом «готовности». Техническое ядро, видимый игровой продукт и внешняя Android/RuStore интеграция имеют разную степень проверяемости.
 
-## Что уже реально работает
+## Видимый игровой продукт — реализовано в коде
 
-### Игровое ядро
+### Основной gameplay
 
-- детерминированная генерация маршрутов по `seed + generatorVersion`;
-- запись траектории и timestamps;
+- детерминированная генерация маршрутов `seed + generatorVersion`;
+- запись координат и timestamps;
 - score `0–100%` с точностью до `0,1%`;
-- Tutorial;
-- Daily Challenge;
-- бесконечная Training;
-- friend Duel / challenge token;
-- hints, cosmetics, medals, Perfect effect, result-card;
-- локальный JSON SaveData с миграциями;
-- portrait mobile layout, safe area, Android Back, pause/resume;
-- локальные Sound/Haptics settings.
+- tutorial первого запуска;
+- reference/player trajectory на результате;
+- medals + Perfect effect;
+- hints и selectable cosmetics;
+- Sound/Haptics settings;
+- portrait layout, safe area, Android Back и pause/resume policy.
 
-### Локальная кампания — новый блок
-
-Первая полноценная версия кампании реализована в коде:
+### Campaign
 
 - **60 локальных уровней**;
-- **6 глав по 10 уровней**;
-- уровень всегда имеет фиксированные `seed`, `generatorVersion`, difficulty и display time;
+- **6 глав по 10 уровней**: «Первые шаги», «Ритм», «Повороты», «Давление», «Эксперт», «Без ошибок»;
+- фиксированные seed/version/difficulty/display-time профили;
 - постепенный рост сложности;
 - `60% = ★`, `80% = ★★`, `95% = ★★★`;
-- следующий уровень открывается после получения хотя бы одной звезды;
-- лучший score и максимальное число звёзд уровня сохраняются локально;
-- повторное прохождение не может ухудшить сохранённый результат;
-- экран выбора уровней показывает замки, звёзды и лучший процент;
-- на Home теперь отдельные входы **УРОВНИ**, **DAILY**, **ТРЕНИРОВКА**;
-- после уровня доступны следующий уровень / повтор / возврат к выбору уровней;
-- Android Back и safe area учитывают экран кампании.
+- unlock следующего уровня только после минимум одной звезды;
+- лучший score/максимум stars не ухудшаются повторным прохождением;
+- chapter/level selector с locks, stars и best score;
+- финал 60-го уровня показывает завершение кампании и общий star progress;
+- Campaign PNG result card подписывается как Campaign/Level, а не internal Training mode.
 
-Campaign catalog/progression находятся в pure C# и покрыты unit tests. На текущем этапе **кампания ещё требует ручного Play Mode теста в Unity**.
+### Campaign progression / economy
 
-### Offline-first
+- каждая **новая** звезда даёт `5 coins`;
+- улучшение 1→3 stars выдаёт только разницу, повторный результат нельзя фармить;
+- первое прохождение финала каждой главы (10/20/.../60) даёт `+1 hint` один раз;
+- `30 coins → +1 hint` — локальный обмен, не связанный с ценами RuStore;
+- Home и Statistics показывают campaign progress/stars/resources;
+- все presentation-сервисы используют одну runtime identity `SaveData`, поэтому purchase/reward/coin exchange не могут быть затёрты поздним сохранением старой копии.
 
-Для release-клиента не требуется наш сервер или собственная база данных. Критический прогресс хранится локально. Опциональный `server/` остаётся только заделом для будущих online-функций.
+### Daily / Training / Social
 
-## Текущее состояние по блокам
+- local UTC Daily Challenge, 1–3 маршрута;
+- exact display-time cache/profile;
+- streak, personal best и per-Daily best;
+- Training с явным выбором **Easy / Medium / Hard / Random**;
+- friend Duel;
+- self-contained L3 challenge token (date/seed/version/routeCount/display-times/score);
+- backward compatibility L1/L2;
+- rematch;
+- text share + PNG result card;
+- deeplink/referrer adapters без нашего backend.
 
-| Блок | Состояние |
-|---|---|
-| Core route/scoring/input | Реализовано и покрыто pure tests |
-| Campaign 60 levels | Реализовано в коде; нужен ручной Unity UX/progression pass |
-| Daily / Training | Реализовано и вручную запускается в Unity |
-| Friend Duel / referral token | Реализовано; Android Install Referrer integration ещё требует device pass |
-| Save / migrations | **SaveData v13**, включая campaign progress |
-| Hints / cosmetics / settings | Реализовано |
-| Store / RuStore Pay | Код интеграции готов; нужны RuStore Console credentials и device purchase tests |
-| Ads | Adapter/policies готовы; официальный Yandex package + IDs ещё не подключены в production |
-| UI | Рабочий тестовый portrait UI; **финальный дизайн ещё не реализован** |
-| RuStore Review / Update | Adapter flow реализован; нужен реальный device/store test |
-| Install Referrer / Remote Config | Platform adapters сохранены, но проблемные UPM packages временно исключены из Editor manifest для Unity 6.3; перед интеграционным тестом нужно подключить официальные `.tgz` и проверить на Android |
-| Release | Нужны production package name, signing, AAB и физические Android-тесты |
+### Store / monetization
+
+- RuStore Pay adapter, SDK catalog/prices, purchase/restore flow;
+- `remove_ads` реально подавляет interstitial;
+- `hints_10` выдаёт расходуемые hints;
+- Neon/Retro/Gold cosmetics реально выбираются и влияют на Drawing visuals;
+- starter pack выдаёт свои non-consumables и отключает interstitial;
+- rewarded — только opt-in, выдаёт +1 hint после reward callback;
+- rewarded Home surface отделён от основных CTA;
+- interstitial запрещён во время active round/result/share/store/purchase и ограничен policy/cooldown.
+
+### Local state / analytics
+
+- SaveData **v13** + migrations;
+- JSON save + backup/temp write;
+- bounded local analytics/logs, без нашего сервера;
+- campaign `level_start/level_complete` входят в analytics allow-list;
+- Daily/share/duel/hints/settings/rewarded/store/purchase events реализованы.
+
+## Offline-first architecture
+
+Release-клиент не требует developer-operated backend или собственной БД. Campaign, Daily, Training, progress, economy, settings и cosmetics работают локально. `server/` остаётся только как optional foundation для возможного будущего online leaderboard/authoritative mode.
+
+## UI state
+
+Собран единый portrait presentation-layer: dark surface, cyan/violet accents, rounded CTA/cards, Home hero, campaign selector, Training selector, meta/settings/store/result overlays и safe-area обработка. Устранены конфликтующие layout/theme owners и Home flicker.
+
+Это **final functional UI candidate**, который будет оцениваться целиком после завершения кодового этапа. Авторская типографика/иллюстрации/иконки могут быть заменены после общей визуальной приёмки, но для этого не требуется менять gameplay architecture.
 
 ## Автоматические проверки
 
-В PR работают пять проверок:
+В PR теперь шесть checks:
 
 1. `pure-csharp-tests`;
-2. `backend-tests` — только для необязательного future backend;
+2. `backend-tests` — только optional future backend;
 3. `offline-mode-guard`;
 4. `rustore-dependency-guard`;
-5. `unity-static-validation`.
+5. `unity-static-validation`;
+6. `product-flow-guard` — Campaign/rewards/local economy/shared save/Training invariants.
 
-Campaign rules, star thresholds, unlock progression и SaveData v13 migration входят в pure C# suite. Offline guard также защищает наличие 60-level campaign и её локальную природу.
+Pure suite покрывает deterministic routes, scoring, Daily, save migrations, campaign 60-level catalog, star thresholds, unlocks, reward idempotency и coin→hint exchange.
 
-## Что обязательно проверить вручную сейчас
+## RuStore / Android release target
 
-После `git pull` в Unity:
+Последняя сверка официальной документации на 2026-09-16:
 
-1. Home показывает **УРОВНИ**, **DAILY**, **ТРЕНИРОВКА**, статистику и магазин.
-2. `УРОВНИ` открывает главу 1; уровень 1 доступен, уровни 2–10 заблокированы.
-3. Результат `<60%` не открывает следующий уровень.
-4. Результат `>=60%` открывает уровень 2.
-5. `>=80%` даёт две звезды, `>=95%` — три.
-6. Более слабое повторное прохождение не уменьшает лучший score/звёзды.
-7. После перезапуска Unity прогресс кампании сохраняется.
-8. Переход между главами корректно показывает 10 уровней.
-9. Android Back на выборе уровней закрывает меню, а не завершает приложение.
-10. Daily/Training/Duel после добавления кампании не получили регрессий.
+- Pay Unity target: `11.1.0`;
+- Install Referrer Unity target: `10.6.1`;
+- Update Unity: `10.5.1`;
+- Review Unity: `10.5.1`;
+- Remote Config adapter target: `10.5.0`;
+- targetSdk baseline: `34` / highest installed;
+- проект использует minSdk `25`, потому что Unity 6000.3 уже не поддерживает API 24.
 
-## Что ещё не является готовым продуктом
+Install Referrer и Remote Config UPM packages, которые дали compile errors внутри package source на Unity 6.3, **не маскируются как готовая интеграция**: reflection adapters/fallback сохранены, а официальный package integration вынесен в обязательный Android release gate.
 
-### Финальный UI/UX
+## Что нельзя честно завершить только изменениями в GitHub
 
-Текущий интерфейс нужен для функционального тестирования. Перед релизом будет отдельный final design pass: финальная типографика, иконки, campaign map/level cards, result screen, магазин, статистика, настройки, анимации и адаптация под несколько Android aspect ratios.
+Это не недостающий gameplay, а внешняя финальная приёмка/конфигурация:
 
-### RuStore / Android production integration
-
-Остаются реальные внешние шаги:
-
-- production package name;
-- keystore/signing;
-- RuStore Console Pay configuration;
-- официальные Install Referrer / Remote Config packages и их Android smoke test;
-- Yandex Mobile Ads package и реальные block IDs;
-- Pay purchase/cancel/error/restore на устройстве;
-- deeplink/install-referrer test через реальную установку;
+- production package name из RuStore Console;
+- production keystore/key alias;
+- реальные PayClient/RuStore Console параметры;
+- официальные Install Referrer / Remote Config packages и physical-device smoke test;
+- официальный Yandex Mobile Ads Unity plugin + реальные block IDs;
+- Pay success/cancel/error/restore через реальный RuStore;
+- deeplink + Install Referrer после реальной установки;
+- Review / Update на устройстве с RuStore;
+- Android 13 notification permission/local notification;
+- PNG FileProvider/system share на устройстве;
 - signed AAB;
-- device regression минимум на Android API 25+ и Android 13+;
-- повторная сверка актуальной документации RuStore непосредственно перед production build.
+- multi-device DPI/safe-area/lifecycle regression.
 
-## Главный следующий этап
-
-Сначала вручную проверить новый цикл кампании **уровень 1 → звезда → unlock уровня 2 → сохранение прогресса**. После стабилизации кампании продолжать наращивать видимый игровой продукт и только затем делать финальный UI/UX pass и production RuStore integration.
+PR #1 остаётся Draft до этой общей финальной приёмки. Промежуточный ручной тест больше не используется как условие продолжения разработки.
