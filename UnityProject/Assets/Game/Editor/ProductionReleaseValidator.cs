@@ -81,7 +81,7 @@ namespace DontGetSidetracked.EditorTools
 
             ValidateFileContains(SharePathsPath, errors,
                 ("cache-path", "Result share paths must expose only the app cache directory."),
-                ("result-share/", "Result share cache subdirectory is missing from FileProvider paths."));
+                ("path=\"share/\"", "Result share cache subdirectory must match NativeImageShare's share/ directory."));
 
             // Install Referrer and Remote Config are intentionally allowed to be absent from the day-to-day
             // Unity Editor manifest after their Unity 6.3 package regressions, but a production AAB must never
@@ -210,8 +210,7 @@ namespace DontGetSidetracked.EditorTools
             {
                 string extension = Path.GetExtension(files[i]);
                 if (extension != ".cs" && extension != ".json" && extension != ".xml" && extension != ".md") continue;
-                try { text.Append(File.ReadAllText(files[i]));
-                }
+                try { text.Append(File.ReadAllText(files[i])); }
                 catch (IOException) { }
             }
             return text.ToString();
