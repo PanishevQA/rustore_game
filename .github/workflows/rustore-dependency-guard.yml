@@ -45,5 +45,9 @@ jobs:
           grep -q 'FindRuStoreType("RuStoreRemoteConfigClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
           grep -q 'HasLoadedRuStoreType("InstallReferrerClient")' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs
           grep -q 'HasLoadedRuStoreType("RuStoreRemoteConfigClient")' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs
+
+          # Runtime consumers must share one config snapshot/cache and must not grow independent facades again.
           grep -q 'RuStoreRemoteConfigRuntime.Service' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs
           grep -q 'RuStoreRemoteConfigRuntime.Service' UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
+          grep -q 'RuStoreRemoteConfigRuntime.Service' UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs
+          grep -q 'RuStoreRemoteConfigRuntime.Service' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
