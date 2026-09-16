@@ -29,6 +29,13 @@ namespace DontGetSidetracked.Core
     }
 
     [Serializable]
+    public sealed class DailyBestData
+    {
+        public string ChallengeId = string.Empty;
+        public double BestScore;
+    }
+
+    [Serializable]
     public sealed class ReplayPointData
     {
         public int X;
@@ -57,7 +64,7 @@ namespace DontGetSidetracked.Core
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 11;
+        public const int CurrentVersion = 12;
 
         public int Version = CurrentVersion;
         public string AnonymousPlayerId = string.Empty;
@@ -73,6 +80,7 @@ namespace DontGetSidetracked.Core
         public bool TutorialCompleted;
         public string LastCompletedDailyDateUtc = string.Empty;
         public DailyCacheData LastDaily = new DailyCacheData();
+        public List<DailyBestData> DailyBests = new List<DailyBestData>();
         public string PendingReferralId = string.Empty;
         public bool InstallReferrerConsumed;
         public int SessionNumber;
@@ -181,6 +189,12 @@ namespace DontGetSidetracked.Core
                 data.Version = 11;
             }
 
+            if (data.Version == 11)
+            {
+                if (data.DailyBests == null) data.DailyBests = new List<DailyBestData>();
+                data.Version = 12;
+            }
+
             if (string.IsNullOrWhiteSpace(data.AnonymousPlayerId))
                 data.AnonymousPlayerId = "anon_" + Guid.NewGuid().ToString("N");
             if (data.Settings == null) data.Settings = new GameSettingsData();
@@ -189,6 +203,7 @@ namespace DontGetSidetracked.Core
             if (data.ProcessedPurchaseIds == null) data.ProcessedPurchaseIds = new List<string>();
             if (string.IsNullOrWhiteSpace(data.SelectedSkinId)) data.SelectedSkinId = "default";
             if (data.LastDaily == null) data.LastDaily = new DailyCacheData();
+            if (data.DailyBests == null) data.DailyBests = new List<DailyBestData>();
             NormalizeDailyCache(data.LastDaily);
             if (data.PendingAttempts == null) data.PendingAttempts = new List<PendingDailyAttemptData>();
 
