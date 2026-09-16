@@ -108,7 +108,7 @@ Production требует официальный Yandex Unity plugin, define `YA
 - Install Referrer Unity `10.6.1`;
 - Update Unity `10.5.1`;
 - Review Unity `10.5.1`;
-- Remote Config Unity `10.5.1`;
+- Remote Config Unity `10.5.0`;
 - GameCenter Unity `10.5.2` — optional, не critical path;
 - RuStore Push не используется: Daily reminders локальные;
 - target API baseline 34 / highest installed;
@@ -118,7 +118,7 @@ Install Referrer и Remote Config adapters SDK-isolated через reflection/fa
 
 ## Remote Config
 
-Gameplay не зависит напрямую от SDK. `RemoteGameplayTuningCoordinator` переводит валидированные параметры в pure C# runtime tuning.
+Gameplay не зависит напрямую от SDK. `RuStoreRemoteConfigRuntime` владеет одним shared provider/cache для runtime. `RemoteGameplayTuningCoordinator` читает его через `IRemoteConfigService`; реклама и platform policy используют тот же snapshot. Provider сбрасывается при `SubsystemRegistration`, поэтому Unity Play без Domain Reload не переиспользует stale static state.
 
 Ключи:
 
@@ -192,7 +192,7 @@ Production-сборка дополнительно требует точный p
 - `UnityProject/Assets/Game/Monetization` — ad policies + Yandex adapter.
 - `UnityProject/Assets/Game/Services` — external-service interfaces.
 - `UnityProject/Assets/Game/Presentation` — runtime UI/input/coordinators.
-- `UnityProject/Assets/Game/Platform/RuStore` — RuStore adapters.
+- `UnityProject/Assets/Game/Platform/RuStore` — RuStore adapters and shared Remote Config runtime.
 - `UnityProject/Assets/Game/Platform/Android` — notifications/Android helpers.
 - `server` — optional future online mode, not required by release client.
 - `docs` — architecture, SDK matrix, project status and production checklist.
