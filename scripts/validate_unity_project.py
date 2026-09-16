@@ -43,7 +43,7 @@ def validate_package_manifest() -> None:
     # Only packages required for the editor-functional MVP are pinned here.
     # Install Referrer and Remote Config are intentionally omitted from the editor manifest:
     # their SDK adapters are reflection-based and they are added later for Android/RuStore
-    # integration testing using the official RuStore tarballs.
+    # integration testing using the official RuStore tarballs/packages.
     expected = {
         "com.unity.test-framework": "1.6.0",
         "com.unity.mobile.notifications": "2.4.3",
@@ -150,6 +150,24 @@ def validate_required_runtime_files() -> None:
             fail(f"Missing required runtime file: UnityProject/{relative}")
 
 
+def validate_release_preflight_contract() -> None:
+    path = UNITY / "Assets/Game/Editor/ProductionReleaseValidator.cs"
+    text = read(path)
+    required = {
+        '\"ru.rustore.pay\\\": \\\"11.1.0\\\"': "Production preflight must enforce RuStore Pay 11.1.0.",
+        '\"ru.rustore.installreferrer\\\": \\\"10.6.1\\\"': "Production preflight must block release until Install Referrer 10.6.1 is restored.",
+        '\"ru.rustore.remoteconfig\\\": \\\"10.5.0\\\"': "Production preflight must block release until Remote Config 10.5.0 is restored.",
+        'YANDEX_MOBILE_ADS': "Production preflight must require the Yandex ads integration symbol.",
+        'useCustomKeystore': "Production preflight must require custom signing.",
+        'buildAppBundle': "Production preflight must require AAB output.",
+        'ScriptingImplementation.IL2CPP': "Production preflight must require IL2CPP.",
+        'AndroidArchitecture.ARM64': "Production preflight must require ARM64.",
+    }
+    for needle, message in required.items():
+        if needle not in text:
+            fail(message)
+
+
 def validate_source_hygiene() -> None:
     for path in (UNITY / "Assets/Game").rglob("*.cs"):
         text = read(path)
@@ -163,6 +181,7 @@ def main() -> int:
     validate_asmdefs()
     validate_android_manifest()
     validate_required_runtime_files()
+    validate_release_preflight_contract()
     validate_source_hygiene()
 
     if ERRORS:
