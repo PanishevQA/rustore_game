@@ -32,6 +32,7 @@ namespace DontGetSidetracked.Presentation
         private FieldInfo _duelSessionField;
         private FieldInfo _apiField;
         private FieldInfo _primaryField;
+        private FieldInfo _saveField;
 
         private readonly DailyBestService _dailyBest = new DailyBestService();
         private JsonFileSaveRepository _saveRepository;
@@ -135,7 +136,8 @@ namespace DontGetSidetracked.Presentation
             DailyChallengeDefinition daily = _dailyField?.GetValue(_bootstrap) as DailyChallengeDefinition;
             if (daily == null || string.IsNullOrWhiteSpace(daily.ChallengeId)) return;
 
-            SaveData save = _saveRepository.Load();
+            SaveData save = _saveField?.GetValue(_bootstrap) as SaveData;
+            if (save == null) save = _saveRepository.Load();
             DailyBestUpdate update = _dailyBest.Apply(save, daily.ChallengeId, score);
             _saveRepository.Save(save);
 
@@ -143,6 +145,7 @@ namespace DontGetSidetracked.Presentation
             _recordLabel.text = update.PreviousBest > 0.0
                 ? $"🏆 НОВЫЙ РЕКОРД  {update.PreviousBest:0.0}% → {update.BestScore:0.0}%"
                 : $"🏆 РЕКОРД ДНЯ  {update.BestScore:0.0}%";
+            _recordLabel.gameObject.SetActive(true);
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.DailyRecord, Params(
                 "challenge_id", daily.ChallengeId,
                 "previous", update.PreviousBest,
@@ -191,7 +194,7 @@ namespace DontGetSidetracked.Presentation
                 string challengeUrl = string.Empty;
                 if (aggregate && daily != null && api != null)
                 {
-                    SaveData save = _saveRepository.Load();
+                    SaveData save = _saveField?.GetValue(_bootstrap) as SaveData ?? _saveRepository.Load();
                     challengeUrl = await api.CreateChallengeAsync(save.AnonymousPlayerId, daily.ChallengeId, score);
                 }
 
@@ -268,6 +271,7 @@ namespace DontGetSidetracked.Presentation
             _duelSessionField = _bootstrapType.GetField("_duelSession", flags);
             _apiField = _bootstrapType.GetField("_api", flags);
             _primaryField = _bootstrapType.GetField("_primary", flags);
+            _saveField = _bootstrapType.GetField("_save", flags);
         }
 
         private string GetEnumName(FieldInfo field) => field?.GetValue(_bootstrap)?.ToString() ?? string.Empty;
