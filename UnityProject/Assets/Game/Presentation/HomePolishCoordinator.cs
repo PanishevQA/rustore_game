@@ -6,7 +6,9 @@ namespace DontGetSidetracked.Presentation
 {
     /// <summary>
     /// Final portrait composition pass for Home. Keeps the gameplay/result layout untouched.
+    /// Runs after the theme refresher so presentation styling cannot cause one-frame layout jumps.
     /// </summary>
+    [DefaultExecutionOrder(10000)]
     public sealed class HomePolishCoordinator : MonoBehaviour
     {
         private Text _title;
@@ -29,7 +31,7 @@ namespace DontGetSidetracked.Presentation
             root.AddComponent<HomePolishCoordinator>();
         }
 
-        private void Update()
+        private void LateUpdate()
         {
             if ((_title == null || _statsButton == null || _storeButton == null) && Time.unscaledTime >= _nextResolve)
             {
