@@ -187,15 +187,36 @@ def validate_android_manifest() -> None:
         fail("Result PNG sharing requires a non-exported ${applicationId}.shareprovider FileProvider with nesbeisya_file_paths.")
 
 
+def validate_share_path_alignment() -> None:
+    xml_path = UNITY / "Assets/ResultShare.androidlib/src/main/res/xml/nesbeisya_file_paths.xml"
+    try:
+        root = ET.fromstring(read(xml_path))
+    except ET.ParseError as exc:
+        fail(f"nesbeisya_file_paths.xml is invalid XML: {exc}")
+        return
+
+    cache_paths = root.findall("./cache-path")
+    if not any(item.attrib.get("path") == "share/" for item in cache_paths):
+        fail("FileProvider must expose exactly the share/ cache subdirectory used by NativeImageShare.")
+
+    share_code = read(UNITY / "Assets/Game/Presentation/NativeImageShare.cs")
+    if 'Path.Combine(Application.temporaryCachePath, "share")' not in share_code:
+        fail("NativeImageShare must write PNG cards into the FileProvider share/ cache subdirectory.")
+    if 'Application.identifier + ".shareprovider"' not in share_code:
+        fail("NativeImageShare authority must match ${applicationId}.shareprovider from AndroidManifest.")
+
+
 def validate_required_runtime_files() -> None:
     paths = (
         "Assets/Game/Presentation/GameBootstrap.cs",
         "Assets/Game/Presentation/MobileUiCoordinator.cs",
+        "Assets/Game/Presentation/NativeImageShare.cs",
         "Assets/Game/Social/OfflineGameApi.cs",
         "Assets/Game/Platform/RuStore/RuStorePaymentService.cs",
         "Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs",
         "Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs",
         "Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs",
+        "Assets/Game/Editor/ProjectConfigurator.cs",
         "Assets/Game/Editor/ProductionReleaseValidator.cs",
         "Assets/ResultShare.androidlib/src/main/res/xml/nesbeisya_file_paths.xml",
     )
@@ -211,6 +232,9 @@ def validate_release_preflight_contract() -> None:
         r'\"ru.rustore.pay\": \"11.1.0\"': "Production preflight must enforce RuStore Pay 11.1.0.",
         r'\"ru.rustore.installreferrer\": \"10.6.1\"': "Production preflight must block release until Install Referrer 10.6.1 is restored.",
         r'\"ru.rustore.remoteconfig\": \"10.5.0\"': "Production preflight must block release until Remote Config 10.5.0 is restored.",
+        'android.permission.POST_NOTIFICATIONS': "Production preflight must protect the Daily reminder permission.",
+        'androidx.core.content.FileProvider': "Production preflight must protect result-card FileProvider wiring.",
+        'ValidateForbiddenManifestPermissions': "Production preflight must reject unnecessary sensitive permissions.",
         'YANDEX_MOBILE_ADS': "Production preflight must require the Yandex ads integration symbol.",
         'useCustomKeystore': "Production preflight must require custom signing.",
         'buildAppBundle': "Production preflight must require AAB output.",
@@ -220,6 +244,39 @@ def validate_release_preflight_contract() -> None:
     for needle, message in required.items():
         if needle not in text:
             fail(message)
+
+
+def validate_editor_configuration_safety() -> None:
+    text = read(UNITY / "Assets/Game/Editor/ProjectConfigurator.cs")
+    required = (
+        "DevelopmentPackageName",
+        "PlayerSettings.GetApplicationIdentifier",
+        "ShouldAssignDevelopmentPackageName",
+        "if (ShouldAssignDevelopmentPackageName(currentPackage))",
+    )
+    for needle in required:
+        if needle not in text:
+            fail("ProjectConfigurator must preserve an explicitly configured production Android package name.")
+            break
+
+
+def validate_repository_hygiene() -> None:
+    text = read(ROOT / ".gitignore")
+    required = (
+        "*.apk",
+        "*.aab",
+        "*.keystore",
+        "*.jks",
+        "*.p12",
+        "*.pfx",
+        "*.pem",
+        "keystore.properties",
+        "local.properties",
+        ".env",
+    )
+    missing = [entry for entry in required if entry not in text]
+    if missing:
+        fail(".gitignore is missing release-artifact/signing protections: " + ", ".join(missing))
 
 
 def validate_source_hygiene() -> None:
@@ -234,8 +291,11 @@ def main() -> int:
     validate_package_manifest()
     validate_asmdefs()
     validate_android_manifest()
+    validate_share_path_alignment()
     validate_required_runtime_files()
     validate_release_preflight_contract()
+    validate_editor_configuration_safety()
+    validate_repository_hygiene()
     validate_source_hygiene()
 
     if ERRORS:
