@@ -18,6 +18,10 @@ namespace DontGetSidetracked.Presentation
     {
         private static CampaignRuntimeCoordinator _instance;
 
+        public static bool IsCampaignActive => _instance != null && _instance._campaignActive;
+        public static int CurrentLevelNumber => _instance?._level?.LevelNumber ?? 0;
+        public static int CurrentChapterNumber => _instance?._level?.ChapterNumber ?? 0;
+
         private GameBootstrap _bootstrap;
         private Type _bootstrapType;
         private FieldInfo _modeField;
@@ -163,6 +167,7 @@ namespace DontGetSidetracked.Presentation
             CampaignLevelCompletion completion = _progress.RecordResult(_level.LevelNumber, score);
             if (_saveField != null) _saveField.SetValue(_bootstrap, _progress.Save);
 
+            bool campaignFinished = _level.LevelNumber == CampaignLevelCatalog.TotalLevels && completion.Stars >= 1;
             Text status = Get<Text>(_statusField);
             if (status != null)
             {
@@ -173,6 +178,8 @@ namespace DontGetSidetracked.Presentation
                 if (completion.NextLevelUnlocked) rewards += $"\nОТКРЫТ УРОВЕНЬ {completion.HighestUnlockedLevel}";
                 if (_level.LevelNumber % CampaignLevelCatalog.LevelsPerChapter == 0 && completion.Stars >= 1)
                     rewards += $"\nГЛАВА {_level.ChapterNumber} ПРОЙДЕНА";
+                if (campaignFinished)
+                    rewards += $"\nКАМПАНИЯ ЗАВЕРШЕНА • ★ {_progress.TotalStars()}/{CampaignLevelCatalog.TotalLevels * 3}";
 
                 status.text =
                     $"УРОВЕНЬ {_level.LevelNumber}  •  {completion.Score:0.0}%\n" +
@@ -183,7 +190,9 @@ namespace DontGetSidetracked.Presentation
             Button secondary = Get<Button>(_secondaryField);
             Button share = Get<Button>(_shareField);
 
-            if (completion.Stars >= 1 && _level.LevelNumber < CampaignLevelCatalog.TotalLevels)
+            if (campaignFinished)
+                Configure(primary, "К УРОВНЯМ", OpenLevelMenu);
+            else if (completion.Stars >= 1 && _level.LevelNumber < CampaignLevelCatalog.TotalLevels)
                 Configure(primary, "СЛЕДУЮЩИЙ УРОВЕНЬ", () => BeginLevel(_bootstrap, _level.LevelNumber + 1));
             else
                 Configure(primary, "ПОВТОРИТЬ", () => BeginLevel(_bootstrap, _level.LevelNumber));
@@ -204,7 +213,8 @@ namespace DontGetSidetracked.Presentation
                 "new_stars", completion.NewStars,
                 "coins_awarded", completion.CoinsAwarded,
                 "hints_awarded", completion.HintsAwarded,
-                "unlocked_next", completion.NextLevelUnlocked));
+                "unlocked_next", completion.NextLevelUnlocked,
+                "campaign_finished", campaignFinished));
         }
 
         private void OpenLevelMenu()
@@ -222,6 +232,7 @@ namespace DontGetSidetracked.Presentation
             if (bootstrap != null && bootstrap != _bootstrap) ResolveBootstrap(bootstrap);
             _campaignActive = false;
             _resultHandled = false;
+            _level = null;
             _showHomeMethod?.Invoke(_bootstrap, null);
         }
 
