@@ -51,6 +51,18 @@ jobs:
           grep -q 'RuntimeInitializeLoadType.SubsystemRegistration' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
           grep -q 'SharedByPath.Clear()' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
 
+          # Save replacement must be failure-safe: a known-good backup exists before deleting the primary,
+          # and a failed replacement attempts immediate recovery.
+          grep -q 'File.Copy(_path, _backupPath, true)' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
+          grep -q 'TryRestorePrimaryFromBackup' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
+          grep -q 'TryDelete(tempPath)' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
+
+          # Current-version saves are repaired too, not only old schema versions.
+          grep -q 'NormalizeCurrentData(data)' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'NormalizeLevelProgress' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'NormalizeDailyBests' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'data.PendingAttempts.Clear()' UnityProject/Assets/Game/Core/SaveData.cs
+
           # Training must be explicit to the player instead of silently cycling difficulty.
           grep -q 'TrainingSelectCanvas' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'ЛЁГКАЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
