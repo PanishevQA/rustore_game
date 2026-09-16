@@ -97,6 +97,20 @@ namespace DontGetSidetracked.Gameplay
                 displayTime);
         }
 
+        public static string ChapterName(int chapterNumber)
+        {
+            switch (chapterNumber)
+            {
+                case 1: return "ПЕРВЫЕ ШАГИ";
+                case 2: return "РИТМ";
+                case 3: return "ПОВОРОТЫ";
+                case 4: return "ДАВЛЕНИЕ";
+                case 5: return "ЭКСПЕРТ";
+                case 6: return "БЕЗ ОШИБОК";
+                default: return "ГЛАВА";
+            }
+        }
+
         public static long SeedFor(int levelNumber, int generatorVersion)
         {
             if (levelNumber < 1 || levelNumber > TotalLevels)
@@ -128,6 +142,21 @@ namespace DontGetSidetracked.Gameplay
         }
     }
 
+    public static class CampaignRewardPolicy
+    {
+        public const int CoinsPerNewStar = 5;
+        public const int ChapterCompletionHints = 1;
+
+        public static int CoinsForStarUpgrade(int previousStars, int newStars)
+        {
+            int delta = Math.Max(0, Math.Min(3, newStars) - Math.Max(0, Math.Min(3, previousStars)));
+            return delta * CoinsPerNewStar;
+        }
+
+        public static bool IsFirstChapterCompletion(int levelNumber, int previousStars, int newStars) =>
+            levelNumber % CampaignLevelCatalog.LevelsPerChapter == 0 && previousStars <= 0 && newStars >= 1;
+    }
+
     public sealed class CampaignLevelCompletion
     {
         public int LevelNumber { get; }
@@ -138,6 +167,8 @@ namespace DontGetSidetracked.Gameplay
         public bool NewStars { get; }
         public bool NextLevelUnlocked { get; }
         public int HighestUnlockedLevel { get; }
+        public int CoinsAwarded { get; }
+        public int HintsAwarded { get; }
 
         public CampaignLevelCompletion(
             int levelNumber,
@@ -147,7 +178,9 @@ namespace DontGetSidetracked.Gameplay
             bool newBest,
             bool newStars,
             bool nextLevelUnlocked,
-            int highestUnlockedLevel)
+            int highestUnlockedLevel,
+            int coinsAwarded,
+            int hintsAwarded)
         {
             LevelNumber = levelNumber;
             Score = score;
@@ -157,6 +190,8 @@ namespace DontGetSidetracked.Gameplay
             NewStars = newStars;
             NextLevelUnlocked = nextLevelUnlocked;
             HighestUnlockedLevel = highestUnlockedLevel;
+            CoinsAwarded = coinsAwarded;
+            HintsAwarded = hintsAwarded;
         }
     }
 
@@ -196,6 +231,14 @@ namespace DontGetSidetracked.Gameplay
             return total;
         }
 
+        public int CompletedLevels()
+        {
+            int count = 0;
+            for (int i = 0; i < _save.LevelProgress.Count; i++)
+                if (_save.LevelProgress[i] != null && _save.LevelProgress[i].Stars > 0) count++;
+            return count;
+        }
+
         public CampaignLevelCompletion RecordResult(int levelNumber, double score)
         {
             if (!IsUnlocked(levelNumber))
@@ -209,12 +252,20 @@ namespace DontGetSidetracked.Gameplay
                 _save.LevelProgress.Add(progress);
             }
 
+            int previousStars = Math.Max(0, Math.Min(3, progress.Stars));
             bool newBest = normalizedScore > progress.BestScore;
             if (newBest) progress.BestScore = normalizedScore;
 
             int earnedStars = CampaignStarPolicy.StarsFor(normalizedScore);
             bool newStars = earnedStars > progress.Stars;
             if (newStars) progress.Stars = earnedStars;
+
+            int coinsAwarded = CampaignRewardPolicy.CoinsForStarUpgrade(previousStars, progress.Stars);
+            int hintsAwarded = CampaignRewardPolicy.IsFirstChapterCompletion(levelNumber, previousStars, progress.Stars)
+                ? CampaignRewardPolicy.ChapterCompletionHints
+                : 0;
+            _save.Coins += coinsAwarded;
+            _save.Hints += hintsAwarded;
 
             int previousHighest = _save.HighestUnlockedLevel;
             if (progress.Stars >= 1 && levelNumber < CampaignLevelCatalog.TotalLevels)
@@ -231,7 +282,9 @@ namespace DontGetSidetracked.Gameplay
                 newBest,
                 newStars,
                 _save.HighestUnlockedLevel > previousHighest,
-                _save.HighestUnlockedLevel);
+                _save.HighestUnlockedLevel,
+                coinsAwarded,
+                hintsAwarded);
         }
 
         private void Normalize()
