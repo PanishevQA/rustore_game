@@ -1,119 +1,189 @@
 # НЕ СБЕЙСЯ!
 
-Мобильная hypercasual-игра для Android / RuStore: игрок несколько секунд запоминает маршрут, затем одним движением повторяет его по памяти и получает точность 0–100%.
+Мобильная игра для Android / RuStore: игрок несколько секунд запоминает маршрут, затем одним движением повторяет его по памяти и получает точность 0–100%.
 
-## Главное: свой сервер не нужен
+## Сервер не обязателен
 
-Текущий MVP — **offline-first**. Для обычной работы игры не требуется VPS, собственная база данных, домен или постоянно работающий backend.
+Release-клиент — **offline-first**. Для Campaign, Daily, Training, прогресса, магазина локальных наград и friend challenge не требуется VPS, собственная база данных, домен или постоянно работающий backend.
 
-На телефоне пользователя локально работают:
+На устройстве работают локально:
 
-- обучение, Daily Challenge и Training;
-- генерация маршрутов и пересчёт score;
-- streak, лучший результат, статистика, настройки и косметика;
-- friend duel: challenge-код содержит дату, `seed`, `generatorVersion`, число маршрутов, точное время показа каждого маршрута и результат друга;
-- сохранения в versioned `SaveData`;
-- локальный журнал аналитических событий без обязательной отправки на наш сервер;
-- локальные Daily-напоминания без push-сервера.
+- Tutorial;
+- Campaign — 60 уровней / 6 глав;
+- Daily Challenge;
+- Training с выбором сложности;
+- генерация маршрутов и score recalculation;
+- level stars/unlocks, streak, personal best и статистика;
+- coins/hints/cosmetics/settings;
+- friend Duel с self-contained challenge token;
+- versioned SaveData v13;
+- bounded local analytics/crash log;
+- локальные Daily reminders.
 
-Daily одинаковый на устройствах благодаря детерминированному seed из UTC-даты и `generatorVersion`. RuStore Remote Config может менять время показа маршрута и количество Daily-маршрутов от 1 до 3, не меняя геометрию уже заданного `seed + generatorVersion`. Ограничение offline-варианта: пользователь теоретически может изменить системную дату устройства, поэтому абсолютной античит-защиты без внешнего источника времени нет.
+Опциональный `server/` оставлен только как foundation для возможного будущего online leaderboard/server-time/stronger anti-cheat. Текущая игра от него не зависит.
 
-Для вызова другу сервер тоже не нужен. Share содержит deeplink для установленной игры и RuStore install URL с тем же компактным `referrerId`. Новый **L3 challenge-token** содержит дату, seed, generatorVersion, routeCount, exact display-time profile и score. Поэтому друг получает то же испытание даже если Remote Config между отправкой и открытием ссылки уже изменился. Старые L1/L2 tokens продолжают открываться с безопасным legacy/default timing. После новой установки RuStore Install Referrer возвращает этот токен приложению, и challenge восстанавливается локально.
+## Игровые режимы
 
-## Что реализовано
+### Campaign
 
-- Unity 6.3 LTS проект, зафиксированный на `6000.3.24f1`, portrait и `UnityPlayerActivity`.
-- Детерминированный fixed-point generator: `seed + generatorVersion` воспроизводит ту же геометрию маршрута.
-- Pure C# scoring: среднее отклонение, завершённость, попадание в END и грубые ошибки.
-- Полный цикл: показать маршрут → скрыть → нарисовать → показать обе траектории → score.
-- Daily из 1–3 маршрутов через Remote Config и бесконечный Training.
-- Offline friend duel без собственной БД, сохраняющий routeCount и exact display times исходного challenge.
-- Локальная статистика вместо обязательного глобального leaderboard.
-- Versioned SaveData v10 + migrations, без хранения основного прогресса только в PlayerPrefs.
-- RuStore Pay, Install Referrer, Review, Update и Remote Config за интерфейсами/адаптерами.
-- Магазин получает цену только из RuStore Pay SDK.
-- Yandex Mobile Ads adapter за `IAdService`: rewarded/interstitial не зависят от gameplay-кода.
-- Unity Mobile Notifications для локального Daily reminder.
-- Safe-area/Back/pause-resume policy и локальный crash log.
-- Production preflight блокирует неверные Activity/package/deeplink/RuStore dependency pins, пустой Remote Config App ID, пустые/demo ad IDs, отсутствие custom keystore, AAB, IL2CPP/ARM64 или валидного versionCode.
-- CI проверяет pure C# rules, optional backend, offline invariants, RuStore dependency pins и статическую структуру Unity-проекта.
+- 60 детерминированных уровней;
+- 6 глав по 10 уровней;
+- фиксированные `seed + generatorVersion + difficulty + displayTime`;
+- `60% = ★`, `80% = ★★`, `95% = ★★★`;
+- следующий уровень открывается с первой звездой;
+- best score и stars не ухудшаются повторным прохождением;
+- новая звезда даёт 5 coins;
+- первое прохождение финала главы даёт +1 hint;
+- 30 coins можно локально обменять на +1 hint;
+- финал 60-го уровня показывает завершение кампании;
+- chapter/level selector показывает locks, stars и рекорд.
 
-## Быстрый запуск
+### Daily
 
-1. Установить Unity `6000.3.24f1` с Android Build Support.
-2. Открыть `UnityProject`.
-3. Дождаться Package Manager/compile.
-4. Скрипт `ProjectConfigurator` создаст `Assets/Scenes/Main.unity`, если сцены ещё нет, и выставит Android-настройки.
-5. Открыть `Main.unity` и нажать Play.
+Daily строится из UTC-даты и `generatorVersion`. Remote Config может менять время показа и число маршрутов 1–3, не меняя геометрию заданного `seed + generatorVersion`. Условия уже созданного challenge фиксируются в cache/token.
 
-Для production необходимо заменить `.dev` package name на точное значение из RuStore Console, настроить RuStore PayClient, Remote Config App ID, production signing и рекламные block IDs. Собственный backend URL задавать **не требуется**.
+Ограничение полностью локального режима: пользователь с модифицированным устройством может изменить системное время. Без внешнего authoritative time абсолютная защита от этого невозможна.
+
+### Training
+
+Бесконечная локальная тренировка с явным выбором:
+
+- Easy;
+- Medium;
+- Hard;
+- Random.
+
+### Friend Duel
+
+Сервер не нужен. L3 challenge token содержит date, seed, generatorVersion, routeCount, exact display-time profile и score отправителя. L1/L2 остаются backward-compatible. Share содержит deeplink для установленной игры и RuStore install URL с тем же token в `referrerId`.
+
+## Результат и прогресс
+
+- reference + player trajectory;
+- score до 0,1%;
+- Bronze/Silver/Gold/Perfect medals;
+- Perfect pulse;
+- per-Daily record;
+- Campaign best/stars;
+- PNG result cards;
+- Campaign card подписана как Campaign/Level, а не внутренний Training reuse;
+- Duel rematch.
+
+## Save / локальная экономика
+
+`SaveData` — v13 с миграциями. Основной прогресс не хранится целиком в PlayerPrefs.
+
+`JsonFileSaveRepository` использует одну process-wide runtime identity `SaveData`, поэтому независимо созданные presentation/store/reward services не могут затереть более свежие coins/hints/purchases/settings старой копией при позднем save.
+
+Campaign coins — только внутриигровая локальная награда. Они не заменяют реальные RuStore prices и расходуются только на hints.
+
+## Store / ads
+
+RuStore Pay находится за `IPaymentService`/`StoreService`. UI показывает цену только из SDK catalog.
+
+MVP products:
+
+- `remove_ads`;
+- `starter_pack`;
+- `skin_neon`;
+- `skin_retro`;
+- `hints_10`.
+
+Non-consumables восстанавливаются через RuStore ownership. Consumable grant защищён локальной idempotency по `purchaseId`.
+
+Yandex ads находятся за `IAdService`:
+
+- rewarded — opt-in, +1 hint только после reward callback;
+- interstitial — только в safe Home между сессиями;
+- active route/result/share/store/purchase не прерываются;
+- `remove_ads`/`starter_pack` подавляют interstitial;
+- frequency/cooldown policy отделена от gameplay.
+
+Production требует официальный Yandex Unity plugin, define `YANDEX_MOBILE_ADS` и реальные block IDs.
+
+## Android / RuStore baseline
+
+Проект зафиксирован на Unity `6000.3.24f1`, portrait, `UnityPlayerActivity`, IL2CPP/ARM64 release baseline.
+
+Последняя сверка официальной документации — 2026-09-16:
+
+- Pay Unity target `11.1.0`;
+- Install Referrer Unity target `10.6.1`;
+- Update `10.5.1`;
+- Review `10.5.1`;
+- Remote Config adapter target `10.5.0`;
+- target API baseline 34 / highest installed;
+- minSdk проекта 25, потому что Unity 6.3 уже не поддерживает API 24.
+
+Install Referrer и Remote Config adapters SDK-isolated через reflection/fallback. Их UPM packages временно отсутствуют в Editor manifest, потому что конкретный package source дал compile errors на Unity 6.3. Перед production они являются отдельным Android integration gate: официальный package → resolve/compile → physical-device test.
 
 ## Remote Config
 
-Runtime использует один shared `RuStoreRemoteConfigService` с локальным cache/default fallback. Gameplay не зависит от RuStore SDK: `RemoteGameplayTuningCoordinator` переводит валидированные параметры в pure C# `RouteRuntimeTuning`.
+Gameplay не зависит напрямую от SDK. `RemoteGameplayTuningCoordinator` переводит валидированные параметры в pure C# runtime tuning.
 
-Ключи MVP:
+Ключи:
 
 - `route_display_time_easy_ms`, `route_display_time_medium_ms`, `route_display_time_hard_ms`;
-- `daily_route_count` — 1..3;
+- `daily_route_count` (1..3);
 - `rewarded_enabled`, `interstitial_enabled`, `interstitial_min_rounds`, `interstitial_cooldown_sec`;
 - `review_min_sessions`;
 - `local_daily_reminder_enabled`, `daily_reminder_hour`;
 - `share_copy_variant`, `store_offer_variant`;
 - `min_supported_version`, `recommended_version`.
 
-Remote Config применяется при создании нового challenge. Уже созданный/расшаренный challenge фиксирует свой routeCount/display-time profile, поэтому изменение config не меняет условия вызова задним числом.
+Daily gameplay keys должны быть глобальными без audience A/B, иначе условия одного дня могут различаться между пользователями.
 
-## Реклама
+## Notifications
 
-В коде есть `YandexMobileAdsService` и runtime wiring для rewarded/interstitial. Gameplay продолжает работать без рекламного SDK. Для production требуется импортировать официальный Unity package, включить define `YANDEX_MOBILE_ADS` и задать реальные rewarded/interstitial block IDs; preflight намеренно блокирует release без этих настроек. Подробности — `docs/ADS_INTEGRATION.md`.
+Daily reminder планируется через `com.unity.mobile.notifications` и не требует push/backend. На Android 13+ `POST_NOTIFICATIONS` запрашивается контекстно после value event; отказ не блокирует игру.
 
-## Локальные уведомления
+## UI / mobile lifecycle
 
-Daily reminder планируется через `com.unity.mobile.notifications` и не требует RuStore Push или нашего сервера. На Android 13+ `POST_NOTIFICATIONS` запрашивается только после первого завершённого Daily и отдельного value prompt. Отказ не блокирует игру.
+- строго portrait;
+- Editor Game View preset 1080×1920;
+- safe-area handling;
+- Android Back для overlays/active round;
+- pause/background policy;
+- единая dark/cyan/violet presentation theme;
+- Home/Campaign/Training/Meta/Result surfaces;
+- Sound/Haptics имеют реальный feedback, а не декоративные toggles.
 
-## Опциональный backend
+## Быстрый запуск
 
-Папка `server/` сохранена как необязательный задел для будущего онлайн-режима: глобального leaderboard, server-time Daily, усиленной античит-проверки и server-side invoice verification. Текущая Android-сборка от этого кода не зависит.
+1. Установить Unity `6000.3.24f1` с Android Build Support.
+2. Открыть `UnityProject`.
+3. Дождаться UPM resolve/compile.
+4. Открыть `Assets/Scenes/Main.unity` (ProjectConfigurator создаст её при необходимости).
+5. Нажать Play.
 
-Если когда-нибудь понадобится онлайн-режим, backend можно запустить отдельно:
+Production-сборка дополнительно требует точный package name из RuStore Console, production signing, PayClient settings, официальный Install Referrer/Remote Config integration, Yandex package/IDs и device tests. Собственный backend URL задавать не требуется.
 
-```bash
-cd server
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\\Scripts\\activate
-pip install -e .[dev]
-pytest
-uvicorn app.main:app --reload
-```
+## CI
 
-## Проверки
+На PR запускаются шесть checks:
 
-На Pull Request запускаются:
+- `pure-csharp-tests` — generator/scoring/Daily/Duel/Economy/Campaign rules;
+- `backend-tests` — только optional future backend;
+- `offline-mode-guard` — offline/L3/config/store invariants;
+- `rustore-dependency-guard` — RuStore pins/registry isolation;
+- `unity-static-validation` — manifest/asmdef/project structure;
+- `product-flow-guard` — Campaign 60 levels, rewards, coin→hint, shared save и Training selector.
 
-- `pure-csharp-tests` — generator/scoring/Daily/Duel/Economy/ad policies/offline codec/runtime tuning;
-- `backend-tests` — только опциональный future-online backend;
-- `offline-mode-guard` — запрещает вернуть обязательный backend/server-sync UX и защищает L3 fairness invariants;
-- `rustore-dependency-guard` — защищает pins/registry/UnityPlayerActivity-инварианты;
-- `unity-static-validation` — проверяет manifest, asmdef, UPM pins и обязательные runtime-файлы.
-
-Статические CI-проверки **не заменяют** реальный compile в Unity и Android device tests.
-
-## RuStore
-
-Перед production-сборкой пройти `docs/RUSTORE_RELEASE_CHECKLIST.md`. Pay SDK и корректная Android Activity/deeplink остаются release blocker. Значения `consoleApplicationId`, signing credentials и другие production-параметры не хранятся в репозитории.
+Статические проверки не заменяют реальный Unity compile, signed AAB и physical-device RuStore tests.
 
 ## Структура
 
-- `UnityProject/Assets/Game/Core` — save/model/fixed-point.
-- `UnityProject/Assets/Game/Gameplay` — generator, score, Daily definitions и pure runtime tuning.
-- `UnityProject/Assets/Game/Daily` — Daily flow, streak/review policy.
-- `UnityProject/Assets/Game/Social` — offline challenge codec, duel/referral flow.
-- `UnityProject/Assets/Game/Economy` — товары и entitlements.
+- `UnityProject/Assets/Game/Core` — save/model/fixed-point/settings.
+- `UnityProject/Assets/Game/Gameplay` — route generator, scoring, Campaign catalog/progression.
+- `UnityProject/Assets/Game/Daily` — Daily/streak/review policies.
+- `UnityProject/Assets/Game/Social` — offline challenge codec, Duel/referral.
+- `UnityProject/Assets/Game/Economy` — RuStore product grants, cosmetics, local reward economy.
 - `UnityProject/Assets/Game/Monetization` — ad policies + Yandex adapter.
-- `UnityProject/Assets/Game/Services` — интерфейсы внешних сервисов.
-- `UnityProject/Assets/Game/Presentation` — UI/input/runtime wiring.
+- `UnityProject/Assets/Game/Services` — external-service interfaces.
+- `UnityProject/Assets/Game/Presentation` — runtime UI/input/coordinators.
 - `UnityProject/Assets/Game/Platform/RuStore` — RuStore adapters.
-- `UnityProject/Assets/Game/Platform/Android` — notification permission/local scheduler.
-- `server` — **опциональный**, не требуется текущему приложению.
-- `docs` — архитектура, SDK matrix, статус и release checklist.
+- `UnityProject/Assets/Game/Platform/Android` — notifications/Android helpers.
+- `server` — optional future online mode, not required by release client.
+- `docs` — architecture, SDK matrix, project status and production checklist.
+
+Перед production обязательно пройти `docs/RUSTORE_RELEASE_CHECKLIST.md`.
