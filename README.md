@@ -4,7 +4,7 @@
 
 ## Сервер не обязателен
 
-Release-клиент — **offline-first**. Для Campaign, Daily, Training, прогресса, магазина локальных наград и friend challenge не требуется VPS, собственная база данных, домен или постоянно работающий backend.
+Release-клиент — **offline-first**. Для Campaign, Daily, Training, прогресса, локальной экономики и friend challenge не требуется VPS, собственная база данных, домен или постоянно работающий backend.
 
 На устройстве работают локально:
 
@@ -46,16 +46,11 @@ Daily строится из UTC-даты и `generatorVersion`. Remote Config м
 
 ### Training
 
-Бесконечная локальная тренировка с явным выбором:
-
-- Easy;
-- Medium;
-- Hard;
-- Random.
+Бесконечная локальная тренировка с явным выбором Easy / Medium / Hard / Random.
 
 ### Friend Duel
 
-Сервер не нужен. L3 challenge token содержит date, seed, generatorVersion, routeCount, exact display-time profile и score отправителя. L1/L2 остаются backward-compatible. Share содержит deeplink для установленной игры и RuStore install URL с тем же token в `referrerId`.
+Сервер не нужен. L3 challenge token содержит date, seed, generatorVersion, routeCount, exact display-time profile и score отправителя. L1/L2 остаются backward-compatible. Share содержит `nesbeisya://challenge/<token>` и официальный RuStore install URL `https://www.rustore.ru/catalog/app/<package>?referrerId=<token>`.
 
 ## Результат и прогресс
 
@@ -71,9 +66,11 @@ Daily строится из UTC-даты и `generatorVersion`. Remote Config м
 
 ## Save / локальная экономика
 
-`SaveData` — v13 с миграциями. Основной прогресс не хранится целиком в PlayerPrefs.
+`SaveData` — v13 с миграциями и post-load repair. Основной прогресс не хранится целиком в PlayerPrefs.
 
-`JsonFileSaveRepository` использует одну process-wide runtime identity `SaveData`, поэтому независимо созданные presentation/store/reward services не могут затереть более свежие coins/hints/purchases/settings старой копией при позднем save.
+`JsonFileSaveRepository` использует одну process-wide runtime identity `SaveData`, поэтому independently created presentation/store/reward services не могут затереть более свежие coins/hints/purchases/settings старой копией. Shared cache сбрасывается при новом runtime, а file replacement использует temp + known-good backup с recovery при ошибке.
+
+Текущая v13 normalization также чинит отрицательные counters/currency, invalid scores, дубли purchase IDs, Daily bests и level progress, а obsolete backend pending queue удаляется при загрузке.
 
 Campaign coins — только внутриигровая локальная награда. Они не заменяют реальные RuStore prices и расходуются только на hints.
 
@@ -105,17 +102,19 @@ Production требует официальный Yandex Unity plugin, define `YA
 
 Проект зафиксирован на Unity `6000.3.24f1`, portrait, `UnityPlayerActivity`, IL2CPP/ARM64 release baseline.
 
-Последняя сверка официальной документации — 2026-09-16:
+Последняя сверка RuStore targets — 2026-09-16:
 
-- Pay Unity target `11.1.0`;
-- Install Referrer Unity target `10.6.1`;
-- Update `10.5.1`;
-- Review `10.5.1`;
-- Remote Config adapter target `10.5.0`;
+- Pay Unity `11.1.0`;
+- Install Referrer Unity `10.6.1`;
+- Update Unity `10.5.1`;
+- Review Unity `10.5.1`;
+- Remote Config Unity `10.5.1`;
+- GameCenter Unity `10.5.2` — optional, не critical path;
+- RuStore Push не используется: Daily reminders локальные;
 - target API baseline 34 / highest installed;
-- minSdk проекта 25, потому что Unity 6.3 уже не поддерживает API 24.
+- minSdk проекта 25, потому что Unity 6.3 уже не поддерживает API 24 как рабочий baseline.
 
-Install Referrer и Remote Config adapters SDK-isolated через reflection/fallback. Их UPM packages временно отсутствуют в Editor manifest, потому что конкретный package source дал compile errors на Unity 6.3. Перед production они являются отдельным Android integration gate: официальный package → resolve/compile → physical-device test.
+Install Referrer и Remote Config adapters SDK-isolated через reflection/fallback. Их packages временно отсутствуют в Editor manifest, потому что конкретная package integration дала compile errors на Unity 6.3. Перед production они являются отдельным Android integration gate: официальный package → resolve/compile → physical-device test. Production preflight требует реально загруженные Unity client types, а не только наличие adapter-файлов.
 
 ## Remote Config
 
@@ -142,11 +141,23 @@ Daily reminder планируется через `com.unity.mobile.notifications
 - строго portrait;
 - Editor Game View preset 1080×1920;
 - safe-area handling;
-- Android Back для overlays/active round;
+- Android Back для Training/Campaign/Meta overlays и active round;
 - pause/background policy;
 - единая dark/cyan/violet presentation theme;
 - Home/Campaign/Training/Meta/Result surfaces;
+- Campaign/Daily статистика находится прямо в Meta UI;
 - Sound/Haptics имеют реальный feedback, а не декоративные toggles.
+
+Текущий UI — функциональный финальный кандидат для общей приёмки. Финальная авторская типографика/иконки/иллюстрации могут быть заменены после визуальной приёмки без изменения gameplay architecture.
+
+## QA в Unity Editor
+
+Меню `Tools → НЕ СБЕЙСЯ! → QA` содержит:
+
+- `Open Local Data Folder`;
+- `Reset Local Progress and QA Logs` — доступно только вне Play Mode.
+
+Это позволяет проводить полный clean-state regression без ручного поиска `persistentDataPath`.
 
 ## Быстрый запуск
 
@@ -162,12 +173,12 @@ Production-сборка дополнительно требует точный p
 
 На PR запускаются шесть checks:
 
-- `pure-csharp-tests` — generator/scoring/Daily/Duel/Economy/Campaign rules;
+- `pure-csharp-tests` — generator/scoring/Daily/Duel/Economy/Campaign/save repair rules;
 - `backend-tests` — только optional future backend;
 - `offline-mode-guard` — offline/L3/config/store invariants;
-- `rustore-dependency-guard` — RuStore pins/registry isolation;
-- `unity-static-validation` — manifest/asmdef/project structure;
-- `product-flow-guard` — Campaign 60 levels, rewards, coin→hint, shared save и Training selector.
+- `rustore-dependency-guard` — RuStore targets/registry isolation;
+- `unity-static-validation` — manifest/asmdef/project/release-preflight structure;
+- `product-flow-guard` — Campaign, rewards, coin→hint, shared save, Training/overlay contracts.
 
 Статические проверки не заменяют реальный Unity compile, signed AAB и physical-device RuStore tests.
 
