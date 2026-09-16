@@ -20,11 +20,22 @@ Recordings/
 *.opendb
 *.VC.db
 
+# Android build artifacts
+*.apk
+*.aab
+*.apks
+
 # Android signing / local secrets
 *.keystore
 *.jks
+*.p12
+*.pfx
+*.pem
+keystore.properties
+local.properties
 *.properties.local
 .env
+.env.*
 
 # Python backend
 __pycache__/
