@@ -63,7 +63,7 @@ namespace DontGetSidetracked.Presentation
             Stretch(_hero.GetComponent<RectTransform>());
             _hero.transform.SetAsFirstSibling();
 
-            Text kicker = CreateText(_hero.transform, "Kicker", "DAILY CHALLENGE", 28,
+            Text kicker = CreateText(_hero.transform, "Kicker", "60 УРОВНЕЙ  •  6 ГЛАВ", 28,
                 new Vector2(0.08f, 0.82f), new Vector2(0.92f, 0.91f));
             kicker.color = new Color(0.35f, 0.88f, 1f, 0.94f);
             kicker.fontStyle = FontStyle.Bold;
@@ -101,7 +101,7 @@ namespace DontGetSidetracked.Presentation
             CreateDot(routeHost.transform, "StartPreview", new Vector2(0.08f, 0.22f), new Color(0.34f, 1f, 0.58f, 1f));
             CreateDot(routeHost.transform, "EndPreview", new Vector2(0.94f, 0.64f), new Color(1f, 0.40f, 0.48f, 1f));
 
-            Text caption = CreateText(_hero.transform, "Caption", "Несколько секунд на память. Потом — один жест.", 26,
+            Text caption = CreateText(_hero.transform, "Caption", "Проходи уровни, собирай звёзды и открывай новые главы.", 26,
                 new Vector2(0.08f, 0.07f), new Vector2(0.92f, 0.18f));
             caption.color = new Color(0.66f, 0.74f, 0.84f, 1f);
         }
