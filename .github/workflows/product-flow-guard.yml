@@ -22,6 +22,7 @@ jobs:
           test -f UnityProject/Assets/Game/Presentation/CampaignMetaSummaryCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/CampaignVisualThemeCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/ExtendedUiThemeCoordinator.cs
+          test -f UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
 
           # Campaign is substantial local content, not a placeholder.
           grep -q 'TotalLevels = 60' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
@@ -79,3 +80,8 @@ jobs:
           grep -q 'new Vector2(0.20f, 0.276f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'ShowRewardedAsync' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'save.Hints++' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+
+          # Daily reminders stay local, continue across missed app launches, and never pop over active gameplay.
+          grep -q 'RepeatInterval = TimeSpan.FromDays(1)' UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
+          grep -q 'ShowInForeground = false' UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
+          grep -q 'CancelScheduledNotification(NotificationId)' UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
