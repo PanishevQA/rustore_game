@@ -50,12 +50,6 @@ namespace DontGetSidetracked.Presentation
             SetVisible(false);
         }
 
-        private void Update()
-        {
-            if (_panel != null && _panel.activeSelf && Input.GetKeyDown(KeyCode.Escape))
-                Close();
-        }
-
         private void Open(GameBootstrap bootstrap)
         {
             _bootstrap = bootstrap;
