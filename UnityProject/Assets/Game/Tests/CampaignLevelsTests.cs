@@ -1,4 +1,5 @@
 using DontGetSidetracked.Core;
+using DontGetSidetracked.Economy;
 using DontGetSidetracked.Gameplay;
 using NUnit.Framework;
 
@@ -64,19 +65,67 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public void ReplayCannotReduceBestScoreOrStars()
+        public void ReplayCannotReduceBestScoreStarsOrFarmRewards()
         {
             var save = SaveData.CreateNew();
             var service = new CampaignProgressService(new MemoryRepository(save), save);
 
-            service.RecordResult(1, 97.2);
+            CampaignLevelCompletion first = service.RecordResult(1, 97.2);
             CampaignLevelCompletion replay = service.RecordResult(1, 63.0);
 
+            Assert.That(first.CoinsAwarded, Is.EqualTo(15));
+            Assert.That(save.Coins, Is.EqualTo(15));
             Assert.That(replay.BestScore, Is.EqualTo(97.2));
             Assert.That(replay.Stars, Is.EqualTo(3));
             Assert.That(replay.NewBest, Is.False);
             Assert.That(replay.NewStars, Is.False);
+            Assert.That(replay.CoinsAwarded, Is.EqualTo(0));
             Assert.That(service.TotalStars(), Is.EqualTo(3));
+            Assert.That(service.CompletedLevels(), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void StarUpgradeAwardsOnlyTheDifference()
+        {
+            var save = SaveData.CreateNew();
+            var service = new CampaignProgressService(new MemoryRepository(save), save);
+
+            CampaignLevelCompletion oneStar = service.RecordResult(1, 65.0);
+            CampaignLevelCompletion threeStars = service.RecordResult(1, 96.0);
+
+            Assert.That(oneStar.CoinsAwarded, Is.EqualTo(5));
+            Assert.That(threeStars.CoinsAwarded, Is.EqualTo(10));
+            Assert.That(save.Coins, Is.EqualTo(15));
+        }
+
+        [Test]
+        public void FirstChapterCompletionAwardsHintOnlyOnce()
+        {
+            var save = SaveData.CreateNew { HighestUnlockedLevel = 10 };
+            var service = new CampaignProgressService(new MemoryRepository(save), save);
+
+            CampaignLevelCompletion first = service.RecordResult(10, 70.0);
+            CampaignLevelCompletion replay = service.RecordResult(10, 99.0);
+
+            Assert.That(first.HintsAwarded, Is.EqualTo(1));
+            Assert.That(replay.HintsAwarded, Is.EqualTo(0));
+            Assert.That(save.Hints, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void CoinHintExchangeIsLocalAndAtomic()
+        {
+            var save = SaveData.CreateNew();
+            save.Coins = LocalRewardEconomyService.HintPriceCoins;
+            var repository = new MemoryRepository(save);
+            var economy = new LocalRewardEconomyService(repository, save);
+
+            Assert.That(economy.TryBuyHint(), Is.True);
+            Assert.That(save.Coins, Is.EqualTo(0));
+            Assert.That(save.Hints, Is.EqualTo(1));
+            Assert.That(economy.TryBuyHint(), Is.False);
+            Assert.That(save.Hints, Is.EqualTo(1));
+            Assert.That(repository.SaveCount, Is.EqualTo(1));
         }
 
         [Test]
