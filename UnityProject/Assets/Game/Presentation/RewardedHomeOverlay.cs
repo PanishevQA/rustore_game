@@ -124,9 +124,7 @@ namespace DontGetSidetracked.Presentation
         private static bool IsMetaPanelOpen()
         {
             MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
-            if (meta == null) return false;
-            FieldInfo field = typeof(MetaMenuOverlay).GetField("_panelOpen", BindingFlags.Instance | BindingFlags.NonPublic);
-            return field?.GetValue(meta) is bool open && open;
+            return meta != null && meta.IsPanelOpen;
         }
 
         private void ResolveBootstrap()
