@@ -48,6 +48,18 @@ jobs:
           grep -q 'DisplayTimeHardMs' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'RouteCount' UnityProject/Assets/Game/Presentation/GameBootstrap.cs
 
+          # Local campaign must stay deterministic and entirely device-side.
+          test -f UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          test -f UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+          test -f UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs
+          grep -q 'TotalLevels = 60' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          grep -q 'CampaignStarPolicy' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          grep -q 'HighestUnlockedLevel' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'LevelProgress' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'CurrentVersion = 13' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'CampaignRuntimeCoordinator.StartLevel' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+          grep -q 'level_complete' UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs
+
           # Hints bought in the store or earned via rewarded ads must be usable, locally persisted,
           # and Daily hint usage must propagate as assisted instead of silently remaining competitive.
           grep -q 'save.Hints--' UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs
@@ -85,7 +97,6 @@ jobs:
 
           # Result juice must stay useful rather than decorative: stable score medals, bounded per-Daily records,
           # a real PNG card through FileProvider, and a Duel rematch affordance.
-          grep -q 'CurrentVersion = 12' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'DailyBests' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'PerfectEffectThreshold' UnityProject/Assets/Game/Gameplay/ScoreCelebrationPolicy.cs
           grep -q 'MaxStoredRecords = 60' UnityProject/Assets/Game/Daily/DailyBestService.cs
