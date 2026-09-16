@@ -23,12 +23,16 @@ jobs:
           fi
           grep -q 'UnityPlayerActivity' docs/RUSTORE_RELEASE_CHECKLIST.md
           grep -q '11.1.0' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
-          grep -q '10.6.0' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
           grep -q '"com.unity.modules.audio": "1.0.0"' UnityProject/Packages/manifest.json
+          grep -q '"com.unity.modules.imageconversion": "1.0.0"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.core": "10.5.0"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.pay": "11.1.0"' UnityProject/Packages/manifest.json
-          grep -q '"ru.rustore.installreferrer": "10.6.0"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.update": "10.5.1"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.review": "10.5.1"' UnityProject/Packages/manifest.json
-          grep -q '"ru.rustore.remoteconfig": "10.5.0"' UnityProject/Packages/manifest.json
           grep -q 'nexus-external.rustore.ru/repository/npm-unity-rustore-exposed' UnityProject/Packages/manifest.json
+
+          # Install Referrer and Remote Config are optional during Editor functional testing.
+          # Their adapters must remain SDK-isolated so the game compiles and falls back safely when
+          # the official Android integration packages are not installed yet.
+          grep -q 'FindRuStoreType("InstallReferrerClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
+          grep -q 'FindRuStoreType("RuStoreRemoteConfigClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
