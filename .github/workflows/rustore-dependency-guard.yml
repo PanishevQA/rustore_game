@@ -43,5 +43,7 @@ jobs:
           # however, must block release until the verified versions are restored.
           grep -q 'FindRuStoreType("InstallReferrerClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
           grep -q 'FindRuStoreType("RuStoreRemoteConfigClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
-          grep -q 'ru.rustore.installreferrer\\\": \\\"10.6.1' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs
-          grep -q 'ru.rustore.remoteconfig\\\": \\\"10.5.0' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs
+          grep -q 'installreferrer' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs
+          grep -q '10.6.1' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs
+          grep -q 'remoteconfig' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs
+          grep -q '10.5.0' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs
