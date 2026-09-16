@@ -73,10 +73,18 @@ namespace DontGetSidetracked.Presentation
             if (TryDismissNotificationPrompt(platform)) return;
 
             TrainingMenuCoordinator training = FindFirstObjectByType<TrainingMenuCoordinator>();
-            if (TryCloseOverlayPanel(training, "_panel", "Close")) return;
+            if (training != null && training.IsOpen)
+            {
+                training.Close();
+                return;
+            }
 
             CampaignLevelMenuOverlay campaign = FindFirstObjectByType<CampaignLevelMenuOverlay>();
-            if (TryCloseOverlayPanel(campaign, "_panel", "Close")) return;
+            if (campaign != null && campaign.IsOpen)
+            {
+                campaign.Close();
+                return;
+            }
 
             MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
             if (TryCloseMetaPanel(meta)) return;
@@ -154,19 +162,6 @@ namespace DontGetSidetracked.Presentation
 
             MethodInfo decline = type.GetMethod("DeclineNotificationValuePrompt", BindingFlags.Instance | BindingFlags.NonPublic);
             decline?.Invoke(platform, null);
-            return true;
-        }
-
-        private static bool TryCloseOverlayPanel(object overlay, string panelFieldName, string closeMethodName)
-        {
-            if (overlay == null) return false;
-            Type type = overlay.GetType();
-            FieldInfo panelField = type.GetField(panelFieldName, BindingFlags.Instance | BindingFlags.NonPublic);
-            GameObject panel = panelField?.GetValue(overlay) as GameObject;
-            if (panel == null || !panel.activeSelf) return false;
-
-            MethodInfo close = type.GetMethod(closeMethodName, BindingFlags.Instance | BindingFlags.NonPublic);
-            close?.Invoke(overlay, null);
             return true;
         }
 
