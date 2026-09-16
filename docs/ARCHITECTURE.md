@@ -20,7 +20,7 @@ Release-клиент **не требует собственного backend, с�
 
 `Presentation -> gameplay/application services + interfaces`
 
-`Network` в release-клиенте остаётся compatibility/provider facade. При пустом `OptionalBackendBaseUrl` `UnityGameApi` работает через локальный `OfflineGameApi`; собственный HTTP не входит в обязательный runtime path.
+`Network` в release-клиенте остаётся compatibility/provider facade. При пустом `OptionalBackendBaseUrl` `UnityGameApi` работает через локальный `OfflineGameApi`; собственный HTTP не входит в обязательный runtime path. Gameplay tuning и advertising не используют `Network` для Remote Config: они читают общий `IRemoteConfigService` из `Platform/RuStore`.
 
 ## Модули
 
@@ -34,7 +34,7 @@ Release-клиент **не требует собственного backend, с�
 | Monetization | rewarded/interstitial policies и provider boundary |
 | Analytics | bounded device-only event journal |
 | Network | compatibility/provider facade; HTTP только для optional future mode |
-| Platform/RuStore | Pay, Review, Update и reflection-isolated Install Referrer/Remote Config adapters |
+| Platform/RuStore | Pay, Review, Update, reflection-isolated Install Referrer/Remote Config adapters и shared Remote Config runtime |
 | Platform/Android | notification permission и local Daily scheduler |
 | Presentation | Unity UI/input/lifecycle, Campaign/Training/Home/meta/result coordinators, safe area и runtime wiring |
 | Editor | production preflight, portrait Game View, local QA/reset tools |
@@ -138,6 +138,8 @@ Gameplay зависит от `IPaymentService`, а не от RuStore Pay нап�
 
 Gameplay знает только `IAdService`/policy classes. Rewarded на Home выдаёт `+1 hint` только после reward callback. Interstitial допускается только между сессиями и не показывается во время route display/drawing/result/share/store/purchase. `remove_ads` и `starter_pack` отключают interstitial.
 
+Advertising runtime читает тот же `RuStoreRemoteConfigRuntime` snapshot, что и gameplay tuning; отдельного Network-config path нет.
+
 Production требует официальный Yandex Mobile Ads Unity package, реальные block IDs и device test.
 
 ## Analytics
@@ -146,7 +148,9 @@ Production требует официальный Yandex Mobile Ads Unity package
 
 ## Remote Config
 
-`RuStoreRemoteConfigService` reflection-isolated и имеет cache/default fallback. Текущий production target — **Remote Config Unity 10.5.1**. Editor manifest намеренно не содержит проблемную package integration после Unity 6.3 compile regression; production preflight требует реально загруженный `RuStoreRemoteConfigClient` и production AppId.
+`RuStoreRemoteConfigService` reflection-isolated и имеет cache/default fallback. Текущий подтверждённый production target — **Remote Config Unity 10.5.0**. Editor manifest намеренно не содержит проблемную package integration после Unity 6.3 compile regression; production preflight требует реально загруженный `RuStoreRemoteConfigClient` и production AppId.
+
+`RuStoreRemoteConfigRuntime` владеет единственным shared provider/snapshot. Gameplay tuning и advertising получают его через `IRemoteConfigService`; compatibility facade `BootstrapRemoteConfigService` также делегирует этому же instance. Статическое состояние provider сбрасывается на `SubsystemRegistration`, чтобы Play Mode без Domain Reload не использовал stale snapshot.
 
 Основной gameplay не зависит от наличия SDK.
 
@@ -180,7 +184,7 @@ Editor QA menu позволяет открыть `persistentDataPath` и сбр�
 - min API 25 и текущий target API baseline;
 - Pay 11.1.0 / Update 10.5.1 / Review 10.5.1;
 - реально загруженные Install Referrer и Remote Config Unity client types;
-- Install Referrer target 10.6.1 / Remote Config target 10.5.1;
+- Install Referrer target 10.6.1 / Remote Config target 10.5.0;
 - пустой developer backend URL;
 - Remote Config production App ID;
 - Yandex production define и реальные ad IDs;
