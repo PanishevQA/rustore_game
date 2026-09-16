@@ -78,6 +78,8 @@
 
 Release-клиент не требует developer-operated backend или собственной БД. Campaign, Daily, Training, progress, economy, settings и cosmetics работают локально. `server/` остаётся только как optional foundation для возможного будущего online leaderboard/authoritative mode.
 
+Remote Config runtime также не зависит от нашего backend: один `RuStoreRemoteConfigRuntime` provider/cache используется gameplay tuning, advertising и compatibility facade; при отсутствии RuStore SDK работают cache/defaults.
+
 ## UI state
 
 Собран единый portrait presentation-layer: dark surface, cyan/violet accents, rounded CTA/cards, Home hero, campaign selector, Training selector, meta/settings/store/result overlays и safe-area обработка. Устранены конфликтующие layout/theme owners и Home flicker.
@@ -107,7 +109,7 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 - Install Referrer Unity: `10.6.1`;
 - Update Unity: `10.5.1`;
 - Review Unity: `10.5.1`;
-- Remote Config Unity: **`10.5.1`**;
+- Remote Config Unity: **`10.5.0`**;
 - GameCenter Unity: `10.5.2` — optional;
 - RuStore Push не используется: Daily reminder реализован локально;
 - targetSdk baseline: `34` / highest installed;
@@ -123,7 +125,7 @@ Install Referrer и Remote Config packages, которые дали compile erro
 - production keystore/key alias;
 - реальные PayClient/RuStore Console параметры;
 - официальный Install Referrer 10.6.1 package и physical-device smoke test;
-- официальный Remote Config 10.5.1 package/AppId и physical-device fallback test;
+- официальный Remote Config 10.5.0 package/AppId и physical-device fallback test;
 - официальный Yandex Mobile Ads Unity plugin + реальные block IDs;
 - Pay success/cancel/error/restore через реальный RuStore;
 - deeplink + Install Referrer после реальной установки;
