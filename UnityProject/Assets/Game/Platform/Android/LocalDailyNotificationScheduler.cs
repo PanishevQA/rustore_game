@@ -6,7 +6,10 @@ using Unity.Notifications.Android;
 namespace DontGetSidetracked.Platform.Android
 {
     /// <summary>
-    /// Schedules the next Daily reminder entirely on-device. No push server or developer backend is required.
+    /// Schedules the Daily reminder entirely on-device. The first fire time is aligned to the configured
+    /// local hour and then repeats every 24 hours, so reminders continue even if the player does not reopen
+    /// the game the next day. Every later app launch re-schedules it from local time, correcting clock/DST drift.
+    /// No push server or developer backend is required.
     /// </summary>
     public sealed class LocalDailyNotificationScheduler
     {
@@ -42,7 +45,9 @@ namespace DontGetSidetracked.Platform.Android
                 Title = "НЕ СБЕЙСЯ!",
                 Text = "Новое Daily Challenge уже ждёт. Сможешь повторить маршрут точнее?",
                 FireTime = DailyReminderPolicy.NextLocalFireTime(DateTime.Now, localHour),
-                ShouldAutoCancel = true
+                RepeatInterval = TimeSpan.FromDays(1),
+                ShouldAutoCancel = true,
+                ShowInForeground = false
             };
             AndroidNotificationCenter.SendNotificationWithExplicitID(notification, ChannelId, NotificationId);
             return true;
