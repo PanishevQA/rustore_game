@@ -1,0 +1,76 @@
+name: product-flow-guard
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify visible local product flows
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          test -f UnityProject/Assets/Game/Economy/LocalRewardEconomyService.cs
+          test -f UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+          test -f UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/CampaignMetaSummaryCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/CampaignVisualThemeCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/ExtendedUiThemeCoordinator.cs
+
+          # Campaign is substantial local content, not a placeholder.
+          grep -q 'TotalLevels = 60' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          grep -q 'LevelsPerChapter = 10' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          grep -q 'CampaignStarPolicy' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          grep -q 'CampaignRewardPolicy' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          grep -q 'CoinsPerNewStar = 5' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          grep -q 'ChapterCompletionHints = 1' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          grep -q 'CompletedLevels()' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          grep -q 'КАМПАНИЯ ЗАВЕРШЕНА' UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs
+          grep -q 'CurrentVersion = 13' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'HighestUnlockedLevel' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'LevelProgress' UnityProject/Assets/Game/Core/SaveData.cs
+
+          # Earned currency must have a real, bounded local use without replacing RuStore prices.
+          grep -q 'HintPriceCoins = 30' UnityProject/Assets/Game/Economy/LocalRewardEconomyService.cs
+          grep -q 'TryBuyHint' UnityProject/Assets/Game/Economy/LocalRewardEconomyService.cs
+          grep -q 'LocalRewardEconomyService' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+          grep -q '30 МОНЕТ' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+
+          # All presentation-side writers must observe one runtime save identity.
+          grep -q 'SharedByPath' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
+          grep -q 'SharedGate' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
+
+          # Training must be explicit to the player instead of silently cycling difficulty.
+          grep -q 'TrainingSelectCanvas' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'ЛЁГКАЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'СРЕДНЯЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'СЛОЖНАЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'СЛУЧАЙНАЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'TrainingSelectCanvas' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+
+          # Campaign/Training progression remains fully local.
+          if grep -nE 'UnityGameApi|UnityWebRequest|https?://' \
+              UnityProject/Assets/Game/Gameplay/CampaignLevels.cs \
+              UnityProject/Assets/Game/Economy/LocalRewardEconomyService.cs \
+              UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs \
+              UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs \
+              UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs; then
+            echo 'Network dependency leaked into local campaign/training flow.'
+            exit 1
+          fi
+
+          # Campaign analytics must survive the bounded local analytics allow-list.
+          grep -q 'LevelStart = "level_start"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
+          grep -q 'LevelComplete = "level_complete"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
+          grep -q 'CampaignReward = "campaign_reward"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
+
+          # Rewarded hint is opt-in and must not overlap the primary campaign CTA again.
+          grep -q 'new Vector2(0.20f, 0.276f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'ShowRewardedAsync' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'save.Hints++' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
