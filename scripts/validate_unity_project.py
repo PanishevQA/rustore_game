@@ -154,9 +154,9 @@ def validate_release_preflight_contract() -> None:
     path = UNITY / "Assets/Game/Editor/ProductionReleaseValidator.cs"
     text = read(path)
     required = {
-        '\"ru.rustore.pay\\\": \\\"11.1.0\\\"': "Production preflight must enforce RuStore Pay 11.1.0.",
-        '\"ru.rustore.installreferrer\\\": \\\"10.6.1\\\"': "Production preflight must block release until Install Referrer 10.6.1 is restored.",
-        '\"ru.rustore.remoteconfig\\\": \\\"10.5.0\\\"': "Production preflight must block release until Remote Config 10.5.0 is restored.",
+        r'\"ru.rustore.pay\": \"11.1.0\"': "Production preflight must enforce RuStore Pay 11.1.0.",
+        r'\"ru.rustore.installreferrer\": \"10.6.1\"': "Production preflight must block release until Install Referrer 10.6.1 is restored.",
+        r'\"ru.rustore.remoteconfig\": \"10.5.0\"': "Production preflight must block release until Remote Config 10.5.0 is restored.",
         'YANDEX_MOBILE_ADS': "Production preflight must require the Yandex ads integration symbol.",
         'useCustomKeystore': "Production preflight must require custom signing.",
         'buildAppBundle': "Production preflight must require AAB output.",
