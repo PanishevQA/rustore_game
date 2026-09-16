@@ -15,6 +15,7 @@
     "Game.Monetization",
     "UnityEngine.UI",
     "UnityEngine.AudioModule",
+    "UnityEngine.ImageConversionModule",
     "UnityEngine.AndroidJNIModule"
   ],
   "autoReferenced": true
