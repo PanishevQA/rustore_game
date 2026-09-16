@@ -185,10 +185,15 @@ namespace DontGetSidetracked.Social
     {
         private const string LegacyV1Prefix = "L1";
         private const string LegacyV2Prefix = "L2";
-        private const string Prefix = "L3";
+        private const string LegacyV3Prefix = "L3";
+        private const string Prefix = "L4";
         private const int LegacyV1TokenLength = 23;
         private const int LegacyV2TokenLength = 24;
-        private const int MinL3TokenLength = 28;
+        private const int MinLegacyV3TokenLength = 28;
+        private const int ChecksumHexLength = 4;
+        private const int MinL4TokenLength = MinLegacyV3TokenLength + ChecksumHexLength;
+        private const uint ChecksumFnvOffset = 2166136261u;
+        private const uint ChecksumFnvPrime = 16777619u;
 
         public static string Encode(DateTime date, long seed, int generatorVersion, double score) =>
             Encode(
@@ -217,21 +222,22 @@ namespace DontGetSidetracked.Social
                 throw new ArgumentException("Display-time profile must contain one value per route.", nameof(displayTimesMs));
 
             int scoreTenths = Math.Max(0, Math.Min(1000, (int)Math.Round(score * 10.0, MidpointRounding.AwayFromZero)));
-            string token = Prefix +
-                           date.ToString("yyyyMMdd", CultureInfo.InvariantCulture) +
-                           ((uint)seed).ToString("X8", CultureInfo.InvariantCulture) +
-                           generatorVersion.ToString("X2", CultureInfo.InvariantCulture) +
-                           routeCount.ToString("X1", CultureInfo.InvariantCulture);
+            string payload = Prefix +
+                             date.ToString("yyyyMMdd", CultureInfo.InvariantCulture) +
+                             ((uint)seed).ToString("X8", CultureInfo.InvariantCulture) +
+                             generatorVersion.ToString("X2", CultureInfo.InvariantCulture) +
+                             routeCount.ToString("X1", CultureInfo.InvariantCulture);
 
             for (int i = 0; i < routeCount; i++)
             {
                 int displayTime = displayTimesMs[i];
                 if (displayTime < RouteRuntimeTuning.MinDisplayTimeMs || displayTime > RouteRuntimeTuning.MaxDisplayTimeMs)
                     throw new ArgumentOutOfRangeException(nameof(displayTimesMs), "Display time is outside the safe range.");
-                token += displayTime.ToString("X4", CultureInfo.InvariantCulture);
+                payload += displayTime.ToString("X4", CultureInfo.InvariantCulture);
             }
 
-            return token + scoreTenths.ToString("X3", CultureInfo.InvariantCulture);
+            payload += scoreTenths.ToString("X3", CultureInfo.InvariantCulture);
+            return payload + CalculateChecksum(payload).ToString("X4", CultureInfo.InvariantCulture);
         }
 
         public static bool TryDecode(string token, out ReferralDto referral)
@@ -242,14 +248,31 @@ namespace DontGetSidetracked.Social
 
             bool v1 = value.Length == LegacyV1TokenLength && value.StartsWith(LegacyV1Prefix, StringComparison.Ordinal);
             bool v2 = value.Length == LegacyV2TokenLength && value.StartsWith(LegacyV2Prefix, StringComparison.Ordinal);
-            bool v3 = value.StartsWith(Prefix, StringComparison.Ordinal);
-            if (!v1 && !v2 && !v3) return false;
-            if (v3 && value.Length < MinL3TokenLength) return false;
+            bool v3 = value.StartsWith(LegacyV3Prefix, StringComparison.Ordinal);
+            bool v4 = value.StartsWith(Prefix, StringComparison.Ordinal);
+            if (!v1 && !v2 && !v3 && !v4) return false;
+            if (v3 && value.Length < MinLegacyV3TokenLength) return false;
+            if (v4 && value.Length < MinL4TokenLength) return false;
 
-            if (!DateTime.TryParseExact(value.Substring(2, 8), "yyyyMMdd", CultureInfo.InvariantCulture,
+            string payload = value;
+            if (v4)
+            {
+                int checksumOffset = value.Length - ChecksumHexLength;
+                if (checksumOffset <= 0) return false;
+                if (!ushort.TryParse(
+                        value.Substring(checksumOffset, ChecksumHexLength),
+                        NumberStyles.HexNumber,
+                        CultureInfo.InvariantCulture,
+                        out ushort checksum)) return false;
+
+                payload = value.Substring(0, checksumOffset);
+                if (CalculateChecksum(payload) != checksum) return false;
+            }
+
+            if (!DateTime.TryParseExact(payload.Substring(2, 8), "yyyyMMdd", CultureInfo.InvariantCulture,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime date)) return false;
-            if (!uint.TryParse(value.Substring(10, 8), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint seed)) return false;
-            if (!byte.TryParse(value.Substring(18, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out byte version) || version == 0) return false;
+            if (!uint.TryParse(payload.Substring(10, 8), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint seed)) return false;
+            if (!byte.TryParse(payload.Substring(18, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out byte version) || version == 0) return false;
 
             int routeCount;
             int scoreOffset;
@@ -263,7 +286,7 @@ namespace DontGetSidetracked.Social
             }
             else
             {
-                if (!int.TryParse(value.Substring(20, 1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out routeCount) ||
+                if (!int.TryParse(payload.Substring(20, 1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out routeCount) ||
                     routeCount < 1 || routeCount > 3) return false;
 
                 if (v2)
@@ -273,13 +296,13 @@ namespace DontGetSidetracked.Social
                 }
                 else
                 {
-                    int expectedLength = 24 + routeCount * 4;
-                    if (value.Length != expectedLength) return false;
+                    int expectedPayloadLength = 24 + routeCount * 4;
+                    if (payload.Length != expectedPayloadLength) return false;
                     var parsedTimes = new int[routeCount];
                     int offset = 21;
                     for (int i = 0; i < routeCount; i++)
                     {
-                        if (!int.TryParse(value.Substring(offset + i * 4, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int displayTime) ||
+                        if (!int.TryParse(payload.Substring(offset + i * 4, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int displayTime) ||
                             displayTime < RouteRuntimeTuning.MinDisplayTimeMs ||
                             displayTime > RouteRuntimeTuning.MaxDisplayTimeMs)
                             return false;
@@ -290,8 +313,8 @@ namespace DontGetSidetracked.Social
                 }
             }
 
-            if (scoreOffset < 0 || scoreOffset + 3 != value.Length) return false;
-            if (!int.TryParse(value.Substring(scoreOffset, 3), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int scoreTenths) ||
+            if (scoreOffset < 0 || scoreOffset + 3 != payload.Length) return false;
+            if (!int.TryParse(payload.Substring(scoreOffset, 3), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int scoreTenths) ||
                 scoreTenths > 1000) return false;
 
             int easy = RouteRuntimeTuning.DefaultEasyDisplayTimeMs;
@@ -349,6 +372,18 @@ namespace DontGetSidetracked.Social
             if (!TryDecode(candidate, out ReferralDto decoded)) return false;
             token = decoded.ReferralId;
             return true;
+        }
+
+        private static ushort CalculateChecksum(string payload)
+        {
+            uint hash = ChecksumFnvOffset;
+            for (int i = 0; i < payload.Length; i++)
+            {
+                char c = char.ToUpperInvariant(payload[i]);
+                hash ^= (byte)(c & 0xFF);
+                hash *= ChecksumFnvPrime;
+            }
+            return (ushort)(((hash >> 16) ^ hash) & 0xFFFFu);
         }
     }
 }
