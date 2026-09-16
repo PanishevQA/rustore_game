@@ -91,7 +91,6 @@ namespace DontGetSidetracked.Presentation
                 return;
             }
 
-            // Back is explicit navigation, so it leaves Tutorial/Daily/Duel/Training/Result immediately.
             AbortToHome(bootstrap);
         }
 
@@ -106,7 +105,6 @@ namespace DontGetSidetracked.Presentation
             string state = stateField?.GetValue(bootstrap)?.ToString() ?? string.Empty;
             string mode = modeField?.GetValue(bootstrap)?.ToString() ?? string.Empty;
 
-            // Result screens survive temporary backgrounding (for example Android share sheet).
             if (!string.Equals(state, "Showing", StringComparison.Ordinal) &&
                 !string.Equals(state, "Drawing", StringComparison.Ordinal)) return;
 
@@ -232,6 +230,7 @@ namespace DontGetSidetracked.Presentation
             string.Equals(canvasName, "MetaCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "RewardedCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "HintCanvas", StringComparison.Ordinal) ||
+            string.Equals(canvasName, "ResultEnhancementCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "NotificationValueCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "MandatoryUpdateCanvas", StringComparison.Ordinal);
 
