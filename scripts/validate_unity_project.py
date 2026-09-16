@@ -11,6 +11,10 @@ ANDROID_NS = "http://schemas.android.com/apk/res/android"
 ANDROID_NAME = f"{{{ANDROID_NS}}}name"
 ANDROID_SCHEME = f"{{{ANDROID_NS}}}scheme"
 ANDROID_HOST = f"{{{ANDROID_NS}}}host"
+ANDROID_EXPORTED = f"{{{ANDROID_NS}}}exported"
+ANDROID_AUTHORITIES = f"{{{ANDROID_NS}}}authorities"
+ANDROID_GRANT_URI_PERMISSIONS = f"{{{ANDROID_NS}}}grantUriPermissions"
+ANDROID_RESOURCE = f"{{{ANDROID_NS}}}resource"
 
 
 def fail(message: str) -> None:
@@ -109,6 +113,30 @@ def validate_android_manifest() -> None:
         fail(f"AndroidManifest.xml is invalid XML: {exc}")
         return
 
+    permissions = {
+        item.attrib.get(ANDROID_NAME, "")
+        for item in root.findall("./uses-permission")
+    }
+    if "android.permission.POST_NOTIFICATIONS" not in permissions:
+        fail("AndroidManifest.xml must declare POST_NOTIFICATIONS for contextual Daily reminders on Android 13+.")
+
+    forbidden_permissions = {
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_SMS",
+        "android.permission.SEND_SMS",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.MANAGE_EXTERNAL_STORAGE",
+    }
+    forbidden_found = sorted(permission for permission in permissions if permission in forbidden_permissions)
+    if forbidden_found:
+        fail("Unnecessary sensitive Android permissions declared: " + ", ".join(forbidden_found))
+
     activities = list(root.findall("./application/activity"))
     unity_activities = [
         activity for activity in activities
@@ -133,6 +161,31 @@ def validate_android_manifest() -> None:
     if not has_challenge_deeplink:
         fail("UnityPlayerActivity must declare the nesbeisya://challenge deeplink.")
 
+    providers = list(root.findall("./application/provider"))
+    file_providers = [
+        provider for provider in providers
+        if provider.attrib.get(ANDROID_NAME) == "androidx.core.content.FileProvider"
+    ]
+    valid_share_provider = False
+    for provider in file_providers:
+        if provider.attrib.get(ANDROID_AUTHORITIES) != "${applicationId}.shareprovider":
+            continue
+        if provider.attrib.get(ANDROID_EXPORTED) != "false":
+            continue
+        if provider.attrib.get(ANDROID_GRANT_URI_PERMISSIONS) != "true":
+            continue
+        for meta in provider.findall("./meta-data"):
+            if (
+                meta.attrib.get(ANDROID_NAME) == "android.support.FILE_PROVIDER_PATHS"
+                and meta.attrib.get(ANDROID_RESOURCE) == "@xml/nesbeisya_file_paths"
+            ):
+                valid_share_provider = True
+                break
+        if valid_share_provider:
+            break
+    if not valid_share_provider:
+        fail("Result PNG sharing requires a non-exported ${applicationId}.shareprovider FileProvider with nesbeisya_file_paths.")
+
 
 def validate_required_runtime_files() -> None:
     paths = (
@@ -144,6 +197,7 @@ def validate_required_runtime_files() -> None:
         "Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs",
         "Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs",
         "Assets/Game/Editor/ProductionReleaseValidator.cs",
+        "Assets/ResultShare.androidlib/src/main/res/xml/nesbeisya_file_paths.xml",
     )
     for relative in paths:
         if not (UNITY / relative).is_file():
