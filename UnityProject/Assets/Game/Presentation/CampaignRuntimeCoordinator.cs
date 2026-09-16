@@ -166,13 +166,17 @@ namespace DontGetSidetracked.Presentation
             Text status = Get<Text>(_statusField);
             if (status != null)
             {
-                string unlocked = completion.NextLevelUnlocked
-                    ? $"\nОТКРЫТ УРОВЕНЬ {completion.HighestUnlockedLevel}"
-                    : string.Empty;
                 string best = completion.NewBest ? " • НОВЫЙ РЕКОРД" : string.Empty;
+                string rewards = string.Empty;
+                if (completion.CoinsAwarded > 0) rewards += $"\n+{completion.CoinsAwarded} МОНЕТ";
+                if (completion.HintsAwarded > 0) rewards += $"  •  +{completion.HintsAwarded} ПОДСКАЗКА";
+                if (completion.NextLevelUnlocked) rewards += $"\nОТКРЫТ УРОВЕНЬ {completion.HighestUnlockedLevel}";
+                if (_level.LevelNumber % CampaignLevelCatalog.LevelsPerChapter == 0 && completion.Stars >= 1)
+                    rewards += $"\nГЛАВА {_level.ChapterNumber} ПРОЙДЕНА";
+
                 status.text =
                     $"УРОВЕНЬ {_level.LevelNumber}  •  {completion.Score:0.0}%\n" +
-                    $"{Stars(completion.Stars)}{best}{unlocked}";
+                    $"{Stars(completion.Stars)}{best}{rewards}";
             }
 
             Button primary = Get<Button>(_primaryField);
@@ -197,6 +201,9 @@ namespace DontGetSidetracked.Presentation
                 "score", completion.Score,
                 "stars", completion.Stars,
                 "new_best", completion.NewBest,
+                "new_stars", completion.NewStars,
+                "coins_awarded", completion.CoinsAwarded,
+                "hints_awarded", completion.HintsAwarded,
                 "unlocked_next", completion.NextLevelUnlocked));
         }
 
@@ -241,7 +248,6 @@ namespace DontGetSidetracked.Presentation
                 _homeWired = true;
             }
 
-            // HomePolish owns the general portrait layout. This adapter only makes room for a second core CTA.
             SetAnchors(primary.GetComponent<RectTransform>(), new Vector2(0.075f, 0.205f), new Vector2(0.925f, 0.270f));
             SetAnchors(share.GetComponent<RectTransform>(), new Vector2(0.075f, 0.135f), new Vector2(0.925f, 0.195f));
             share.gameObject.SetActive(true);
@@ -257,7 +263,7 @@ namespace DontGetSidetracked.Presentation
                 var progress = new CampaignProgressService(_repository, save);
                 Text status = Get<Text>(_statusField);
                 if (status != null)
-                    status.text = $"УРОВЕНЬ {progress.HighestUnlockedLevel}/{CampaignLevelCatalog.TotalLevels}  •  ★ {progress.TotalStars()}  •  DAILY {_saveStreak(save)}д";
+                    status.text = $"ПРОЙДЕНО {progress.CompletedLevels()}/{CampaignLevelCatalog.TotalLevels}  •  ★ {progress.TotalStars()}\nМОНЕТЫ {save.Coins}  •  DAILY {save.Streak}д";
             }
         }
 
@@ -353,7 +359,7 @@ namespace DontGetSidetracked.Presentation
 
         private string LevelTitle() => _level == null
             ? "УРОВЕНЬ"
-            : $"УРОВЕНЬ {_level.LevelNumber}  •  ГЛАВА {_level.ChapterNumber}";
+            : $"УРОВЕНЬ {_level.LevelNumber}  •  {CampaignLevelCatalog.ChapterName(_level.ChapterNumber)}";
 
         private static string Stars(int count)
         {
@@ -362,8 +368,6 @@ namespace DontGetSidetracked.Presentation
             if (count == 1) return "★ ☆ ☆";
             return "☆ ☆ ☆";
         }
-
-        private static int _saveStreak(SaveData save) => save == null ? 0 : save.Streak;
 
         private static System.Collections.Generic.Dictionary<string, object> Params(params object[] pairs)
         {
