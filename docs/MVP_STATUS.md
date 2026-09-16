@@ -1,6 +1,6 @@
-# MVP readiness — 2026-09-15
+# MVP readiness — 2026-09-16
 
-Текущая оценка **production-ready offline-first MVP: 92%**.
+Текущая оценка **production-ready offline-first MVP: 94%**.
 
 Это не процент строк кода. Оценка взвешивает обязательные блоки продукта и отдельно учитывает то, что нельзя честно считать готовым без Unity Editor, production RuStore Console параметров, подписанного Android AAB и проверки на физическом устройстве.
 
@@ -10,15 +10,15 @@
 |---|---:|---:|---|
 | Core gameplay + deterministic generator + score | 20% | 100% | Реализовано, pure C#, unit tests |
 | Local Daily + replay recalculation | 15% | 99% | UTC-date seed, local replay verification, Remote Config 1–3 routes + exact timing cache; нужен device/golden-seed test |
-| Social/referral/duel viral loop | 12% | 100% | L3 self-contained token фиксирует date/seed/version/routeCount/display-times/score; L1/L2 backward compatibility |
-| Save/local analytics/Remote Config policies | 10% | 99% | SaveData v10, migrations, bounded local analytics, RuStore Remote Config cache/default fallback |
+| Social/referral/duel viral loop | 12% | 100% | L3 self-contained token фиксирует date/seed/version/routeCount/display-times/score; L1/L2 backward compatibility; rematch UX |
+| Save/local analytics/Remote Config policies | 10% | 100% | SaveData v12, migrations, bounded Daily records/local analytics, RuStore Remote Config cache/default fallback |
 | Economy + RuStore Pay | 12% | 90% | Pay 11.1.0 adapter, SDK price, store/restore, offline-first entitlement flow; нужны Console credentials и device purchase tests |
 | Ads monetization | 8% | 80% | Yandex Mobile Ads 8.x adapter, rewarded/interstitial lifecycle и caps готовы; нужны официальный package import, реальные IDs и device test |
-| UI/meta/mobile lifecycle | 8% | 95% | Tutorial/Home/Daily/Training/Duel/statistics/store, dynamic route count, safe area, Back, pause/resume, local notifications |
+| UI/meta/mobile lifecycle | 8% | 98% | Tutorial/Home/Daily/Training/Duel/statistics/store/settings, hints, cosmetics, medals, Perfect pulse, Daily record, PNG result card, safe area/Back/pause |
 | RuStore platform services | 7% | 94% | Review/Update/Install Referrer/Remote Config готовы; Push не нужен для MVP, Daily reminder локальный |
 | Production/release verification | 8% | 62% | Static validator + signed-AAB preflight + CI guards готовы; ещё нет реального Unity compile/AAB/device smoke test |
 
-Взвешенная оценка округлена консервативно до **92%**. Feature/code completeness — примерно **98%**, но её нельзя использовать как «готово к публикации» до реальной Unity/Android проверки.
+Взвешенная оценка округлена консервативно до **94%**. Feature/code completeness — примерно **99%**, но её нельзя использовать как «готово к публикации» до реальной Unity/Android проверки.
 
 ## Уже закрытые release-critical требования
 
@@ -36,8 +36,15 @@
 - L1 и L2 challenge tokens продолжают декодироваться с безопасным legacy/default timing.
 - Reshare L3 сохраняет исходный seed/version/routeCount/display-times и меняет только score нового отправителя.
 - Share содержит deeplink и RuStore install URL с тем же self-contained token.
-- SaveData v10 хранит routeCount + display-time profile cached Daily и удаляет legacy sync queue; новые Daily/Duel не создают `PendingAttempts`.
-- GameBootstrap не показывает пользователю «синхронизацию»/«отправим позже» в offline-first build.
+- SaveData v12 хранит routeCount + display-time profile cached Daily, выбранную косметику и bounded историю личных рекордов Daily; legacy sync queue удалена.
+- Результат получает стабильные медали: Bronze 80+, Silver 90+, Gold 95+, Perfect 99+; Perfect pulse начинается с 98%.
+- Личный рекорд хранится отдельно для каждого `challengeId`, история ограничена 60 Daily-записями.
+- PNG result-card рендерится локально в Unity и шарится через Android `FileProvider`; challenge URL остаётся в share text, а при ошибке image share используется text fallback.
+- Android resources result-card упакованы через Unity 6 `.androidlib`; AndroidX Core/FileProvider pin добавлен явно.
+- Duel после завершения предлагает **«РЕВАНШ»**, не создавая нового server/backend состояния.
+- Подсказки из rewarded/store реально используются в Daily/Training; Daily с подсказкой помечается assisted.
+- Купленные cosmetics имеют локальный selection и визуально применяются только во время Drawing, не меняя scoring/result readability.
+- Sound/Haptics toggles управляют реальным локальным tone/haptic feedback, без лишнего `VIBRATE` permission.
 - Каталог и цены магазина приходят из RuStore Pay SDK; non-consumables восстанавливаются через `GetPurchases`.
 - Consumable reward защищён сохранённым `purchaseId` от повторной локальной выдачи.
 - Yandex rewarded выдаёт награду только после reward callback; interstitial учитывается как показанный только после успешного show result.
@@ -49,7 +56,7 @@
 - Safe area, Android Back и pause/resume policy реализованы; системный share sheet не уничтожает Result screen.
 - `LocalCrashLog` и `LocalAnalyticsService` не требуют нашего сервера.
 - Production preflight блокирует release без custom keystore/alias, AAB, IL2CPP, ARM64, положительного versionCode и обязательных production IDs/settings.
-- L3 code head `cc199bca56509b0004d64790d3996bd0942487c1`: pure C# tests, optional backend tests, offline-mode guard, RuStore dependency guard и Unity static validation — все зелёные.
+- Result-enhancement code head `4829a65b7b4559c1c1b60a17f20762ea6d813fb3`: pure C# tests, optional backend tests, offline-mode guard, RuStore dependency guard и Unity static validation — все зелёные.
 
 ## Осознанные ограничения полностью локальной архитектуры
 
@@ -66,7 +73,7 @@
 4. Импортировать официально скачанный Yandex Mobile Ads Unity package, включить `YANDEX_MOBILE_ADS` и указать реальные rewarded/interstitial block IDs.
 5. Прогнать RuStore Pay purchase/cancel/error/restore на физическом Android-устройстве.
 6. Собрать подписанный release AAB, пройти `Tools/НЕ СБЕЙСЯ!/Validate Production Release` и установить сборку минимум на API 24 и Android 13+.
-7. Выполнить device smoke/regression: Daily 1/2/3 routes, exact display times, Training, L1/L2/L3 Duel/deeplink, Install Referrer, Review, Update, ads, local notification, background/resume, Android Back, share sheet, safe area и несколько DPI/aspect ratios.
+7. Выполнить device smoke/regression: Daily 1/2/3 routes, exact display times, Training, hints, cosmetics, Sound/Haptics, medals/Perfect pulse, per-Daily record, PNG share-card/FileProvider, Duel rematch, L1/L2/L3 deeplink, Install Referrer, Review, Update, ads, local notification, background/resume, Android Back, share sheet, safe area и несколько DPI/aspect ratios.
 8. Повторно сверить версии SDK и Android/RuStore требования непосредственно перед production-сборкой.
 
 Опциональный `server/` остаётся в репозитории только как задел для будущего глобального leaderboard/authoritative online mode. Релизная сборка от него не зависит.
