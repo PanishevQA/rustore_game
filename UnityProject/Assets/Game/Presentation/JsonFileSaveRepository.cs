@@ -54,19 +54,49 @@ namespace DontGetSidetracked.Presentation
             lock (SharedGate)
             {
                 data = SaveMigrator.Migrate(data);
-                SharedByPath[_path] = data;
-
                 string tempPath = _path + ".tmp";
                 File.WriteAllText(tempPath, JsonUtility.ToJson(data, false));
 
-                if (File.Exists(_path))
+                try
                 {
-                    try { File.Copy(_path, _backupPath, true); }
-                    catch (IOException) { }
-                    File.Delete(_path);
+                    if (File.Exists(_path))
+                    {
+                        // Never remove the current primary save unless its backup was created successfully.
+                        File.Copy(_path, _backupPath, true);
+                        File.Delete(_path);
+                    }
+
+                    File.Move(tempPath, _path);
+                    SharedByPath[_path] = data;
                 }
-                File.Move(tempPath, _path);
+                catch
+                {
+                    // If replacement failed after the primary was removed, immediately restore the known-good backup.
+                    TryRestorePrimaryFromBackup();
+                    TryDelete(tempPath);
+                    throw;
+                }
             }
+        }
+
+        private void TryRestorePrimaryFromBackup()
+        {
+            if (File.Exists(_path) || !File.Exists(_backupPath)) return;
+            try
+            {
+                File.Copy(_backupPath, _path, true);
+            }
+            catch (Exception error)
+            {
+                Debug.LogError($"Save recovery failed for {_path}: {error.Message}");
+            }
+        }
+
+        private static void TryDelete(string path)
+        {
+            if (!File.Exists(path)) return;
+            try { File.Delete(path); }
+            catch (Exception) { }
         }
 
         private static SaveData TryLoad(string path)
