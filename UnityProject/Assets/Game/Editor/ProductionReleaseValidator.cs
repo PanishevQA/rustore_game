@@ -73,11 +73,16 @@ namespace DontGetSidetracked.EditorTools
                 ("android:scheme=\"nesbeisya\"", "Challenge deeplink scheme is missing from AndroidManifest."),
                 ("android:host=\"challenge\"", "Challenge deeplink host is missing from AndroidManifest."));
 
+            // Install Referrer and Remote Config are intentionally allowed to be absent from the day-to-day
+            // Unity Editor manifest after their Unity 6.3 package regressions, but a production AAB must never
+            // pass preflight until the verified Android integration packages have been restored and tested.
             ValidateFileContains(PackagesManifestPath, errors,
                 ("nexus-external.rustore.ru/repository/npm-unity-rustore-exposed", "Use the current RuStore npm registry."),
                 ("\"ru.rustore.pay\": \"11.1.0\"", "RuStore Pay must remain pinned to the verified version."),
                 ("\"ru.rustore.update\": \"10.5.1\"", "RuStore Update must remain pinned to the verified version."),
-                ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."));
+                ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."),
+                ("\"ru.rustore.installreferrer\": \"10.6.1\"", "Production release requires the verified RuStore Install Referrer 10.6.1 package for install-time challenge recovery."),
+                ("\"ru.rustore.remoteconfig\": \"10.5.0\"", "Production release requires the verified RuStore Remote Config 10.5.0 package for production tuning."));
 
             ValidateFileContains(RuntimeSettingsPath, errors,
                 ("OptionalBackendBaseUrl = \"\"", "Offline-first MVP must ship without a developer-operated backend URL."));
