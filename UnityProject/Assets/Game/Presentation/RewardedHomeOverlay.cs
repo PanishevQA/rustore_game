@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
-using DontGetSidetracked.Network;
+using DontGetSidetracked.Platform.RuStore;
 using DontGetSidetracked.Services;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,7 +17,7 @@ namespace DontGetSidetracked.Presentation
     public sealed class RewardedHomeOverlay : MonoBehaviour
     {
         private JsonFileSaveRepository _saveRepository;
-        private BootstrapRemoteConfigService _config;
+        private IRemoteConfigService _config;
         private GameBootstrap _bootstrap;
         private FieldInfo _modeField;
         private FieldInfo _stateField;
@@ -39,7 +39,7 @@ namespace DontGetSidetracked.Presentation
         private void Awake()
         {
             _saveRepository = new JsonFileSaveRepository();
-            _config = new BootstrapRemoteConfigService(GameRuntimeSettings.BackendBaseUrl);
+            _config = RuStoreRemoteConfigRuntime.Service;
             BuildUi();
             ResolveBootstrap();
             SetVisible(false);
