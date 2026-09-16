@@ -119,7 +119,7 @@ namespace DontGetSidetracked.Presentation
             ReloadProgress();
             if (!_progress.IsUnlocked(levelNumber)) return;
             SetVisible(false);
-            _bootstrap?.StartCampaignLevel(levelNumber);
+            CampaignRuntimeCoordinator.StartLevel(_bootstrap, levelNumber);
         }
 
         private void PreviousChapter()
@@ -134,6 +134,12 @@ namespace DontGetSidetracked.Presentation
             if (_chapter >= CampaignLevelCatalog.TotalChapters) return;
             _chapter++;
             Render();
+        }
+
+        private void GoHome()
+        {
+            SetVisible(false);
+            CampaignRuntimeCoordinator.ReturnHome(_bootstrap);
         }
 
         private void Close() => SetVisible(false);
@@ -181,7 +187,7 @@ namespace DontGetSidetracked.Presentation
             _gridRoot = grid.transform;
 
             _previous = CreateButton(_panel.transform, "← ГЛАВА", new Vector2(0.07f, 0.105f), new Vector2(0.31f, 0.165f), PreviousChapter);
-            CreateButton(_panel.transform, "ЗАКРЫТЬ", new Vector2(0.38f, 0.105f), new Vector2(0.62f, 0.165f), Close);
+            CreateButton(_panel.transform, "ДОМОЙ", new Vector2(0.38f, 0.105f), new Vector2(0.62f, 0.165f), GoHome);
             _next = CreateButton(_panel.transform, "ГЛАВА →", new Vector2(0.69f, 0.105f), new Vector2(0.93f, 0.165f), NextChapter);
 
             Text hint = CreateText(_panel.transform, "Hint", 24, TextAnchor.MiddleCenter,
