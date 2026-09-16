@@ -8,7 +8,6 @@ namespace DontGetSidetracked.EditorTools
 {
     /// <summary>
     /// Keeps the Editor Game view aligned with the portrait-only mobile product.
-    /// Uses reflection only against UnityEditor internals and fails silently if Unity changes them.
     /// Runtime/build orientation is enforced separately by PlayerSettings and AndroidManifest.
     /// </summary>
     [InitializeOnLoad]
@@ -38,12 +37,27 @@ namespace DontGetSidetracked.EditorTools
                 if (gameViewType == null || sizesType == null || groupType == null || sizeType == null || sizeKindType == null)
                     return;
 
-                object sizes = sizesType.GetProperty("instance", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
+                Type singletonType = typeof(ScriptableSingleton<>).MakeGenericType(sizesType);
+                PropertyInfo instanceProperty = singletonType.GetProperty(
+                    "instance",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                object sizes = instanceProperty?.GetValue(null);
                 if (sizes == null) return;
 
-                string groupName = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android ? "Android" : "Standalone";
-                object groupEnum = Enum.Parse(groupType, groupName);
-                object group = sizesType.GetMethod("GetGroup", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.Invoke(sizes, new[] { groupEnum });
+                PropertyInfo currentGroupProperty = sizesType.GetProperty(
+                    "currentGroupType",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                object groupEnum = currentGroupProperty?.GetValue(sizes);
+                if (groupEnum == null)
+                {
+                    string fallbackGroup = EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android ? "Android" : "Standalone";
+                    groupEnum = Enum.Parse(groupType, fallbackGroup);
+                }
+
+                MethodInfo getGroup = sizesType.GetMethod(
+                    "GetGroup",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                object group = getGroup?.Invoke(sizes, new[] { groupEnum });
                 if (group == null) return;
 
                 Type concreteGroupType = group.GetType();
@@ -82,11 +96,33 @@ namespace DontGetSidetracked.EditorTools
                     addCustomSize.Invoke(group, new[] { customSize });
                     count = Convert.ToInt32(getTotalCount.Invoke(group, null));
                     selectedIndex = count - 1;
+
+                    MethodInfo saveToHdd = sizesType.GetMethod("SaveToHDD", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    saveToHdd?.Invoke(sizes, null);
                 }
 
-                EditorWindow gameView = EditorWindow.GetWindow(gameViewType, false, "Game", false);
-                PropertyInfo selectedSizeIndex = gameViewType.GetProperty("selectedSizeIndex", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                selectedSizeIndex?.SetValue(gameView, selectedIndex);
+                EditorWindow gameView = EditorWindow.GetWindow(gameViewType, false, "Game", true);
+
+                // Unity 6.x updates the toolbar reliably through SizeSelectionCallback.
+                MethodInfo selectionCallback = gameViewType.GetMethod(
+                    "SizeSelectionCallback",
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (selectionCallback != null)
+                {
+                    ParameterInfo[] parameters = selectionCallback.GetParameters();
+                    object[] args = parameters.Length == 2
+                        ? new object[] { selectedIndex, null }
+                        : new object[] { selectedIndex };
+                    selectionCallback.Invoke(gameView, args);
+                }
+                else
+                {
+                    PropertyInfo selectedSizeIndex = gameViewType.GetProperty(
+                        "selectedSizeIndex",
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    selectedSizeIndex?.SetValue(gameView, selectedIndex);
+                }
+
                 gameView.Repaint();
             }
             catch (Exception error)
