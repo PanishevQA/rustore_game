@@ -7,7 +7,7 @@ namespace DontGetSidetracked.Platform.RuStore
         public const string Update = "10.5.1";
         public const string Review = "10.5.1";
         public const string GameCenter = "10.5.2";
-        public const string RemoteConfig = "10.5.1";
+        public const string RemoteConfig = "10.5.0";
 
         // RuStore Push is intentionally not part of the MVP: Daily reminders are local notifications.
         // Do not add a Push version/package without a fresh Unity-specific compatibility check.
