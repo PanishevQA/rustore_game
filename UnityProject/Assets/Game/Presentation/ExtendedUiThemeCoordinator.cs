@@ -5,8 +5,8 @@ using UnityEngine.UI;
 namespace DontGetSidetracked.Presentation
 {
     /// <summary>
-    /// Styles the training chooser added after the base visual theme.
-    /// CampaignCanvas has its own CampaignVisualThemeCoordinator so there is only one visual owner per surface.
+    /// Styles product surfaces added after the base visual theme.
+    /// CampaignCanvas has its own CampaignVisualThemeCoordinator so there is one visual owner per surface.
     /// </summary>
     public sealed class ExtendedUiThemeCoordinator : MonoBehaviour
     {
@@ -15,6 +15,7 @@ namespace DontGetSidetracked.Presentation
 
         private static readonly Color Surface = new Color(0.045f, 0.065f, 0.115f, 0.985f);
         private static readonly Color SurfaceRaised = new Color(0.075f, 0.105f, 0.17f, 1f);
+        private static readonly Color Cyan = new Color(0.29f, 0.91f, 1f, 1f);
         private static readonly Color Violet = new Color(0.55f, 0.43f, 1f, 1f);
         private static readonly Color Text = new Color(0.96f, 0.98f, 1f, 1f);
         private static readonly Color Muted = new Color(0.62f, 0.72f, 0.84f, 1f);
@@ -43,6 +44,12 @@ namespace DontGetSidetracked.Presentation
 
         private static void Apply()
         {
+            StyleTraining();
+            StyleRewarded();
+        }
+
+        private static void StyleTraining()
+        {
             GameObject canvas = GameObject.Find("TrainingSelectCanvas");
             if (canvas == null) return;
             Transform panel = Find(canvas.transform, "TrainingPanel");
@@ -64,8 +71,21 @@ namespace DontGetSidetracked.Presentation
                 Text label = buttons[i].GetComponentInChildren<Text>(true);
                 string text = label?.text ?? string.Empty;
                 Color background = text.IndexOf("СЛУЧАЙНАЯ", StringComparison.OrdinalIgnoreCase) >= 0 ? Violet : SurfaceRaised;
-                StyleButton(buttons[i], background);
+                StyleButton(buttons[i], background, Text);
             }
+        }
+
+        private static void StyleRewarded()
+        {
+            GameObject canvas = GameObject.Find("RewardedCanvas");
+            if (canvas == null) return;
+            Button button = canvas.GetComponentInChildren<Button>(true);
+            if (button == null) return;
+            StyleButton(button, new Color(Cyan.r, Cyan.g, Cyan.b, 0.90f), new Color(0.02f, 0.05f, 0.08f, 1f));
+            Shadow shadow = button.GetComponent<Shadow>();
+            if (shadow == null) shadow = button.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, 0.20f);
+            shadow.effectDistance = new Vector2(0f, -3f);
         }
 
         private static void StylePanel(Image image)
@@ -80,7 +100,7 @@ namespace DontGetSidetracked.Presentation
             shadow.effectDistance = new Vector2(0f, -10f);
         }
 
-        private static void StyleButton(Button button, Color background)
+        private static void StyleButton(Button button, Color background, Color textColor)
         {
             if (button == null) return;
             Image image = button.GetComponent<Image>();
@@ -102,7 +122,7 @@ namespace DontGetSidetracked.Presentation
             Text label = button.GetComponentInChildren<Text>(true);
             if (label != null)
             {
-                label.color = button.interactable ? Text : Muted;
+                label.color = button.interactable ? textColor : Muted;
                 label.fontStyle = FontStyle.Bold;
             }
         }
