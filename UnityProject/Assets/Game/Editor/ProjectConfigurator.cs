@@ -11,8 +11,9 @@ namespace DontGetSidetracked.EditorTools
     [InitializeOnLoad]
     public static class ProjectConfigurator
     {
-        // Development fallback only. Once a real package name is configured, Editor startup must never overwrite it.
+        // Development fallbacks only. Once real release values are configured, Editor startup must never overwrite them.
         public const string DevelopmentPackageName = "ru.panishedqa.nesbeisya.dev";
+        public const string DevelopmentVersion = "0.1.0";
         private const string ScenePath = "Assets/Scenes/Main.unity";
 
         static ProjectConfigurator()
@@ -34,6 +35,11 @@ namespace DontGetSidetracked.EditorTools
             string currentPackage = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android);
             if (ShouldAssignDevelopmentPackageName(currentPackage))
                 PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, DevelopmentPackageName);
+
+            if (string.IsNullOrWhiteSpace(PlayerSettings.bundleVersion))
+                PlayerSettings.bundleVersion = DevelopmentVersion;
+            if (PlayerSettings.Android.bundleVersionCode <= 0)
+                PlayerSettings.Android.bundleVersionCode = 1;
 
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel34;
