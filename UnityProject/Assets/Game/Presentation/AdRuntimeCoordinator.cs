@@ -5,7 +5,7 @@ using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Economy;
 using DontGetSidetracked.Monetization;
-using DontGetSidetracked.Network;
+using DontGetSidetracked.Platform.RuStore;
 using DontGetSidetracked.Services;
 using UnityEngine;
 
@@ -20,7 +20,7 @@ namespace DontGetSidetracked.Presentation
         public static IAdService Ads { get; private set; }
 
         private JsonFileSaveRepository _saveRepository;
-        private BootstrapRemoteConfigService _config;
+        private IRemoteConfigService _config;
         private YandexMobileAdsService _yandex;
         private InterstitialController _interstitial;
         private GameBootstrap _bootstrap;
@@ -42,7 +42,7 @@ namespace DontGetSidetracked.Presentation
         private void Awake()
         {
             _saveRepository = new JsonFileSaveRepository();
-            _config = new BootstrapRemoteConfigService(GameRuntimeSettings.BackendBaseUrl);
+            _config = RuStoreRemoteConfigRuntime.Service;
 
             _yandex = new YandexMobileAdsService(
                 YandexMobileAdsSettings.RewardedUnitId,
@@ -128,9 +128,7 @@ namespace DontGetSidetracked.Presentation
         private static bool IsMetaPanelOpen()
         {
             MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
-            if (meta == null) return false;
-            FieldInfo field = typeof(MetaMenuOverlay).GetField("_panelOpen", BindingFlags.Instance | BindingFlags.NonPublic);
-            return field?.GetValue(meta) is bool open && open;
+            return meta != null && meta.IsPanelOpen;
         }
 
         private void ResolveBootstrap()
