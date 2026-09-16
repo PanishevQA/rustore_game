@@ -70,9 +70,11 @@ jobs:
           grep -q 'RuntimeInitializeLoadType.SubsystemRegistration' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
           grep -q 'SharedByPath.Clear()' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
 
-          # Save replacement must be failure-safe.
+          # Save replacement and corrupt-primary recovery must remain failure-safe.
           grep -q 'File.Copy(_path, _backupPath, true)' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
-          grep -q 'TryRestorePrimaryFromBackup' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
+          grep -q 'RestorePrimaryFromBackup(overwriteExisting: true)' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
+          grep -q 'RestorePrimaryFromBackup(overwriteExisting: false)' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
+          grep -q 'TryDelete(_path)' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
           grep -q 'TryDelete(tempPath)' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
 
           # Current-version saves are repaired too, not only old schema versions.
