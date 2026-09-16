@@ -7,14 +7,12 @@ using UnityEngine;
 namespace DontGetSidetracked.Network
 {
     /// <summary>
-    /// Compatibility facade kept so presentation code depends on a stable config surface.
-    /// All runtime instances share one RuStore provider/snapshot. The offline-first release performs
-    /// no requests to a developer-operated backend.
+    /// Compatibility facade kept for existing presentation/tests while the release runtime uses
+    /// the single RuStoreRemoteConfigRuntime provider. The optional backend URL is deliberately ignored.
     /// </summary>
     public sealed class BootstrapRemoteConfigService : IRemoteConfigService
     {
         private const string DefaultVersion = "0.1.0";
-        private static RuStoreRemoteConfigService _sharedProvider;
         private readonly RuStoreRemoteConfigService _provider;
 
         public string MinSupportedVersion =>
@@ -27,21 +25,7 @@ namespace DontGetSidetracked.Network
 
         public BootstrapRemoteConfigService(string optionalBackendBaseUrl)
         {
-            // Deliberately ignore the optional backend URL for the release runtime.
-            // A future online mode should use a separate provider instead of changing gameplay contracts.
-            _provider = GetSharedProvider();
-        }
-
-        private static RuStoreRemoteConfigService GetSharedProvider()
-        {
-            if (_sharedProvider == null)
-            {
-                _sharedProvider = new RuStoreRemoteConfigService(
-                    RuStoreRemoteConfigSettings.AppId,
-                    account: string.Empty,
-                    cacheFileName: "rustore-remote-config.json");
-            }
-            return _sharedProvider;
+            _provider = RuStoreRemoteConfigRuntime.Service;
         }
 
         public async Task<bool> RefreshAsync()
