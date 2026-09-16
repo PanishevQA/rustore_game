@@ -128,7 +128,7 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public async Task FlushPendingAsync_OnlyRemovesLegacyQueue()
+        public async Task FlushPendingAsync_IsIdempotentAfterCurrentSaveRepairClearsLegacyQueue()
         {
             var save = SaveData.CreateNew();
             save.PendingAttempts.Add(new PendingDailyAttemptData { ChallengeId = "legacy" });
@@ -137,7 +137,7 @@ namespace DontGetSidetracked.Tests
 
             int removed = await service.FlushPendingAsync();
 
-            Assert.That(removed, Is.EqualTo(1));
+            Assert.That(removed, Is.Zero);
             Assert.That(save.PendingAttempts, Is.Empty);
             Assert.That(api.SubmitCount, Is.EqualTo(0));
         }
