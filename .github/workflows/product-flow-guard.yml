@@ -19,7 +19,7 @@ jobs:
           test -f UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
           test -f UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
-          test -f UnityProject/Assets/Game/Presentation/CampaignMetaSummaryCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           test -f UnityProject/Assets/Game/Presentation/CampaignVisualThemeCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/ExtendedUiThemeCoordinator.cs
           test -f UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
@@ -36,6 +36,12 @@ jobs:
           grep -q 'CurrentVersion = 13' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'HighestUnlockedLevel' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'LevelProgress' UnityProject/Assets/Game/Core/SaveData.cs
+
+          # Statistics must expose Campaign directly in the primary Meta surface, without a reflection patch layer.
+          grep -q 'new CampaignProgressService' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'CampaignLevelCatalog.TotalLevels' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'public bool IsPanelOpen' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          test ! -f UnityProject/Assets/Game/Presentation/CampaignMetaSummaryCoordinator.cs
 
           # Earned currency must have a real, bounded local use without replacing RuStore prices.
           grep -q 'HintPriceCoins = 30' UnityProject/Assets/Game/Economy/LocalRewardEconomyService.cs
