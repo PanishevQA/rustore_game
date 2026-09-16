@@ -47,7 +47,7 @@ def validate_package_manifest() -> None:
     # Only packages required for the editor-functional MVP are pinned here.
     # Install Referrer and Remote Config are intentionally omitted from the editor manifest:
     # their SDK adapters are reflection-based and they are added later for Android/RuStore
-    # integration testing using the official RuStore tarballs/packages.
+    # integration testing using an official registry, tgz or unitypackage.
     expected = {
         "com.unity.test-framework": "1.6.0",
         "com.unity.mobile.notifications": "2.4.3",
@@ -69,7 +69,7 @@ def validate_package_manifest() -> None:
         and "ru.rustore" in (entry.get("scopes") or [])
         for entry in registries
     ):
-        fail("Current RuStore scoped npm registry is missing from Packages/manifest.json.")
+        fail("The Editor baseline RuStore scoped npm registry is missing from Packages/manifest.json.")
 
 
 def validate_asmdefs() -> None:
@@ -206,6 +206,18 @@ def validate_share_path_alignment() -> None:
         fail("NativeImageShare authority must match ${applicationId}.shareprovider from AndroidManifest.")
 
 
+def validate_local_notification_contract() -> None:
+    text = read(UNITY / "Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs")
+    required = {
+        "RepeatInterval = TimeSpan.FromDays(1)": "Daily reminder must continue locally across missed app launches.",
+        "ShowInForeground = false": "Daily reminder must not be shown over active gameplay.",
+        "CancelScheduledNotification(NotificationId)": "Daily reminder rescheduling must replace the previous schedule instead of duplicating notifications.",
+    }
+    for needle, message in required.items():
+        if needle not in text:
+            fail(message)
+
+
 def validate_required_runtime_files() -> None:
     paths = (
         "Assets/Game/Presentation/GameBootstrap.cs",
@@ -230,8 +242,10 @@ def validate_release_preflight_contract() -> None:
     text = read(path)
     required = {
         r'\"ru.rustore.pay\": \"11.1.0\"': "Production preflight must enforce RuStore Pay 11.1.0.",
-        r'\"ru.rustore.installreferrer\": \"10.6.1\"': "Production preflight must block release until Install Referrer 10.6.1 is restored.",
-        r'\"ru.rustore.remoteconfig\": \"10.5.0\"': "Production preflight must block release until Remote Config 10.5.0 is restored.",
+        'HasLoadedRuStoreType("InstallReferrerClient")': "Production preflight must require an actually loaded Install Referrer Unity integration regardless of package source.",
+        'HasLoadedRuStoreType("RuStoreRemoteConfigClient")': "Production preflight must require an actually loaded Remote Config Unity integration regardless of package source.",
+        'InstallReferrer = \\"10.6.1\\"': "Production preflight must protect the current Install Referrer target version.",
+        'RemoteConfig = \\"10.5.0\\"': "Production preflight must protect the current Remote Config target version.",
         'android.permission.POST_NOTIFICATIONS': "Production preflight must protect the Daily reminder permission.",
         'androidx.core.content.FileProvider': "Production preflight must protect result-card FileProvider wiring.",
         'ValidateForbiddenManifestPermissions': "Production preflight must reject unnecessary sensitive permissions.",
@@ -292,6 +306,7 @@ def main() -> int:
     validate_asmdefs()
     validate_android_manifest()
     validate_share_path_alignment()
+    validate_local_notification_contract()
     validate_required_runtime_files()
     validate_release_preflight_contract()
     validate_editor_configuration_safety()
