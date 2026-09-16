@@ -8,6 +8,10 @@ namespace DontGetSidetracked.Analytics
         public const string SessionStart = "session_start";
         public const string TutorialStart = "tutorial_start";
         public const string TutorialComplete = "tutorial_complete";
+        public const string LevelStart = "level_start";
+        public const string LevelComplete = "level_complete";
+        public const string CampaignReward = "campaign_reward";
+        public const string CoinSpend = "coin_spend";
         public const string DailyStart = "daily_start";
         public const string DailyComplete = "daily_complete";
         public const string RoundStart = "round_start";
@@ -42,13 +46,15 @@ namespace DontGetSidetracked.Analytics
 
         private static readonly HashSet<string> Known = new HashSet<string>
         {
-            AppOpen, SessionStart, TutorialStart, TutorialComplete, DailyStart, DailyComplete,
-            RoundStart, RoundComplete, RoundFailed, ScoreGenerated, PersonalBest, DailyRecord,
-            MedalEarned, ShareClick, ShareComplete, ShareCard, ChallengeOpen, ChallengeComplete,
-            DuelRematch, HintUsed, CosmeticSelect, SettingsOpen, SettingsChange, RewardedOffer,
-            RewardedStart, RewardedComplete, InterstitialShow, StoreOpen, PurchaseStart,
-            PurchaseSuccess, PurchaseCancel, PurchaseError, ReviewFlowRequest,
-            PushPermissionRequest, PushPermissionResult
+            AppOpen, SessionStart, TutorialStart, TutorialComplete,
+            LevelStart, LevelComplete, CampaignReward, CoinSpend,
+            DailyStart, DailyComplete, RoundStart, RoundComplete, RoundFailed,
+            ScoreGenerated, PersonalBest, DailyRecord, MedalEarned,
+            ShareClick, ShareComplete, ShareCard, ChallengeOpen, ChallengeComplete,
+            DuelRematch, HintUsed, CosmeticSelect, SettingsOpen, SettingsChange,
+            RewardedOffer, RewardedStart, RewardedComplete, InterstitialShow,
+            StoreOpen, PurchaseStart, PurchaseSuccess, PurchaseCancel, PurchaseError,
+            ReviewFlowRequest, PushPermissionRequest, PushPermissionResult
         };
 
         public static bool IsKnown(string eventName) => eventName != null && Known.Contains(eventName);
