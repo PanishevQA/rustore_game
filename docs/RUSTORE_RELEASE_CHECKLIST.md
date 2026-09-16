@@ -11,8 +11,8 @@
 - [ ] PayClient Settings содержит корректные `consoleApplicationId` и уникальный deeplink scheme.
 - [ ] Выполнены PayClient `Patch Manifest` и `Verify Manifest`/эквивалентные проверки актуального SDK.
 - [ ] Цена в UI берётся только из каталога Pay SDK.
-- [ ] BillingClient packages отсутствуют.
-- [ ] Старый `artifactory-external.vkpartner.ru` отсутствует; repository URL повторно сверены по актуальным Unity-страницам каждого SDK.
+- [ ] Старый Billing SDK/BillingClient integration отсутствует.
+- [ ] Старый `artifactory-external.vkpartner.ru` отсутствует; repository URL повторно сверены по актуальным Unity/GitFlic-страницам каждого SDK.
 - [ ] `OptionalBackendBaseUrl` остаётся пустым: production MVP не требует собственного backend/DB.
 - [ ] Production preflight проходит без placeholder package name, пустого Remote Config App ID и demo ad IDs.
 - [ ] Release build — AAB, IL2CPP, ARM64, положительный versionCode.
@@ -24,8 +24,9 @@
 - [ ] В production Android integration установлен и реально компилируется официальный **Install Referrer Unity 10.6.1** (или более новая версия, повторно проверенная перед сборкой).
 - [ ] После установки Install Referrer проверены Android package resolve, IL2CPP stripping и physical-device `GetInstallReferrer`.
 - [ ] `referrerId` сохраняется сразу после первого успешного чтения: RuStore выдаёт его одноразово и хранит ограниченное время.
+- [ ] RuStore install URL использует официальный формат `https://www.rustore.ru/catalog/app/<package>?referrerId=<value>`.
 - [ ] В `RuStoreRemoteConfigSettings.AppId` указан реальный App ID из RuStore Console.
-- [ ] Production integration использует официальный Remote Config package версии, повторно проверенной перед release; текущий adapter target — **10.5.0**.
+- [ ] Production integration использует официальный Remote Config package версии, повторно проверенной перед release; текущий target — **10.5.1**.
 - [ ] В RuStore Console заведены ключи с корректными типами: `route_display_time_easy_ms`, `route_display_time_medium_ms`, `route_display_time_hard_ms`, `daily_route_count`, `rewarded_enabled`, `interstitial_enabled`, `interstitial_min_rounds`, `interstitial_cooldown_sec`, `share_copy_variant`, `review_min_sessions`, `local_daily_reminder_enabled`, `daily_reminder_hour`, `store_offer_variant`, `min_supported_version`, `recommended_version`.
 - [ ] Четыре gameplay-ключа Daily (`daily_route_count` и три `route_display_time_*`) настроены **глобально без audience targeting/A-B сегментации**; иначе пользователи одного UTC-дня могут получить разные условия.
 - [ ] `daily_route_count` принимает только 1–3; клиент валидирует значение и применяет безопасный default 3.
