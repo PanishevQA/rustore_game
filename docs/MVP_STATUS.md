@@ -1,6 +1,6 @@
 # Состояние проекта — 2026-09-16
 
-> Проект больше не оценивается одним процентом «готовности». Техническое ядро, видимый игровой продукт и внешняя Android/RuStore интеграция имеют разную степень проверяемости.
+> Проект не оценивается одним процентом «готовности»: repo-side функционал, визуальная приёмка и внешняя Android/RuStore интеграция проверяются разными способами.
 
 ## Видимый игровой продукт — реализовано в коде
 
@@ -19,7 +19,7 @@
 ### Campaign
 
 - **60 локальных уровней**;
-- **6 глав по 10 уровней**: «Первые шаги», «Ритм», «Повороты», «Давление», «Эксперт», «Без ошибок»;
+- **6 глав по 10 уровней**;
 - фиксированные seed/version/difficulty/display-time профили;
 - постепенный рост сложности;
 - `60% = ★`, `80% = ★★`, `95% = ★★★`;
@@ -36,7 +36,7 @@
 - первое прохождение финала каждой главы (10/20/.../60) даёт `+1 hint` один раз;
 - `30 coins → +1 hint` — локальный обмен, не связанный с ценами RuStore;
 - Home и Statistics показывают campaign progress/stars/resources;
-- все presentation-сервисы используют одну runtime identity `SaveData`, поэтому purchase/reward/coin exchange не могут быть затёрты поздним сохранением старой копии.
+- campaign statistics встроены непосредственно в Meta UI, без отдельного reflection-патча.
 
 ### Daily / Training / Social
 
@@ -49,7 +49,8 @@
 - backward compatibility L1/L2;
 - rematch;
 - text share + PNG result card;
-- deeplink/referrer adapters без нашего backend.
+- deeplink/referrer adapters без нашего backend;
+- RuStore install URL использует официальный формат `https://www.rustore.ru/catalog/app/<package>?referrerId=<token>`.
 
 ### Store / monetization
 
@@ -62,13 +63,16 @@
 - rewarded Home surface отделён от основных CTA;
 - interstitial запрещён во время active round/result/share/store/purchase и ограничен policy/cooldown.
 
-### Local state / analytics
+## Save / reliability
 
 - SaveData **v13** + migrations;
-- JSON save + backup/temp write;
-- bounded local analytics/logs, без нашего сервера;
-- campaign `level_start/level_complete` входят в analytics allow-list;
-- Daily/share/duel/hints/settings/rewarded/store/purchase events реализованы.
+- current-version post-load repair нормализует отрицательные currency/counters, invalid scores, дубли purchases/Daily bests/level progress и invalid campaign entries;
+- obsolete backend `PendingAttempts` очищается даже в current-version save;
+- все runtime writers используют одну shared `SaveData` identity на save path;
+- shared cache сбрасывается на `SubsystemRegistration`, поэтому Editor Play без Domain Reload перечитывает persisted file;
+- запись использует temp + known-good backup; при неудачной замене primary предпринимается recovery из backup;
+- bounded local analytics/crash log, без нашего сервера;
+- Editor menu `Tools → НЕ СБЕЙСЯ! → QA` позволяет открыть data folder и безопасно сбросить local progress/logs вне Play Mode.
 
 ## Offline-first architecture
 
@@ -78,34 +82,38 @@ Release-клиент не требует developer-operated backend или со�
 
 Собран единый portrait presentation-layer: dark surface, cyan/violet accents, rounded CTA/cards, Home hero, campaign selector, Training selector, meta/settings/store/result overlays и safe-area обработка. Устранены конфликтующие layout/theme owners и Home flicker.
 
-Это **final functional UI candidate**, который будет оцениваться целиком после завершения кодового этапа. Авторская типографика/иллюстрации/иконки могут быть заменены после общей визуальной приёмки, но для этого не требуется менять gameplay architecture.
+Meta/Training/Campaign overlays имеют публичные open/close state contracts для mobile Back вместо чтения их private state через reflection.
+
+Это **functional final UI candidate** для общей приёмки. Авторская типографика/иллюстрации/иконки могут быть заменены после общей визуальной приёмки без изменения gameplay architecture.
 
 ## Автоматические проверки
 
-В PR теперь шесть checks:
+В PR шесть checks:
 
 1. `pure-csharp-tests`;
 2. `backend-tests` — только optional future backend;
 3. `offline-mode-guard`;
 4. `rustore-dependency-guard`;
 5. `unity-static-validation`;
-6. `product-flow-guard` — Campaign/rewards/local economy/shared save/Training invariants.
+6. `product-flow-guard`.
 
-Pure suite покрывает deterministic routes, scoring, Daily, save migrations, campaign 60-level catalog, star thresholds, unlocks, reward idempotency и coin→hint exchange.
+Pure suite покрывает deterministic routes, scoring, Daily, save migrations/repair, campaign 60-level catalog, star thresholds, unlocks, reward idempotency и coin→hint exchange. Guards защищают offline architecture, viral token fairness, Android manifest/share contracts, RuStore targets, shared save и видимые Campaign/Training flows.
 
 ## RuStore / Android release target
 
-Последняя сверка официальной документации на 2026-09-16:
+Последняя сверка RuStore targets на 2026-09-16:
 
-- Pay Unity target: `11.1.0`;
-- Install Referrer Unity target: `10.6.1`;
+- Pay Unity: `11.1.0`;
+- Install Referrer Unity: `10.6.1`;
 - Update Unity: `10.5.1`;
 - Review Unity: `10.5.1`;
-- Remote Config adapter target: `10.5.0`;
+- Remote Config Unity: **`10.5.1`**;
+- GameCenter Unity: `10.5.2` — optional;
+- RuStore Push не используется: Daily reminder реализован локально;
 - targetSdk baseline: `34` / highest installed;
-- проект использует minSdk `25`, потому что Unity 6000.3 уже не поддерживает API 24.
+- minSdk проекта: `25` из-за Unity 6000.3 baseline.
 
-Install Referrer и Remote Config UPM packages, которые дали compile errors внутри package source на Unity 6.3, **не маскируются как готовая интеграция**: reflection adapters/fallback сохранены, а официальный package integration вынесен в обязательный Android release gate.
+Install Referrer и Remote Config packages, которые дали compile errors внутри package source на Unity 6.3, **не маскируются как готовая интеграция**: reflection adapters/fallback сохранены, а production preflight требует реально загруженные official Unity client types перед non-development AAB.
 
 ## Что нельзя честно завершить только изменениями в GitHub
 
@@ -114,7 +122,8 @@ Install Referrer и Remote Config UPM packages, которые дали compile 
 - production package name из RuStore Console;
 - production keystore/key alias;
 - реальные PayClient/RuStore Console параметры;
-- официальные Install Referrer / Remote Config packages и physical-device smoke test;
+- официальный Install Referrer 10.6.1 package и physical-device smoke test;
+- официальный Remote Config 10.5.1 package/AppId и physical-device fallback test;
 - официальный Yandex Mobile Ads Unity plugin + реальные block IDs;
 - Pay success/cancel/error/restore через реальный RuStore;
 - deeplink + Install Referrer после реальной установки;
@@ -124,4 +133,4 @@ Install Referrer и Remote Config UPM packages, которые дали compile 
 - signed AAB;
 - multi-device DPI/safe-area/lifecycle regression.
 
-PR #1 остаётся Draft до этой общей финальной приёмки. Промежуточный ручной тест больше не используется как условие продолжения разработки.
+PR #1 остаётся Draft до общей финальной приёмки. Промежуточный ручной тест не используется как условие продолжения разработки.
