@@ -40,16 +40,19 @@ def validate_package_manifest() -> None:
         return
 
     dependencies = manifest.get("dependencies") or {}
+    # Only packages required for the editor-functional MVP are pinned here.
+    # Install Referrer and Remote Config are intentionally omitted from the editor manifest:
+    # their SDK adapters are reflection-based and they are added later for Android/RuStore
+    # integration testing using the official RuStore tarballs.
     expected = {
         "com.unity.test-framework": "1.6.0",
         "com.unity.mobile.notifications": "2.4.3",
         "com.unity.modules.audio": "1.0.0",
+        "com.unity.modules.imageconversion": "1.0.0",
         "ru.rustore.core": "10.5.0",
         "ru.rustore.pay": "11.1.0",
-        "ru.rustore.installreferrer": "10.6.0",
         "ru.rustore.update": "10.5.1",
         "ru.rustore.review": "10.5.1",
-        "ru.rustore.remoteconfig": "10.5.0",
     }
     for package, version in expected.items():
         actual = dependencies.get(package)
@@ -90,7 +93,6 @@ def validate_asmdefs() -> None:
 
     for path, data in parsed:
         for reference in data.get("references") or []:
-            # GUID refs and package/Unity assemblies are resolved by Unity/UPM. Internal Game.* refs must exist here.
             if isinstance(reference, str) and reference.startswith("Game.") and reference not in names:
                 fail(f"{path.relative_to(ROOT)} references missing internal assembly {reference!r}.")
 
