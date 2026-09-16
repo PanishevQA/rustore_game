@@ -172,13 +172,8 @@ namespace DontGetSidetracked.Presentation
 
         private static bool TryCloseMetaPanel(MetaMenuOverlay meta)
         {
-            if (meta == null) return false;
-            Type type = typeof(MetaMenuOverlay);
-            FieldInfo openField = type.GetField("_panelOpen", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (!(openField?.GetValue(meta) is bool isOpen) || !isOpen) return false;
-
-            MethodInfo close = type.GetMethod("ClosePanel", BindingFlags.Instance | BindingFlags.NonPublic);
-            close?.Invoke(meta, null);
+            if (meta == null || !meta.IsPanelOpen) return false;
+            meta.ClosePanel();
             return true;
         }
 
