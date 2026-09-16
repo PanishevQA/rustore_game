@@ -208,6 +208,7 @@ def validate_required_runtime_files() -> None:
         "Assets/Game/Platform/RuStore/RuStorePaymentService.cs",
         "Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs",
         "Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs",
+        "Assets/Game/Platform/RuStore/RuStoreRemoteConfigRuntime.cs",
         "Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs",
         "Assets/Game/Editor/ProjectConfigurator.cs",
         "Assets/Game/Editor/ProductionReleaseValidator.cs",
@@ -218,6 +219,21 @@ def validate_required_runtime_files() -> None:
             fail(f"Missing required runtime file: UnityProject/{relative}")
 
 
+def validate_remote_config_runtime_contract() -> None:
+    runtime = read(UNITY / "Assets/Game/Platform/RuStore/RuStoreRemoteConfigRuntime.cs")
+    bootstrap = read(UNITY / "Assets/Game/Network/BootstrapRemoteConfigService.cs")
+    tuning = read(UNITY / "Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs")
+
+    if "RuntimeInitializeLoadType.SubsystemRegistration" not in runtime or "_service = null" not in runtime:
+        fail("Shared RuStore Remote Config runtime must reset static state between Unity Play sessions.")
+    if "RuStoreRemoteConfigRuntime.Service" not in bootstrap:
+        fail("Compatibility Remote Config facade must use the centralized RuStore runtime provider.")
+    if "RuStoreRemoteConfigRuntime.Service" not in tuning:
+        fail("Gameplay tuning must use the centralized RuStore runtime provider.")
+    if "DontGetSidetracked.Network" in tuning or "BootstrapRemoteConfigService" in tuning:
+        fail("Gameplay Remote Config tuning must not depend on the optional Network module.")
+
+
 def validate_release_preflight_contract() -> None:
     text = read(UNITY / "Assets/Game/Editor/ProductionReleaseValidator.cs")
     required = {
@@ -225,7 +241,7 @@ def validate_release_preflight_contract() -> None:
         'HasLoadedRuStoreType("InstallReferrerClient")': "Production preflight must require an actually loaded Install Referrer Unity integration regardless of package source.",
         'HasLoadedRuStoreType("RuStoreRemoteConfigClient")': "Production preflight must require an actually loaded Remote Config Unity integration regardless of package source.",
         'InstallReferrer = \\"10.6.1\\"': "Production preflight must protect the current Install Referrer target version.",
-        'RemoteConfig = \\"10.5.1\\"': "Production preflight must protect the current Remote Config target version.",
+        'RemoteConfig = \\"10.5.0\\"': "Production preflight must protect the current Remote Config target version.",
         'android.permission.POST_NOTIFICATIONS': "Production preflight must protect the Daily reminder permission.",
         'androidx.core.content.FileProvider': "Production preflight must protect result-card FileProvider wiring.",
         'ValidateForbiddenManifestPermissions': "Production preflight must reject unnecessary sensitive permissions.",
@@ -280,6 +296,7 @@ def main() -> int:
     validate_share_path_alignment()
     validate_local_notification_contract()
     validate_required_runtime_files()
+    validate_remote_config_runtime_contract()
     validate_release_preflight_contract()
     validate_editor_configuration_safety()
     validate_repository_hygiene()
