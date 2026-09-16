@@ -101,7 +101,8 @@ namespace DontGetSidetracked.Tests
         [Test]
         public void FirstChapterCompletionAwardsHintOnlyOnce()
         {
-            var save = SaveData.CreateNew { HighestUnlockedLevel = 10 };
+            var save = SaveData.CreateNew();
+            save.HighestUnlockedLevel = 10;
             var service = new CampaignProgressService(new MemoryRepository(save), save);
 
             CampaignLevelCompletion first = service.RecordResult(10, 70.0);
