@@ -41,7 +41,24 @@ namespace DontGetSidetracked.Presentation
                 if (SharedByPath.TryGetValue(_path, out SaveData shared) && shared != null)
                     return shared;
 
-                SaveData loaded = TryLoad(_path) ?? TryLoad(_backupPath) ?? SaveData.CreateNew();
+                SaveData loaded = TryLoad(_path);
+                if (loaded == null)
+                {
+                    SaveData backup = TryLoad(_backupPath);
+                    if (backup != null)
+                    {
+                        loaded = backup;
+                        RestorePrimaryFromBackup(overwriteExisting: true);
+                    }
+                    else
+                    {
+                        // Neither file is usable. Do not let an unreadable primary become the next "good" backup.
+                        TryDelete(_path);
+                        TryDelete(_backupPath);
+                        loaded = SaveData.CreateNew();
+                    }
+                }
+
                 loaded = SaveMigrator.Migrate(loaded);
                 SharedByPath[_path] = loaded;
                 return loaded;
@@ -72,16 +89,17 @@ namespace DontGetSidetracked.Presentation
                 catch
                 {
                     // If replacement failed after the primary was removed, immediately restore the known-good backup.
-                    TryRestorePrimaryFromBackup();
+                    RestorePrimaryFromBackup(overwriteExisting: false);
                     TryDelete(tempPath);
                     throw;
                 }
             }
         }
 
-        private void TryRestorePrimaryFromBackup()
+        private void RestorePrimaryFromBackup(bool overwriteExisting)
         {
-            if (File.Exists(_path) || !File.Exists(_backupPath)) return;
+            if (!File.Exists(_backupPath)) return;
+            if (!overwriteExisting && File.Exists(_path)) return;
             try
             {
                 File.Copy(_backupPath, _path, true);
