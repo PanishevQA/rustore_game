@@ -23,10 +23,12 @@ jobs:
           fi
           grep -q 'UnityPlayerActivity' docs/RUSTORE_RELEASE_CHECKLIST.md
           grep -q '11.1.0' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
-          grep -q '10.6.1' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
+          grep -q '10.6.0' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
+          grep -q '"com.unity.modules.audio": "1.0.0"' UnityProject/Packages/manifest.json
+          grep -q '"ru.rustore.core": "10.5.0"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.pay": "11.1.0"' UnityProject/Packages/manifest.json
-          grep -q '"ru.rustore.installreferrer": "10.6.1"' UnityProject/Packages/manifest.json
+          grep -q '"ru.rustore.installreferrer": "10.6.0"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.update": "10.5.1"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.review": "10.5.1"' UnityProject/Packages/manifest.json
-          grep -q '"ru.rustore.remoteconfig": "10.5.1"' UnityProject/Packages/manifest.json
+          grep -q '"ru.rustore.remoteconfig": "10.5.0"' UnityProject/Packages/manifest.json
           grep -q 'nexus-external.rustore.ru/repository/npm-unity-rustore-exposed' UnityProject/Packages/manifest.json
