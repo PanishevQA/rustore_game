@@ -196,5 +196,39 @@ namespace DontGetSidetracked.Tests
             Assert.That(streak.ApplyCompletedDaily(save, new DateTime(2026, 9, 16, 1, 0, 0, DateTimeKind.Utc)), Is.True);
             Assert.That(save.Streak, Is.EqualTo(2));
         }
+
+        [Test]
+        public void StreakParsesPersistedOffsetInUtcRegardlessOfLocale()
+        {
+            var save = SaveData.CreateNew();
+            save.Streak = 4;
+            save.CompletedDailyCount = 7;
+            save.LastCompletedDailyDateUtc = "2026-09-15T23:30:00+02:00"; // 2026-09-15 UTC
+
+            var streak = new StreakService();
+            bool changed = streak.ApplyCompletedDaily(save, new DateTime(2026, 9, 16, 8, 0, 0, DateTimeKind.Utc));
+
+            Assert.That(changed, Is.True);
+            Assert.That(save.Streak, Is.EqualTo(5));
+            Assert.That(save.CompletedDailyCount, Is.EqualTo(8));
+            Assert.That(save.LastCompletedDailyDateUtc, Is.EqualTo("2026-09-16T00:00:00.0000000Z"));
+        }
+
+        [Test]
+        public void StreakRecoversFromMalformedPersistedDate()
+        {
+            var save = SaveData.CreateNew();
+            save.Streak = 50;
+            save.CompletedDailyCount = 2;
+            save.LastCompletedDailyDateUtc = "not-a-date";
+
+            var streak = new StreakService();
+            bool changed = streak.ApplyCompletedDaily(save, new DateTime(2026, 9, 16, 8, 0, 0, DateTimeKind.Utc));
+
+            Assert.That(changed, Is.True);
+            Assert.That(save.Streak, Is.EqualTo(1));
+            Assert.That(save.CompletedDailyCount, Is.EqualTo(3));
+            Assert.That(save.LastCompletedDailyDateUtc, Is.EqualTo("2026-09-16T00:00:00.0000000Z"));
+        }
     }
 }
