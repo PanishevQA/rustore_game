@@ -39,8 +39,9 @@ jobs:
           # Earned currency must have a real, bounded local use without replacing RuStore prices.
           grep -q 'HintPriceCoins = 30' UnityProject/Assets/Game/Economy/LocalRewardEconomyService.cs
           grep -q 'TryBuyHint' UnityProject/Assets/Game/Economy/LocalRewardEconomyService.cs
-          grep -q 'LocalRewardEconomyService' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
-          grep -q '30 МОНЕТ' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+          grep -q 'LocalRewardEconomyService.HintPriceCoins' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+          grep -q 'МОНЕТ → +1 ПОДСКАЗКА' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+          grep -q 'AnalyticsEventNames.CoinSpend' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
 
           # All presentation-side writers must observe one runtime save identity.
           grep -q 'SharedByPath' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
@@ -69,6 +70,7 @@ jobs:
           grep -q 'LevelStart = "level_start"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
           grep -q 'LevelComplete = "level_complete"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
           grep -q 'CampaignReward = "campaign_reward"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
+          grep -q 'CoinSpend = "coin_spend"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
 
           # Rewarded hint is opt-in and must not overlap the primary campaign CTA again.
           grep -q 'new Vector2(0.20f, 0.276f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
