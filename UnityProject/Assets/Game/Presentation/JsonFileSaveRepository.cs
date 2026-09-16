@@ -10,6 +10,8 @@ namespace DontGetSidetracked.Presentation
     /// Versioned JSON save with a process-wide in-memory identity per file path.
     /// Runtime services that independently construct a repository therefore still mutate the same SaveData instance,
     /// preventing stale copies from overwriting purchases, campaign rewards, hints or settings later in the session.
+    /// The shared cache is reset at runtime subsystem registration so Editor Play sessions without domain reload
+    /// still reload the persisted file instead of reusing stale in-memory state.
     /// </summary>
     public sealed class JsonFileSaveRepository : ISaveRepository
     {
@@ -18,6 +20,13 @@ namespace DontGetSidetracked.Presentation
 
         private readonly string _path;
         private readonly string _backupPath;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetSharedState()
+        {
+            lock (SharedGate)
+                SharedByPath.Clear();
+        }
 
         public JsonFileSaveRepository(string fileName = "save.json")
         {
