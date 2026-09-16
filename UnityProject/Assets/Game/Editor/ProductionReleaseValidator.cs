@@ -11,6 +11,7 @@ namespace DontGetSidetracked.EditorTools
     public sealed class ProductionReleaseValidator : IPreprocessBuildWithReport
     {
         private const string ManifestPath = "Assets/Plugins/Android/AndroidManifest.xml";
+        private const string SharePathsPath = "Assets/ResultShare.androidlib/src/main/res/xml/nesbeisya_file_paths.xml";
         private const string PackagesManifestPath = "Packages/manifest.json";
         private const string RuntimeSettingsPath = "Assets/Game/Presentation/GameRuntimeSettings.cs";
         private const string AdsSettingsPath = "Assets/Game/Monetization/YandexMobileAdsService.cs";
@@ -69,9 +70,18 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Production release profile requires Android App Bundle (AAB). Enable Build App Bundle before release.");
 
             ValidateFileContains(ManifestPath, errors,
+                ("android.permission.POST_NOTIFICATIONS", "Daily reminder permission is missing from AndroidManifest."),
                 ("com.unity3d.player.UnityPlayerActivity", "Custom AndroidManifest must use UnityPlayerActivity."),
                 ("android:scheme=\"nesbeisya\"", "Challenge deeplink scheme is missing from AndroidManifest."),
-                ("android:host=\"challenge\"", "Challenge deeplink host is missing from AndroidManifest."));
+                ("android:host=\"challenge\"", "Challenge deeplink host is missing from AndroidManifest."),
+                ("androidx.core.content.FileProvider", "Result-card FileProvider is missing from AndroidManifest."),
+                ("${applicationId}.shareprovider", "Result-card FileProvider authority must be application-scoped."),
+                ("@xml/nesbeisya_file_paths", "Result-card FileProvider paths resource is missing."));
+            ValidateForbiddenManifestPermissions(errors);
+
+            ValidateFileContains(SharePathsPath, errors,
+                ("cache-path", "Result share paths must expose only the app cache directory."),
+                ("result-share/", "Result share cache subdirectory is missing from FileProvider paths."));
 
             // Install Referrer and Remote Config are intentionally allowed to be absent from the day-to-day
             // Unity Editor manifest after their Unity 6.3 package regressions, but a production AAB must never
@@ -109,6 +119,30 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Production Android keystore path/name is empty.");
             if (string.IsNullOrWhiteSpace(PlayerSettings.Android.keyaliasName))
                 errors.Add("Production Android key alias is empty.");
+        }
+
+        private static void ValidateForbiddenManifestPermissions(List<string> errors)
+        {
+            if (!File.Exists(ManifestPath)) return;
+            string manifest = File.ReadAllText(ManifestPath);
+            string[] forbidden =
+            {
+                "android.permission.ACCESS_FINE_LOCATION",
+                "android.permission.ACCESS_COARSE_LOCATION",
+                "android.permission.READ_CONTACTS",
+                "android.permission.WRITE_CONTACTS",
+                "android.permission.RECORD_AUDIO",
+                "android.permission.CAMERA",
+                "android.permission.READ_SMS",
+                "android.permission.SEND_SMS",
+                "android.permission.READ_EXTERNAL_STORAGE",
+                "android.permission.WRITE_EXTERNAL_STORAGE",
+                "android.permission.MANAGE_EXTERNAL_STORAGE"
+            };
+
+            for (int i = 0; i < forbidden.Length; i++)
+                if (manifest.IndexOf(forbidden[i], StringComparison.Ordinal) >= 0)
+                    errors.Add("Unnecessary sensitive Android permission declared: " + forbidden[i]);
         }
 
         private static void ValidateRemoteConfig(List<string> errors)
@@ -176,7 +210,8 @@ namespace DontGetSidetracked.EditorTools
             {
                 string extension = Path.GetExtension(files[i]);
                 if (extension != ".cs" && extension != ".json" && extension != ".xml" && extension != ".md") continue;
-                try { text.Append(File.ReadAllText(files[i])); }
+                try { text.Append(File.ReadAllText(files[i]));
+                }
                 catch (IOException) { }
             }
             return text.ToString();
