@@ -1,16 +1,17 @@
 using DontGetSidetracked.Gameplay;
-using DontGetSidetracked.Network;
+using DontGetSidetracked.Platform.RuStore;
+using DontGetSidetracked.Services;
 using UnityEngine;
 
 namespace DontGetSidetracked.Presentation
 {
     /// <summary>
     /// Bridges validated Remote Config values into pure gameplay/session tuning.
-    /// No RuStore SDK type crosses into Gameplay.
+    /// No RuStore SDK type crosses into Gameplay; presentation reads the service contract only.
     /// </summary>
     public sealed class RemoteGameplayTuningCoordinator : MonoBehaviour
     {
-        private BootstrapRemoteConfigService _config;
+        private IRemoteConfigService _config;
         private float _nextPoll;
         private int _easy;
         private int _medium;
@@ -28,7 +29,7 @@ namespace DontGetSidetracked.Presentation
 
         private void Awake()
         {
-            _config = new BootstrapRemoteConfigService(GameRuntimeSettings.BackendBaseUrl);
+            _config = RuStoreRemoteConfigRuntime.Service;
             ApplyIfChanged(force: true);
         }
 
