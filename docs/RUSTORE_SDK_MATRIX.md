@@ -1,6 +1,6 @@
 # RuStore SDK matrix — 2026-09-16
 
-Сверено с актуальными RuStore Unity/GitFlic-источниками на дату выше. Перед **каждой** production-сборкой версии и repository requirements нужно проверить ещё раз: документация и registry могут обновляться независимо.
+Сверено с актуальными официальными RuStore Unity-страницами на дату выше. Перед **каждой** production-сборкой версии и repository requirements нужно проверить ещё раз: документация и registry могут обновляться независимо.
 
 | SDK | Release target | Состояние проекта |
 |---|---:|---|
@@ -9,12 +9,12 @@
 | Update Unity | 10.5.1 | установлен; adapter реализован |
 | Review Unity | 10.5.1 | установлен; запрос только после positive event |
 | GameCenter Unity | 10.5.2 | optional, не source of truth; package не нужен для базового gameplay |
-| Remote Config Unity | 10.5.1 | актуальный release target (релиз 2026-08-19); adapter/cache/default реализованы; Editor package временно не установлен; перед production нужен официальный package/AppId + Android test |
+| Remote Config Unity | 10.5.0 | официальная Unity-страница RuStore помечает 10.5.0 как актуальную версию; adapter/cache/default реализованы; Editor package временно не установлен; перед production нужен официальный package/AppId + Android test |
 | Push Unity | — | **не используется в MVP**; Daily reminder реализован локально через Unity Mobile Notifications, поэтому Push package/version не pin-ится |
 
 ## Android baseline
 
-Официальные RuStore Unity-инструкции для Update/Install Referrer указывают Minimum API 24 и Target API 34. Unity 6000.3 уже не поддерживает API 24 как рабочий baseline, поэтому проект использует **minSdk 25** и **targetSdk 34 / highest installed**. Production preflight защищает эту комбинацию.
+Официальные RuStore Unity-инструкции для Update/Install Referrer/Remote Config указывают Minimum API 24 и Target API 34. Unity 6000.3 уже не поддерживает API 24 как рабочий baseline, поэтому проект использует **minSdk 25** и **targetSdk 34 / highest installed**. Production preflight защищает эту комбинацию.
 
 `UnityPlayerActivity` остаётся обязательным baseline для текущего Pay integration. Любое добавление activity-wrapper из другого SDK требует повторного device smoke-test Pay + deeplink + lifecycle.
 
@@ -30,7 +30,9 @@
 
 ## Remote Config
 
-Актуальная Unity-линия — 10.5.1. Production preflight не считает adapter/fallback достаточной интеграцией: перед AAB должен быть реально загружен официальный `RuStoreRemoteConfigClient`, задан AppId и выполнен Android fallback/device test.
+Актуальная официальная Unity-страница на дату проверки — **10.5.0**. Production preflight не считает adapter/fallback достаточной интеграцией: перед AAB должен быть реально загружен официальный `RuStoreRemoteConfigClient`, задан AppId и выполнен Android fallback/device test.
+
+Runtime использует один `RuStoreRemoteConfigRuntime` instance. Gameplay tuning, review/update policy и локальные Daily reminders читают один общий snapshot/cache; при Unity Play без Domain Reload provider пересоздаётся на `SubsystemRegistration`.
 
 ## Notifications
 
