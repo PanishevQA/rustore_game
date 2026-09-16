@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Economy;
 using DontGetSidetracked.Gameplay;
@@ -145,7 +147,16 @@ namespace DontGetSidetracked.Presentation
         {
             SaveData save = _repository.Load();
             var economy = new LocalRewardEconomyService(_repository, save);
-            economy.TryBuyHint();
+            if (economy.TryBuyHint())
+            {
+                AnalyticsLifecycle.Service?.Track(
+                    AnalyticsEventNames.CoinSpend,
+                    Params(
+                        "item", "hint",
+                        "coins_spent", LocalRewardEconomyService.HintPriceCoins,
+                        "coins_left", economy.Save.Coins,
+                        "hints", economy.Save.Hints));
+            }
             Render();
         }
 
@@ -270,6 +281,17 @@ namespace DontGetSidetracked.Presentation
             if (count == 2) return "★ ★ ☆";
             if (count == 1) return "★ ☆ ☆";
             return "☆ ☆ ☆";
+        }
+
+        private static Dictionary<string, object> Params(params object[] values)
+        {
+            var result = new Dictionary<string, object>();
+            for (int i = 0; i + 1 < values.Length; i += 2)
+            {
+                string key = values[i]?.ToString();
+                if (!string.IsNullOrWhiteSpace(key)) result[key] = values[i + 1];
+            }
+            return result;
         }
     }
 }
