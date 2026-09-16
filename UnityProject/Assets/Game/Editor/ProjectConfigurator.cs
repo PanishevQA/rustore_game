@@ -29,13 +29,10 @@ namespace DontGetSidetracked.EditorTools
             PlayerSettings.allowedAutorotateToLandscapeRight = false;
             PlayerSettings.allowedAutorotateToPortrait = true;
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
-            PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, PackageName);
-            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, PackageName);
+            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel34;
             PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.Activity;
-            PlayerSettings.Android.useCustomMainManifest = true;
-            PlayerSettings.Android.useCustomMainGradleTemplate = true;
-            PlayerSettings.Android.useCustomGradlePropertiesTemplate = true;
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
 
