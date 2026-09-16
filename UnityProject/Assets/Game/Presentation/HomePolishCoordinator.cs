@@ -31,7 +31,7 @@ namespace DontGetSidetracked.Presentation
 
         private void Update()
         {
-            if (_title == null && Time.unscaledTime >= _nextResolve)
+            if ((_title == null || _statsButton == null || _storeButton == null) && Time.unscaledTime >= _nextResolve)
             {
                 _nextResolve = Time.unscaledTime + 0.25f;
                 Resolve();
@@ -105,16 +105,28 @@ namespace DontGetSidetracked.Presentation
                 SetAnchors(_playArea, new Vector2(0.075f, 0.305f), new Vector2(0.925f, 0.815f));
 
             if (_primary != null)
+            {
                 SetAnchors(_primary.GetComponent<RectTransform>(), new Vector2(0.075f, 0.195f), new Vector2(0.925f, 0.265f));
+                SetButtonFont(_primary, 36);
+            }
 
             if (_secondary != null)
+            {
                 SetAnchors(_secondary.GetComponent<RectTransform>(), new Vector2(0.075f, 0.100f), new Vector2(0.350f, 0.165f));
+                SetButtonFont(_secondary, 23);
+            }
 
             if (_statsButton != null)
+            {
                 SetAnchors(_statsButton, new Vector2(0.365f, 0.100f), new Vector2(0.635f, 0.165f));
+                SetButtonFont(_statsButton.GetComponent<Button>(), 21);
+            }
 
             if (_storeButton != null)
+            {
                 SetAnchors(_storeButton, new Vector2(0.650f, 0.100f), new Vector2(0.925f, 0.165f));
+                SetButtonFont(_storeButton.GetComponent<Button>(), 21);
+            }
         }
 
         private void RestoreGameplayLayout()
@@ -147,6 +159,17 @@ namespace DontGetSidetracked.Presentation
             string compact = value.Replace("\r", string.Empty).Replace("\n", "     •     ");
             compact = compact.Replace("Серия:", "СЕРИЯ").Replace("Лучший:", "ЛУЧШИЙ");
             return compact;
+        }
+
+        private static void SetButtonFont(Button button, int size)
+        {
+            if (button == null) return;
+            Text label = button.GetComponentInChildren<Text>(true);
+            if (label == null) return;
+            label.fontSize = size;
+            label.resizeTextMinSize = Mathf.Max(14, size - 8);
+            label.resizeTextMaxSize = size;
+            label.fontStyle = FontStyle.Bold;
         }
 
         private static T Find<T>(Transform root, string name) where T : Component
