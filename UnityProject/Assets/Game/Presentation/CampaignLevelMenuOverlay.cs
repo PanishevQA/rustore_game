@@ -1,5 +1,6 @@
 using System;
 using DontGetSidetracked.Core;
+using DontGetSidetracked.Economy;
 using DontGetSidetracked.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,6 +21,7 @@ namespace DontGetSidetracked.Presentation
         private Transform _gridRoot;
         private Button _previous;
         private Button _next;
+        private Button _coinHint;
         private GameBootstrap _bootstrap;
         private JsonFileSaveRepository _repository;
         private CampaignProgressService _progress;
@@ -71,10 +73,12 @@ namespace DontGetSidetracked.Presentation
         private void Render()
         {
             ReloadProgress();
-            _title.text = $"ГЛАВА {_chapter} / {CampaignLevelCatalog.TotalChapters}";
+            SaveData save = _progress.Save;
+            _title.text = $"ГЛАВА {_chapter} / {CampaignLevelCatalog.TotalChapters}\n{CampaignLevelCatalog.ChapterName(_chapter)}";
             _summary.text =
-                $"Открыт уровень {_progress.HighestUnlockedLevel}/{CampaignLevelCatalog.TotalLevels}    •    " +
-                $"★ {_progress.TotalStars()}/{CampaignLevelCatalog.TotalLevels * 3}";
+                $"Пройдено {_progress.CompletedLevels()}/{CampaignLevelCatalog.TotalLevels}  •  " +
+                $"★ {_progress.TotalStars()}/{CampaignLevelCatalog.TotalLevels * 3}\n" +
+                $"Монеты: {save.Coins}  •  Подсказки: {save.Hints}";
 
             for (int i = _gridRoot.childCount - 1; i >= 0; i--)
                 Destroy(_gridRoot.GetChild(i).gameObject);
@@ -93,7 +97,7 @@ namespace DontGetSidetracked.Presentation
                 }
                 else if (record == null || record.Stars <= 0)
                 {
-                    label = $"{level:00}\n— — —";
+                    label = $"{level:00}\n☆ ☆ ☆";
                 }
                 else
                 {
@@ -106,6 +110,13 @@ namespace DontGetSidetracked.Presentation
 
             _previous.interactable = _chapter > 1;
             _next.interactable = _chapter < CampaignLevelCatalog.TotalChapters;
+            if (_coinHint != null)
+            {
+                _coinHint.interactable = save.Coins >= LocalRewardEconomyService.HintPriceCoins;
+                Text label = _coinHint.GetComponentInChildren<Text>(true);
+                if (label != null)
+                    label.text = $"{LocalRewardEconomyService.HintPriceCoins} МОНЕТ → +1 ПОДСКАЗКА";
+            }
         }
 
         private void SelectLevel(int levelNumber)
@@ -127,6 +138,14 @@ namespace DontGetSidetracked.Presentation
         {
             if (_chapter >= CampaignLevelCatalog.TotalChapters) return;
             _chapter++;
+            Render();
+        }
+
+        private void BuyHintWithCoins()
+        {
+            SaveData save = _repository.Load();
+            var economy = new LocalRewardEconomyService(_repository, save);
+            economy.TryBuyHint();
             Render();
         }
 
@@ -160,33 +179,34 @@ namespace DontGetSidetracked.Presentation
             SetAnchors(_panel.GetComponent<RectTransform>(), new Vector2(0.035f, 0.035f), new Vector2(0.965f, 0.965f));
             _panel.GetComponent<Image>().color = new Color(0.018f, 0.028f, 0.060f, 0.995f);
 
-            _title = CreateText(_panel.transform, "Title", 60, TextAnchor.MiddleCenter,
-                new Vector2(0.06f, 0.88f), new Vector2(0.94f, 0.965f));
+            _title = CreateText(_panel.transform, "Title", 56, TextAnchor.MiddleCenter,
+                new Vector2(0.06f, 0.875f), new Vector2(0.94f, 0.965f));
             _title.fontStyle = FontStyle.Bold;
 
-            _summary = CreateText(_panel.transform, "Summary", 28, TextAnchor.MiddleCenter,
-                new Vector2(0.06f, 0.825f), new Vector2(0.94f, 0.88f));
+            _summary = CreateText(_panel.transform, "Summary", 27, TextAnchor.MiddleCenter,
+                new Vector2(0.06f, 0.800f), new Vector2(0.94f, 0.875f));
             _summary.color = new Color(0.62f, 0.72f, 0.86f, 1f);
 
             var grid = new GameObject("LevelGrid", typeof(RectTransform), typeof(GridLayoutGroup));
             grid.transform.SetParent(_panel.transform, false);
             RectTransform gridRect = grid.GetComponent<RectTransform>();
-            SetAnchors(gridRect, new Vector2(0.07f, 0.20f), new Vector2(0.93f, 0.80f));
+            SetAnchors(gridRect, new Vector2(0.07f, 0.245f), new Vector2(0.93f, 0.785f));
             GridLayoutGroup layout = grid.GetComponent<GridLayoutGroup>();
-            layout.cellSize = new Vector2(400f, 175f);
-            layout.spacing = new Vector2(28f, 22f);
+            layout.cellSize = new Vector2(400f, 150f);
+            layout.spacing = new Vector2(28f, 18f);
             layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             layout.constraintCount = 2;
             layout.childAlignment = TextAnchor.UpperCenter;
             _gridRoot = grid.transform;
 
+            _coinHint = CreateButton(_panel.transform, "МОНЕТЫ → ПОДСКАЗКА", new Vector2(0.22f, 0.185f), new Vector2(0.78f, 0.235f), BuyHintWithCoins);
             _previous = CreateButton(_panel.transform, "← ГЛАВА", new Vector2(0.07f, 0.105f), new Vector2(0.31f, 0.165f), PreviousChapter);
             CreateButton(_panel.transform, "ДОМОЙ", new Vector2(0.38f, 0.105f), new Vector2(0.62f, 0.165f), GoHome);
             _next = CreateButton(_panel.transform, "ГЛАВА →", new Vector2(0.69f, 0.105f), new Vector2(0.93f, 0.165f), NextChapter);
 
-            Text hint = CreateText(_panel.transform, "Hint", 24, TextAnchor.MiddleCenter,
+            Text hint = CreateText(_panel.transform, "Hint", 23, TextAnchor.MiddleCenter,
                 new Vector2(0.08f, 0.045f), new Vector2(0.92f, 0.095f));
-            hint.text = "60% = ★    80% = ★★    95% = ★★★";
+            hint.text = "Новые звёзды дают монеты • финал главы даёт +1 подсказку";
             hint.color = new Color(0.45f, 0.88f, 1f, 1f);
         }
 
