@@ -36,6 +36,14 @@ namespace DontGetSidetracked.Core
     }
 
     [Serializable]
+    public sealed class LevelProgressData
+    {
+        public int LevelNumber;
+        public double BestScore;
+        public int Stars;
+    }
+
+    [Serializable]
     public sealed class ReplayPointData
     {
         public int X;
@@ -64,7 +72,7 @@ namespace DontGetSidetracked.Core
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 12;
+        public const int CurrentVersion = 13;
 
         public int Version = CurrentVersion;
         public string AnonymousPlayerId = string.Empty;
@@ -81,6 +89,8 @@ namespace DontGetSidetracked.Core
         public string LastCompletedDailyDateUtc = string.Empty;
         public DailyCacheData LastDaily = new DailyCacheData();
         public List<DailyBestData> DailyBests = new List<DailyBestData>();
+        public int HighestUnlockedLevel = 1;
+        public List<LevelProgressData> LevelProgress = new List<LevelProgressData>();
         public string PendingReferralId = string.Empty;
         public bool InstallReferrerConsumed;
         public int SessionNumber;
@@ -101,7 +111,8 @@ namespace DontGetSidetracked.Core
             {
                 Version = CurrentVersion,
                 AnonymousPlayerId = "anon_" + Guid.NewGuid().ToString("N"),
-                SelectedSkinId = "default"
+                SelectedSkinId = "default",
+                HighestUnlockedLevel = 1
             };
         }
     }
@@ -195,6 +206,13 @@ namespace DontGetSidetracked.Core
                 data.Version = 12;
             }
 
+            if (data.Version == 12)
+            {
+                if (data.LevelProgress == null) data.LevelProgress = new List<LevelProgressData>();
+                data.HighestUnlockedLevel = 1;
+                data.Version = 13;
+            }
+
             if (string.IsNullOrWhiteSpace(data.AnonymousPlayerId))
                 data.AnonymousPlayerId = "anon_" + Guid.NewGuid().ToString("N");
             if (data.Settings == null) data.Settings = new GameSettingsData();
@@ -204,6 +222,9 @@ namespace DontGetSidetracked.Core
             if (string.IsNullOrWhiteSpace(data.SelectedSkinId)) data.SelectedSkinId = "default";
             if (data.LastDaily == null) data.LastDaily = new DailyCacheData();
             if (data.DailyBests == null) data.DailyBests = new List<DailyBestData>();
+            if (data.LevelProgress == null) data.LevelProgress = new List<LevelProgressData>();
+            if (data.HighestUnlockedLevel < 1) data.HighestUnlockedLevel = 1;
+            if (data.HighestUnlockedLevel > 60) data.HighestUnlockedLevel = 60;
             NormalizeDailyCache(data.LastDaily);
             if (data.PendingAttempts == null) data.PendingAttempts = new List<PendingDailyAttemptData>();
 
