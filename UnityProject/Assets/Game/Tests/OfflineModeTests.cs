@@ -50,7 +50,7 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public void L3ChallengeToken_RoundTripsRouteCountAndDisplayTimes()
+        public void L4ChallengeToken_RoundTripsRouteCountDisplayTimesAndChecksum()
         {
             var date = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
             long seed = OfflineDaily.SeedForDate(date, RouteGenerator.CurrentGeneratorVersion);
@@ -62,9 +62,10 @@ namespace DontGetSidetracked.Tests
                 new[] { 4200, 3600 },
                 94.7);
 
-            Assert.That(token.Length, Is.EqualTo(32));
-            Assert.That(token, Does.StartWith("L3"));
+            Assert.That(token.Length, Is.EqualTo(36));
+            Assert.That(token, Does.StartWith("L4"));
             Assert.That(OfflineChallengeCodec.TryDecode(token, out ReferralDto referral), Is.True);
+            Assert.That(referral.ReferralId, Is.EqualTo(token));
             Assert.That(referral.ChallengeId, Is.EqualTo("daily_2026_09_15"));
             Assert.That(referral.Seed, Is.EqualTo(seed));
             Assert.That(referral.GeneratorVersion, Is.EqualTo(RouteGenerator.CurrentGeneratorVersion));
@@ -83,7 +84,28 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public void LegacyL1AndL2Tokens_RemainCompatibleWithDefaultDisplayTimes()
+        public void L4ChallengeToken_RejectsSingleCharacterPayloadMutation()
+        {
+            var date = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
+            string token = OfflineChallengeCodec.Encode(
+                date,
+                0x01234567,
+                RouteGenerator.CurrentGeneratorVersion,
+                2,
+                new[] { 4200, 3600 },
+                94.7);
+
+            char[] chars = token.ToCharArray();
+            const int seedCharacterIndex = 10;
+            chars[seedCharacterIndex] = chars[seedCharacterIndex] == 'A' ? 'B' : 'A';
+            string corrupted = new string(chars);
+
+            Assert.That(corrupted, Is.Not.EqualTo(token));
+            Assert.That(OfflineChallengeCodec.TryDecode(corrupted, out _), Is.False);
+        }
+
+        [Test]
+        public void LegacyL1L2AndL3Tokens_RemainCompatible()
         {
             var date = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
             long seed = OfflineDaily.SeedForDate(date, RouteGenerator.CurrentGeneratorVersion);
@@ -93,6 +115,7 @@ namespace DontGetSidetracked.Tests
             string score = ((int)Math.Round(88.8 * 10)).ToString("X3", CultureInfo.InvariantCulture);
             string l1 = "L1" + common + score;
             string l2 = "L2" + common + "2" + score;
+            string l3 = BuildLegacyL3(date, seed, RouteGenerator.CurrentGeneratorVersion, 2, new[] { 4200, 3600 }, 88.8);
 
             Assert.That(OfflineChallengeCodec.TryDecode(l1, out ReferralDto oldV1), Is.True);
             Assert.That(oldV1.RouteCount, Is.EqualTo(3));
@@ -104,10 +127,17 @@ namespace DontGetSidetracked.Tests
             Assert.That(oldV2.RouteCount, Is.EqualTo(2));
             Assert.That(oldV2.DisplayTimesMs[0], Is.EqualTo(RouteRuntimeTuning.DefaultEasyDisplayTimeMs));
             Assert.That(oldV2.DisplayTimesMs[1], Is.EqualTo(RouteRuntimeTuning.DefaultMediumDisplayTimeMs));
+
+            Assert.That(OfflineChallengeCodec.TryDecode(l3, out ReferralDto oldV3), Is.True);
+            Assert.That(oldV3.ReferralId, Is.EqualTo(l3));
+            Assert.That(oldV3.RouteCount, Is.EqualTo(2));
+            Assert.That(oldV3.DisplayTimesMs[0], Is.EqualTo(4200));
+            Assert.That(oldV3.DisplayTimesMs[1], Is.EqualTo(3600));
+            Assert.That(oldV3.InviterScore, Is.EqualTo(88.8).Within(0.001));
         }
 
         [Test]
-        public async Task OfflineApi_WithPackageName_SharesL3DeepLinkAndInstallFallback()
+        public async Task OfflineApi_WithPackageName_SharesL4DeepLinkAndInstallFallback()
         {
             RouteRuntimeTuning.ConfigureDailyRouteCount(2);
             RouteRuntimeTuning.ConfigureDisplayTimes(4300, 3700, 2800);
@@ -118,8 +148,8 @@ namespace DontGetSidetracked.Tests
             string share = await api.CreateChallengeAsync("anon_test", daily.ChallengeId, 91.2);
             string[] lines = share.Split('\n');
             Assert.That(lines.Length, Is.EqualTo(2));
-            Assert.That(lines[0], Does.StartWith("nesbeisya://challenge/L3"));
-            Assert.That(lines[1], Does.StartWith("https://www.rustore.ru/catalog/app/ru.example.game?referrerId=L3"));
+            Assert.That(lines[0], Does.StartWith("nesbeisya://challenge/L4"));
+            Assert.That(lines[1], Does.StartWith("https://www.rustore.ru/catalog/app/ru.example.game?referrerId=L4"));
 
             Assert.That(OfflineChallengeCodec.TryExtractToken(lines[0], out string token), Is.True);
             Assert.That(OfflineChallengeCodec.TryDecode(token, out ReferralDto referral), Is.True);
@@ -129,14 +159,14 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public async Task ResharedDuel_PreservesOriginalSeedVersionRouteCountAndDisplayTimes()
+        public async Task ResharedLegacyL3Duel_PreservesIdentityAndUpgradesToL4()
         {
             var api = new OfflineGameApi();
             var date = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
             const long originalSeed = 0x01234567;
             const int originalVersion = 7;
             const int originalRouteCount = 1;
-            string incoming = OfflineChallengeCodec.Encode(
+            string incoming = BuildLegacyL3(
                 date,
                 originalSeed,
                 originalVersion,
@@ -149,6 +179,7 @@ namespace DontGetSidetracked.Tests
             string resharedLink = await api.CreateChallengeAsync("anon_test", loaded.ChallengeId, 91.2);
 
             Assert.That(OfflineChallengeCodec.TryExtractToken(resharedLink, out string resharedToken), Is.True);
+            Assert.That(resharedToken, Does.StartWith("L4"));
             Assert.That(OfflineChallengeCodec.TryDecode(resharedToken, out ReferralDto reshared), Is.True);
             Assert.That(reshared.Seed, Is.EqualTo(originalSeed));
             Assert.That(reshared.GeneratorVersion, Is.EqualTo(originalVersion));
@@ -188,6 +219,25 @@ namespace DontGetSidetracked.Tests
                 false);
 
             Assert.That(score, Is.EqualTo(100.0));
+        }
+
+        private static string BuildLegacyL3(
+            DateTime date,
+            long seed,
+            int generatorVersion,
+            int routeCount,
+            IReadOnlyList<int> displayTimesMs,
+            double score)
+        {
+            int scoreTenths = Math.Max(0, Math.Min(1000, (int)Math.Round(score * 10.0, MidpointRounding.AwayFromZero)));
+            string token = "L3" +
+                           date.ToString("yyyyMMdd", CultureInfo.InvariantCulture) +
+                           ((uint)seed).ToString("X8", CultureInfo.InvariantCulture) +
+                           generatorVersion.ToString("X2", CultureInfo.InvariantCulture) +
+                           routeCount.ToString("X1", CultureInfo.InvariantCulture);
+            for (int i = 0; i < routeCount; i++)
+                token += displayTimesMs[i].ToString("X4", CultureInfo.InvariantCulture);
+            return token + scoreTenths.ToString("X3", CultureInfo.InvariantCulture);
         }
     }
 }
