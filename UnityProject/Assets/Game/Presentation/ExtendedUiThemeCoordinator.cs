@@ -5,8 +5,8 @@ using UnityEngine.UI;
 namespace DontGetSidetracked.Presentation
 {
     /// <summary>
-    /// Styles product surfaces that were added after the base visual theme: campaign and training chooser.
-    /// Presentation-only and safe to remove without affecting game state.
+    /// Styles the training chooser added after the base visual theme.
+    /// CampaignCanvas has its own CampaignVisualThemeCoordinator so there is only one visual owner per surface.
     /// </summary>
     public sealed class ExtendedUiThemeCoordinator : MonoBehaviour
     {
@@ -15,7 +15,6 @@ namespace DontGetSidetracked.Presentation
 
         private static readonly Color Surface = new Color(0.045f, 0.065f, 0.115f, 0.985f);
         private static readonly Color SurfaceRaised = new Color(0.075f, 0.105f, 0.17f, 1f);
-        private static readonly Color Cyan = new Color(0.29f, 0.91f, 1f, 1f);
         private static readonly Color Violet = new Color(0.55f, 0.43f, 1f, 1f);
         private static readonly Color Text = new Color(0.96f, 0.98f, 1f, 1f);
         private static readonly Color Muted = new Color(0.62f, 0.72f, 0.84f, 1f);
@@ -44,44 +43,6 @@ namespace DontGetSidetracked.Presentation
 
         private static void Apply()
         {
-            StyleCampaign();
-            StyleTraining();
-        }
-
-        private static void StyleCampaign()
-        {
-            GameObject canvas = GameObject.Find("CampaignCanvas");
-            if (canvas == null) return;
-            Transform panel = Find(canvas.transform, "CampaignPanel");
-            if (panel == null) return;
-            StylePanel(panel.GetComponent<Image>());
-
-            Text title = Find<Text>(panel, "Title");
-            if (title != null)
-            {
-                title.color = Text;
-                title.fontStyle = FontStyle.Bold;
-                title.lineSpacing = 0.90f;
-            }
-            Text summary = Find<Text>(panel, "Summary");
-            if (summary != null) summary.color = Muted;
-
-            Button[] buttons = panel.GetComponentsInChildren<Button>(true);
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                Text label = buttons[i].GetComponentInChildren<Text>(true);
-                string text = label?.text ?? string.Empty;
-                if (text.IndexOf("МОНЕТ", StringComparison.OrdinalIgnoreCase) >= 0)
-                    StyleButton(buttons[i], Cyan, new Color(0.02f, 0.05f, 0.08f, 1f));
-                else if (text.IndexOf("ДОМОЙ", StringComparison.OrdinalIgnoreCase) >= 0)
-                    StyleButton(buttons[i], Violet, Color.white);
-                else
-                    StyleButton(buttons[i], SurfaceRaised, Text);
-            }
-        }
-
-        private static void StyleTraining()
-        {
             GameObject canvas = GameObject.Find("TrainingSelectCanvas");
             if (canvas == null) return;
             Transform panel = Find(canvas.transform, "TrainingPanel");
@@ -103,7 +64,7 @@ namespace DontGetSidetracked.Presentation
                 Text label = buttons[i].GetComponentInChildren<Text>(true);
                 string text = label?.text ?? string.Empty;
                 Color background = text.IndexOf("СЛУЧАЙНАЯ", StringComparison.OrdinalIgnoreCase) >= 0 ? Violet : SurfaceRaised;
-                StyleButton(buttons[i], background, Text);
+                StyleButton(buttons[i], background);
             }
         }
 
@@ -113,17 +74,13 @@ namespace DontGetSidetracked.Presentation
             image.sprite = _rounded;
             image.type = Image.Type.Sliced;
             image.color = Surface;
-            Outline outline = image.GetComponent<Outline>();
-            if (outline == null) outline = image.gameObject.AddComponent<Outline>();
-            outline.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, 0.12f);
-            outline.effectDistance = new Vector2(2f, -2f);
             Shadow shadow = image.GetComponent<Shadow>();
             if (shadow == null) shadow = image.gameObject.AddComponent<Shadow>();
             shadow.effectColor = new Color(0f, 0f, 0f, 0.45f);
             shadow.effectDistance = new Vector2(0f, -10f);
         }
 
-        private static void StyleButton(Button button, Color background, Color textColor)
+        private static void StyleButton(Button button, Color background)
         {
             if (button == null) return;
             Image image = button.GetComponent<Image>();
@@ -145,7 +102,7 @@ namespace DontGetSidetracked.Presentation
             Text label = button.GetComponentInChildren<Text>(true);
             if (label != null)
             {
-                label.color = button.interactable ? textColor : Muted;
+                label.color = button.interactable ? Text : Muted;
                 label.fontStyle = FontStyle.Bold;
             }
         }
@@ -177,7 +134,7 @@ namespace DontGetSidetracked.Presentation
             const int radius = 24;
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
             {
-                name = "ExtendedUiRounded",
+                name = "TrainingUiRounded",
                 wrapMode = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Bilinear,
                 hideFlags = HideFlags.HideAndDontSave
