@@ -22,6 +22,8 @@ namespace DontGetSidetracked.Presentation
         private float _nextResolve;
         private bool _wired;
 
+        public bool IsOpen => _panel != null && _panel.activeSelf;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoStart()
         {
@@ -50,7 +52,7 @@ namespace DontGetSidetracked.Presentation
             if (!string.Equals(mode, "Home", StringComparison.Ordinal))
             {
                 _wired = false;
-                if (_panel != null && _panel.activeSelf) SetVisible(false);
+                if (IsOpen) SetVisible(false);
                 return;
             }
 
@@ -92,10 +94,7 @@ namespace DontGetSidetracked.Presentation
             }
         }
 
-        private void Open()
-        {
-            SetVisible(true);
-        }
+        private void Open() => SetVisible(true);
 
         private void StartEasy() => StartDifficulty(0);
         private void StartMedium() => StartDifficulty(1);
@@ -118,7 +117,7 @@ namespace DontGetSidetracked.Presentation
             _startTrainingMethod.Invoke(_bootstrap, null);
         }
 
-        private void Close() => SetVisible(false);
+        public void Close() => SetVisible(false);
 
         private void SetVisible(bool visible)
         {
