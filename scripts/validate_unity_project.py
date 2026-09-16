@@ -44,10 +44,6 @@ def validate_package_manifest() -> None:
         return
 
     dependencies = manifest.get("dependencies") or {}
-    # Only packages required for the editor-functional MVP are pinned here.
-    # Install Referrer and Remote Config are intentionally omitted from the editor manifest:
-    # their SDK adapters are reflection-based and they are added later for Android/RuStore
-    # integration testing using an official registry, tgz or unitypackage.
     expected = {
         "com.unity.test-framework": "1.6.0",
         "com.unity.mobile.notifications": "2.4.3",
@@ -88,10 +84,7 @@ def validate_asmdefs() -> None:
             fail(f"Assembly name is missing in {path.relative_to(ROOT)}")
             continue
         if name in names:
-            fail(
-                f"Duplicate assembly name {name!r}: "
-                f"{names[name].relative_to(ROOT)} and {path.relative_to(ROOT)}"
-            )
+            fail(f"Duplicate assembly name {name!r}: {names[name].relative_to(ROOT)} and {path.relative_to(ROOT)}")
         names[name] = path
         parsed.append((path, data))
 
@@ -113,10 +106,7 @@ def validate_android_manifest() -> None:
         fail(f"AndroidManifest.xml is invalid XML: {exc}")
         return
 
-    permissions = {
-        item.attrib.get(ANDROID_NAME, "")
-        for item in root.findall("./uses-permission")
-    }
+    permissions = {item.attrib.get(ANDROID_NAME, "") for item in root.findall("./uses-permission")}
     if "android.permission.POST_NOTIFICATIONS" not in permissions:
         fail("AndroidManifest.xml must declare POST_NOTIFICATIONS for contextual Daily reminders on Android 13+.")
 
@@ -138,10 +128,7 @@ def validate_android_manifest() -> None:
         fail("Unnecessary sensitive Android permissions declared: " + ", ".join(forbidden_found))
 
     activities = list(root.findall("./application/activity"))
-    unity_activities = [
-        activity for activity in activities
-        if activity.attrib.get(ANDROID_NAME) == "com.unity3d.player.UnityPlayerActivity"
-    ]
+    unity_activities = [a for a in activities if a.attrib.get(ANDROID_NAME) == "com.unity3d.player.UnityPlayerActivity"]
     if not unity_activities:
         fail("AndroidManifest.xml must declare com.unity3d.player.UnityPlayerActivity.")
 
@@ -162,10 +149,7 @@ def validate_android_manifest() -> None:
         fail("UnityPlayerActivity must declare the nesbeisya://challenge deeplink.")
 
     providers = list(root.findall("./application/provider"))
-    file_providers = [
-        provider for provider in providers
-        if provider.attrib.get(ANDROID_NAME) == "androidx.core.content.FileProvider"
-    ]
+    file_providers = [p for p in providers if p.attrib.get(ANDROID_NAME) == "androidx.core.content.FileProvider"]
     valid_share_provider = False
     for provider in file_providers:
         if provider.attrib.get(ANDROID_AUTHORITIES) != "${applicationId}.shareprovider":
@@ -175,10 +159,7 @@ def validate_android_manifest() -> None:
         if provider.attrib.get(ANDROID_GRANT_URI_PERMISSIONS) != "true":
             continue
         for meta in provider.findall("./meta-data"):
-            if (
-                meta.attrib.get(ANDROID_NAME) == "android.support.FILE_PROVIDER_PATHS"
-                and meta.attrib.get(ANDROID_RESOURCE) == "@xml/nesbeisya_file_paths"
-            ):
+            if meta.attrib.get(ANDROID_NAME) == "android.support.FILE_PROVIDER_PATHS" and meta.attrib.get(ANDROID_RESOURCE) == "@xml/nesbeisya_file_paths":
                 valid_share_provider = True
                 break
         if valid_share_provider:
@@ -238,14 +219,13 @@ def validate_required_runtime_files() -> None:
 
 
 def validate_release_preflight_contract() -> None:
-    path = UNITY / "Assets/Game/Editor/ProductionReleaseValidator.cs"
-    text = read(path)
+    text = read(UNITY / "Assets/Game/Editor/ProductionReleaseValidator.cs")
     required = {
         r'\"ru.rustore.pay\": \"11.1.0\"': "Production preflight must enforce RuStore Pay 11.1.0.",
         'HasLoadedRuStoreType("InstallReferrerClient")': "Production preflight must require an actually loaded Install Referrer Unity integration regardless of package source.",
         'HasLoadedRuStoreType("RuStoreRemoteConfigClient")': "Production preflight must require an actually loaded Remote Config Unity integration regardless of package source.",
         'InstallReferrer = \\"10.6.1\\"': "Production preflight must protect the current Install Referrer target version.",
-        'RemoteConfig = \\"10.5.0\\"': "Production preflight must protect the current Remote Config target version.",
+        'RemoteConfig = \\"10.5.1\\"': "Production preflight must protect the current Remote Config target version.",
         'android.permission.POST_NOTIFICATIONS': "Production preflight must protect the Daily reminder permission.",
         'androidx.core.content.FileProvider': "Production preflight must protect result-card FileProvider wiring.",
         'ValidateForbiddenManifestPermissions': "Production preflight must reject unnecessary sensitive permissions.",
@@ -277,16 +257,8 @@ def validate_editor_configuration_safety() -> None:
 def validate_repository_hygiene() -> None:
     text = read(ROOT / ".gitignore")
     required = (
-        "*.apk",
-        "*.aab",
-        "*.keystore",
-        "*.jks",
-        "*.p12",
-        "*.pfx",
-        "*.pem",
-        "keystore.properties",
-        "local.properties",
-        ".env",
+        "*.apk", "*.aab", "*.keystore", "*.jks", "*.p12", "*.pfx", "*.pem",
+        "keystore.properties", "local.properties", ".env",
     )
     missing = [entry for entry in required if entry not in text]
     if missing:
