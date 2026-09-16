@@ -23,6 +23,7 @@ jobs:
           test -f UnityProject/Assets/Game/Presentation/CampaignVisualThemeCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/ExtendedUiThemeCoordinator.cs
           test -f UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
+          test -f UnityProject/Assets/Game/Editor/LocalQaTools.cs
 
           # Campaign is substantial local content, not a placeholder.
           grep -q 'TotalLevels = 60' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
@@ -41,7 +42,19 @@ jobs:
           grep -q 'new CampaignProgressService' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           grep -q 'CampaignLevelCatalog.TotalLevels' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           grep -q 'public bool IsPanelOpen' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'public void ClosePanel' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           test ! -f UnityProject/Assets/Game/Presentation/CampaignMetaSummaryCoordinator.cs
+
+          # Mobile Back uses stable overlay contracts instead of private-state reflection for product overlays.
+          grep -q 'public bool IsOpen' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'public void Close()' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'public bool IsOpen' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+          grep -q 'public void Close()' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+          grep -q 'training.IsOpen' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+          grep -q 'training.Close()' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+          grep -q 'campaign.IsOpen' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+          grep -q 'campaign.Close()' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+          grep -q 'meta.IsPanelOpen' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
 
           # Earned currency must have a real, bounded local use without replacing RuStore prices.
           grep -q 'HintPriceCoins = 30' UnityProject/Assets/Game/Economy/LocalRewardEconomyService.cs
@@ -57,8 +70,7 @@ jobs:
           grep -q 'RuntimeInitializeLoadType.SubsystemRegistration' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
           grep -q 'SharedByPath.Clear()' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
 
-          # Save replacement must be failure-safe: a known-good backup exists before deleting the primary,
-          # and a failed replacement attempts immediate recovery.
+          # Save replacement must be failure-safe.
           grep -q 'File.Copy(_path, _backupPath, true)' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
           grep -q 'TryRestorePrimaryFromBackup' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
           grep -q 'TryDelete(tempPath)' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
@@ -103,3 +115,8 @@ jobs:
           grep -q 'RepeatInterval = TimeSpan.FromDays(1)' UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
           grep -q 'ShowInForeground = false' UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
           grep -q 'CancelScheduledNotification(NotificationId)' UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
+
+          # Final QA can reset local state safely without shipping debug runtime UI.
+          grep -q 'QA/Open Local Data Folder' UnityProject/Assets/Game/Editor/LocalQaTools.cs
+          grep -q 'QA/Reset Local Progress and QA Logs' UnityProject/Assets/Game/Editor/LocalQaTools.cs
+          grep -q 'EditorApplication.isPlayingOrWillChangePlaymode' UnityProject/Assets/Game/Editor/LocalQaTools.cs
