@@ -43,9 +43,12 @@ jobs:
           grep -q 'МОНЕТ → +1 ПОДСКАЗКА' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
           grep -q 'AnalyticsEventNames.CoinSpend' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
 
-          # All presentation-side writers must observe one runtime save identity.
+          # All presentation-side writers must observe one runtime save identity, while a new app/Editor runtime
+          # must reload persisted state instead of inheriting a stale static cache.
           grep -q 'SharedByPath' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
           grep -q 'SharedGate' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
+          grep -q 'RuntimeInitializeLoadType.SubsystemRegistration' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
+          grep -q 'SharedByPath.Clear()' UnityProject/Assets/Game/Presentation/JsonFileSaveRepository.cs
 
           # Training must be explicit to the player instead of silently cycling difficulty.
           grep -q 'TrainingSelectCanvas' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
