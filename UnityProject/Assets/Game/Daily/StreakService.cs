@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using DontGetSidetracked.Core;
 
 namespace DontGetSidetracked.Daily
@@ -8,11 +9,16 @@ namespace DontGetSidetracked.Daily
         public bool ApplyCompletedDaily(SaveData save, DateTime serverDateUtc)
         {
             if (save == null) throw new ArgumentNullException(nameof(save));
-            DateTime day = serverDateUtc.Date;
+            DateTime utc = serverDateUtc.Kind == DateTimeKind.Utc ? serverDateUtc : serverDateUtc.ToUniversalTime();
+            DateTime day = utc.Date;
 
-            if (DateTime.TryParse(save.LastCompletedDailyDateUtc, out DateTime previous))
+            if (DateTime.TryParse(
+                    save.LastCompletedDailyDateUtc,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    out DateTime previous))
             {
-                previous = previous.ToUniversalTime().Date;
+                previous = previous.Date;
                 if (previous == day) return false;
                 save.Streak = previous == day.AddDays(-1) ? save.Streak + 1 : 1;
             }
@@ -21,8 +27,8 @@ namespace DontGetSidetracked.Daily
                 save.Streak = 1;
             }
 
-            save.LastCompletedDailyDateUtc = day.ToString("O");
-            save.CompletedDailyCount++;
+            save.LastCompletedDailyDateUtc = day.ToString("O", CultureInfo.InvariantCulture);
+            if (save.CompletedDailyCount < int.MaxValue) save.CompletedDailyCount++;
             return true;
         }
     }
