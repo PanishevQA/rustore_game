@@ -72,8 +72,11 @@ namespace DontGetSidetracked.Presentation
             RuntimePlatformCoordinator platform = FindFirstObjectByType<RuntimePlatformCoordinator>();
             if (TryDismissNotificationPrompt(platform)) return;
 
+            TrainingMenuCoordinator training = FindFirstObjectByType<TrainingMenuCoordinator>();
+            if (TryCloseOverlayPanel(training, "_panel", "Close")) return;
+
             CampaignLevelMenuOverlay campaign = FindFirstObjectByType<CampaignLevelMenuOverlay>();
-            if (TryCloseCampaignPanel(campaign)) return;
+            if (TryCloseOverlayPanel(campaign, "_panel", "Close")) return;
 
             MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
             if (TryCloseMetaPanel(meta)) return;
@@ -154,16 +157,16 @@ namespace DontGetSidetracked.Presentation
             return true;
         }
 
-        private static bool TryCloseCampaignPanel(CampaignLevelMenuOverlay campaign)
+        private static bool TryCloseOverlayPanel(object overlay, string panelFieldName, string closeMethodName)
         {
-            if (campaign == null) return false;
-            Type type = typeof(CampaignLevelMenuOverlay);
-            FieldInfo panelField = type.GetField("_panel", BindingFlags.Instance | BindingFlags.NonPublic);
-            GameObject panel = panelField?.GetValue(campaign) as GameObject;
+            if (overlay == null) return false;
+            Type type = overlay.GetType();
+            FieldInfo panelField = type.GetField(panelFieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            GameObject panel = panelField?.GetValue(overlay) as GameObject;
             if (panel == null || !panel.activeSelf) return false;
 
-            MethodInfo close = type.GetMethod("Close", BindingFlags.Instance | BindingFlags.NonPublic);
-            close?.Invoke(campaign, null);
+            MethodInfo close = type.GetMethod(closeMethodName, BindingFlags.Instance | BindingFlags.NonPublic);
+            close?.Invoke(overlay, null);
             return true;
         }
 
@@ -244,6 +247,7 @@ namespace DontGetSidetracked.Presentation
             string.Equals(canvasName, "GameCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "MetaCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "CampaignCanvas", StringComparison.Ordinal) ||
+            string.Equals(canvasName, "TrainingSelectCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "RewardedCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "HintCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "ResultEnhancementCanvas", StringComparison.Ordinal) ||
