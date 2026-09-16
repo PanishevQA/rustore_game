@@ -85,15 +85,11 @@ namespace DontGetSidetracked.EditorTools
                 ("cache-path", "Result share paths must expose only the app cache directory."),
                 ("path=\"share/\"", "Result share cache subdirectory must match NativeImageShare's share/ directory."));
 
-            // These packages are part of the stable Editor baseline and therefore remain exact manifest pins.
             ValidateFileContains(PackagesManifestPath, errors,
                 ("\"ru.rustore.pay\": \"11.1.0\"", "RuStore Pay must remain pinned to the verified version."),
                 ("\"ru.rustore.update\": \"10.5.1\"", "RuStore Update must remain pinned to the verified version."),
                 ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."));
 
-            // Install Referrer / Remote Config may be restored through npm, tgz or unitypackage. Production
-            // preflight therefore verifies that their Unity client types are actually loaded instead of assuming
-            // one package source or a particular Packages/manifest.json representation.
             ValidateRuStoreIntegrationPresence(errors);
             ValidateFileContains(SdkVersionsPath, errors,
                 ("InstallReferrer = \"10.6.1\"", "Install Referrer release target must be re-verified before production."),
@@ -254,7 +250,7 @@ namespace DontGetSidetracked.EditorTools
             {
                 string extension = Path.GetExtension(files[i]);
                 if (extension != ".cs" && extension != ".json" && extension != ".xml" && extension != ".md") continue;
-                try { text.Append(File.ReadAllText(files[i]));
+                try { text.Append(File.ReadAllText(files[i])); }
                 catch (IOException) { }
             }
             return text.ToString();
