@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System;
 using System.IO;
 using UnityEditor;
 using UnityEditor.Build;
@@ -10,8 +11,8 @@ namespace DontGetSidetracked.EditorTools
     [InitializeOnLoad]
     public static class ProjectConfigurator
     {
-        // Development placeholder. Replace with the exact RuStore Console package name before production.
-        public const string PackageName = "ru.panishedqa.nesbeisya.dev";
+        // Development fallback only. Once a real package name is configured, Editor startup must never overwrite it.
+        public const string DevelopmentPackageName = "ru.panishedqa.nesbeisya.dev";
         private const string ScenePath = "Assets/Scenes/Main.unity";
 
         static ProjectConfigurator()
@@ -29,7 +30,11 @@ namespace DontGetSidetracked.EditorTools
             PlayerSettings.allowedAutorotateToLandscapeRight = false;
             PlayerSettings.allowedAutorotateToPortrait = true;
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
-            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, PackageName);
+
+            string currentPackage = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android);
+            if (ShouldAssignDevelopmentPackageName(currentPackage))
+                PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, DevelopmentPackageName);
+
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel34;
             PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.Activity;
@@ -37,6 +42,17 @@ namespace DontGetSidetracked.EditorTools
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
 
             EnsureScene();
+        }
+
+        private static bool ShouldAssignDevelopmentPackageName(string currentPackage)
+        {
+            if (string.IsNullOrWhiteSpace(currentPackage)) return true;
+
+            // Fresh Unity projects commonly start with a generated DefaultCompany identifier.
+            // Replace only that bootstrap value. Any explicit identifier, including a production RuStore one,
+            // belongs to the developer and must survive Editor reloads and this menu command.
+            return currentPackage.StartsWith("com.DefaultCompany.", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(currentPackage, "com.DefaultCompany.ProductName", StringComparison.OrdinalIgnoreCase);
         }
 
         private static void EnsureScene()
