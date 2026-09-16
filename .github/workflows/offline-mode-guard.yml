@@ -22,6 +22,13 @@ jobs:
           test -f UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
           test -f UnityProject/Assets/Game/Core/GameSettingsService.cs
           test -f UnityProject/Assets/Game/Presentation/FeedbackRuntimeCoordinator.cs
+          test -f UnityProject/Assets/Game/Gameplay/ScoreCelebrationPolicy.cs
+          test -f UnityProject/Assets/Game/Daily/DailyBestService.cs
+          test -f UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/ResultShareCardRenderer.cs
+          test -f UnityProject/Assets/Game/Presentation/NativeImageShare.cs
+          test -f UnityProject/Assets/ResultShare.androidlib/build.gradle
+          test -f UnityProject/Assets/ResultShare.androidlib/src/main/res/xml/nesbeisya_file_paths.xml
           grep -q 'OptionalBackendBaseUrl = ""' UnityProject/Assets/Game/Presentation/GameRuntimeSettings.cs
           grep -q 'OfflineGameApi' UnityProject/Assets/Game/Network/UnityGameApi.cs
           grep -q 'SeedForDate' UnityProject/Assets/Game/Social/OfflineGameApi.cs
@@ -75,6 +82,21 @@ jobs:
             exit 1
           fi
           grep -q '"HintCanvas"' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+
+          # Result juice must stay useful rather than decorative: stable score medals, bounded per-Daily records,
+          # a real PNG card through FileProvider, and a Duel rematch affordance.
+          grep -q 'CurrentVersion = 12' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'DailyBests' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'PerfectEffectThreshold' UnityProject/Assets/Game/Gameplay/ScoreCelebrationPolicy.cs
+          grep -q 'MaxStoredRecords = 60' UnityProject/Assets/Game/Daily/DailyBestService.cs
+          grep -q 'ScoreCelebrationPolicy.Evaluate' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q 'DailyBestService' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q 'label.text = "РЕВАНШ"' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q 'ResultShareCardRenderer.RenderPng' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q 'FileProvider' UnityProject/Assets/Game/Presentation/NativeImageShare.cs
+          grep -q '\${applicationId}.shareprovider' UnityProject/Assets/Plugins/Android/AndroidManifest.xml
+          grep -q 'nesbeisya_file_paths' UnityProject/Assets/Plugins/Android/AndroidManifest.xml
+          grep -q '"ResultEnhancementCanvas"' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
 
           # Remote Config controls session tuning but never route geometry.
           grep -q 'RuStoreRemoteConfigService' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs
