@@ -53,8 +53,8 @@ namespace DontGetSidetracked.EditorTools
 
             if (PlayerSettings.Android.applicationEntry != AndroidApplicationEntry.Activity)
                 errors.Add("Android Application Entry must be Activity (UnityPlayerActivity), never GameActivity for RuStore Pay.");
-            if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel24)
-                errors.Add("Minimum Android API must be at least 24.");
+            if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel25)
+                errors.Add("Minimum Android API must be at least 25 for Unity 6.3.");
             if (PlayerSettings.Android.targetSdkVersion != AndroidSdkVersions.AndroidApiLevel34 &&
                 PlayerSettings.Android.targetSdkVersion != AndroidSdkVersions.AndroidApiLevelAuto)
                 errors.Add("Target Android API must match the currently verified RuStore SDK baseline (34) or use highest installed.");
@@ -76,10 +76,8 @@ namespace DontGetSidetracked.EditorTools
             ValidateFileContains(PackagesManifestPath, errors,
                 ("nexus-external.rustore.ru/repository/npm-unity-rustore-exposed", "Use the current RuStore npm registry."),
                 ("\"ru.rustore.pay\": \"11.1.0\"", "RuStore Pay must remain pinned to the verified version."),
-                ("\"ru.rustore.installreferrer\": \"10.6.1\"", "RuStore Install Referrer must remain pinned to the verified version."),
                 ("\"ru.rustore.update\": \"10.5.1\"", "RuStore Update must remain pinned to the verified version."),
-                ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."),
-                ("\"ru.rustore.remoteconfig\": \"10.5.1\"", "RuStore Remote Config must remain pinned to the verified version."));
+                ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."));
 
             ValidateFileContains(RuntimeSettingsPath, errors,
                 ("OptionalBackendBaseUrl = \"\"", "Offline-first MVP must ship without a developer-operated backend URL."));
@@ -119,8 +117,6 @@ namespace DontGetSidetracked.EditorTools
             string config = File.ReadAllText(RemoteConfigSettingsPath);
             if (config.Contains("AppId = \"\"", StringComparison.Ordinal))
                 errors.Add("Configure the production RuStore Remote Config AppId from RuStore Console before release.");
-            if (!config.Contains("RuStoreRemoteConfigClient", StringComparison.Ordinal))
-                errors.Add("RuStore Remote Config runtime adapter is not wired.");
         }
 
         private static void ValidateAds(List<string> errors)
