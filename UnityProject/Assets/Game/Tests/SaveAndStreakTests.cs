@@ -21,6 +21,8 @@ namespace DontGetSidetracked.Tests
             Assert.That(migrated.LastDaily.DisplayTimeMediumMs, Is.EqualTo(DailyCacheData.DefaultMediumDisplayTimeMs));
             Assert.That(migrated.LastDaily.DisplayTimeHardMs, Is.EqualTo(DailyCacheData.DefaultHardDisplayTimeMs));
             Assert.That(migrated.SelectedSkinId, Is.EqualTo("default"));
+            Assert.That(migrated.LevelProgress, Is.Not.Null);
+            Assert.That(migrated.HighestUnlockedLevel, Is.EqualTo(1));
         }
 
         [Test]
@@ -35,6 +37,7 @@ namespace DontGetSidetracked.Tests
             Assert.That(migrated.PendingAttempts, Is.Empty);
             Assert.That(migrated.LastDaily.RouteCount, Is.EqualTo(3));
             Assert.That(migrated.SelectedSkinId, Is.EqualTo("default"));
+            Assert.That(migrated.HighestUnlockedLevel, Is.EqualTo(1));
         }
 
         [Test]
@@ -89,6 +92,23 @@ namespace DontGetSidetracked.Tests
 
             Assert.That(migrated.Version, Is.EqualTo(SaveData.CurrentVersion));
             Assert.That(migrated.SelectedSkinId, Is.EqualTo("default"));
+        }
+
+        [Test]
+        public void Version12MigrationCreatesCampaignProgress()
+        {
+            var data = new SaveData
+            {
+                Version = 12,
+                HighestUnlockedLevel = 0,
+                LevelProgress = null
+            };
+
+            SaveData migrated = SaveMigrator.Migrate(data);
+
+            Assert.That(migrated.Version, Is.EqualTo(SaveData.CurrentVersion));
+            Assert.That(migrated.HighestUnlockedLevel, Is.EqualTo(1));
+            Assert.That(migrated.LevelProgress, Is.Not.Null.And.Empty);
         }
 
         [Test]
