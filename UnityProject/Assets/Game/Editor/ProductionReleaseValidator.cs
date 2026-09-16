@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -16,6 +17,7 @@ namespace DontGetSidetracked.EditorTools
         private const string RuntimeSettingsPath = "Assets/Game/Presentation/GameRuntimeSettings.cs";
         private const string AdsSettingsPath = "Assets/Game/Monetization/YandexMobileAdsService.cs";
         private const string RemoteConfigSettingsPath = "Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs";
+        private const string SdkVersionsPath = "Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs";
         public int callbackOrder => -1000;
 
         [MenuItem("Tools/НЕ СБЕЙСЯ!/Validate Production Release")]
@@ -83,16 +85,19 @@ namespace DontGetSidetracked.EditorTools
                 ("cache-path", "Result share paths must expose only the app cache directory."),
                 ("path=\"share/\"", "Result share cache subdirectory must match NativeImageShare's share/ directory."));
 
-            // Install Referrer and Remote Config are intentionally allowed to be absent from the day-to-day
-            // Unity Editor manifest after their Unity 6.3 package regressions, but a production AAB must never
-            // pass preflight until the verified Android integration packages have been restored and tested.
+            // These packages are part of the stable Editor baseline and therefore remain exact manifest pins.
             ValidateFileContains(PackagesManifestPath, errors,
-                ("nexus-external.rustore.ru/repository/npm-unity-rustore-exposed", "Use the current RuStore npm registry."),
                 ("\"ru.rustore.pay\": \"11.1.0\"", "RuStore Pay must remain pinned to the verified version."),
                 ("\"ru.rustore.update\": \"10.5.1\"", "RuStore Update must remain pinned to the verified version."),
-                ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."),
-                ("\"ru.rustore.installreferrer\": \"10.6.1\"", "Production release requires the verified RuStore Install Referrer 10.6.1 package for install-time challenge recovery."),
-                ("\"ru.rustore.remoteconfig\": \"10.5.0\"", "Production release requires the verified RuStore Remote Config 10.5.0 package for production tuning."));
+                ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."));
+
+            // Install Referrer / Remote Config may be restored through npm, tgz or unitypackage. Production
+            // preflight therefore verifies that their Unity client types are actually loaded instead of assuming
+            // one package source or a particular Packages/manifest.json representation.
+            ValidateRuStoreIntegrationPresence(errors);
+            ValidateFileContains(SdkVersionsPath, errors,
+                ("InstallReferrer = \"10.6.1\"", "Install Referrer release target must be re-verified before production."),
+                ("RemoteConfig = \"10.5.0\"", "Remote Config release target must be re-verified before production."));
 
             ValidateFileContains(RuntimeSettingsPath, errors,
                 ("OptionalBackendBaseUrl = \"\"", "Offline-first MVP must ship without a developer-operated backend URL."));
@@ -119,6 +124,45 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Production Android keystore path/name is empty.");
             if (string.IsNullOrWhiteSpace(PlayerSettings.Android.keyaliasName))
                 errors.Add("Production Android key alias is empty.");
+        }
+
+        private static void ValidateRuStoreIntegrationPresence(List<string> errors)
+        {
+            if (!HasLoadedRuStoreType("InstallReferrerClient"))
+                errors.Add("Install Referrer Unity integration is not loaded. Restore the verified official SDK before production release.");
+            if (!HasLoadedRuStoreType("RuStoreRemoteConfigClient"))
+                errors.Add("RuStore Remote Config Unity integration is not loaded. Restore the verified official SDK before production release.");
+        }
+
+        private static bool HasLoadedRuStoreType(string simpleName)
+        {
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int a = 0; a < assemblies.Length; a++)
+            {
+                Type[] types;
+                try
+                {
+                    types = assemblies[a].GetTypes();
+                }
+                catch (ReflectionTypeLoadException error)
+                {
+                    types = error.Types;
+                }
+                catch
+                {
+                    continue;
+                }
+
+                if (types == null) continue;
+                for (int i = 0; i < types.Length; i++)
+                {
+                    Type type = types[i];
+                    if (type == null || !string.Equals(type.Name, simpleName, StringComparison.Ordinal)) continue;
+                    if (type.Namespace != null && type.Namespace.StartsWith("RuStore", StringComparison.Ordinal))
+                        return true;
+                }
+            }
+            return false;
         }
 
         private static void ValidateForbiddenManifestPermissions(List<string> errors)
