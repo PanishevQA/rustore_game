@@ -93,7 +93,7 @@ namespace DontGetSidetracked.EditorTools
             ValidateRuStoreIntegrationPresence(errors);
             ValidateFileContains(SdkVersionsPath, errors,
                 ("InstallReferrer = \"10.6.1\"", "Install Referrer release target must be re-verified before production."),
-                ("RemoteConfig = \"10.5.1\"", "Remote Config release target must be re-verified before production."));
+                ("RemoteConfig = \"10.5.0\"", "Remote Config release target must be re-verified before production."));
 
             ValidateFileContains(RuntimeSettingsPath, errors,
                 ("OptionalBackendBaseUrl = \"\"", "Offline-first MVP must ship without a developer-operated backend URL."));
