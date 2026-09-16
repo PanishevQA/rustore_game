@@ -21,8 +21,14 @@ jobs:
             echo 'Deprecated RuStore dependency/reference found.'
             exit 1
           fi
+
           grep -q 'UnityPlayerActivity' docs/RUSTORE_RELEASE_CHECKLIST.md
-          grep -q '11.1.0' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
+          grep -q 'public const string Pay = "11.1.0"' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
+          grep -q 'public const string InstallReferrer = "10.6.1"' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
+          grep -q 'public const string Update = "10.5.1"' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
+          grep -q 'public const string Review = "10.5.1"' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
+          grep -q 'public const string RemoteConfig = "10.5.0"' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
+
           grep -q '"com.unity.modules.audio": "1.0.0"' UnityProject/Packages/manifest.json
           grep -q '"com.unity.modules.imageconversion": "1.0.0"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.core": "10.5.0"' UnityProject/Packages/manifest.json
@@ -33,6 +39,9 @@ jobs:
 
           # Install Referrer and Remote Config are optional during Editor functional testing.
           # Their adapters must remain SDK-isolated so the game compiles and falls back safely when
-          # the official Android integration packages are not installed yet.
+          # the official Android integration packages are not installed yet. Production preflight,
+          # however, must block release until the verified versions are restored.
           grep -q 'FindRuStoreType("InstallReferrerClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
           grep -q 'FindRuStoreType("RuStoreRemoteConfigClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
+          grep -q 'ru.rustore.installreferrer\\\": \\\"10.6.1' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs
+          grep -q 'ru.rustore.remoteconfig\\\": \\\"10.5.0' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs
