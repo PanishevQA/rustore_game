@@ -17,9 +17,10 @@ namespace DontGetSidetracked.Platform.RuStore
             {
                 if (_service == null)
                 {
+                    // Account is an optional RuStore Remote Config targeting parameter.
                     _service = new RuStoreRemoteConfigService(
                         RuStoreRemoteConfigSettings.AppId,
-                        RuStoreRemoteConfigSettings.Account,
+                        account: string.Empty,
                         cacheFileName: "rustore-remote-config.json");
                 }
                 return _service;
