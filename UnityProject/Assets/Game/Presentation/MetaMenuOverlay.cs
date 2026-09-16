@@ -4,6 +4,7 @@ using System.Reflection;
 using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Economy;
+using DontGetSidetracked.Gameplay;
 using DontGetSidetracked.Platform.RuStore;
 using DontGetSidetracked.Services;
 using UnityEngine;
@@ -31,6 +32,8 @@ namespace DontGetSidetracked.Presentation
         private GameSettingsService _settings;
         private bool _panelOpen;
         private float _nextVisibilityCheck;
+
+        public bool IsPanelOpen => _panelOpen;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoStart()
@@ -95,6 +98,7 @@ namespace DontGetSidetracked.Presentation
 
         private string BuildStatisticsText()
         {
+            var progress = new CampaignProgressService(_saveRepository, _save);
             string best = _save.PersonalBest > 0 ? _save.PersonalBest.ToString("0.0") + "%" : "—";
             int cosmetics = _save.Inventory?.Count ?? 0;
             int purchases = _save.ProcessedPurchaseIds?.Count ?? 0;
@@ -102,15 +106,20 @@ namespace DontGetSidetracked.Presentation
             if (string.IsNullOrWhiteSpace(lastDaily)) lastDaily = "—";
 
             return
+                "КАМПАНИЯ\n" +
+                $"Пройдено: {progress.CompletedLevels()}/{CampaignLevelCatalog.TotalLevels}\n" +
+                $"Звёзды: {progress.TotalStars()}/{CampaignLevelCatalog.TotalLevels * 3}\n" +
+                $"Открыт уровень: {progress.HighestUnlockedLevel}\n" +
+                $"Монеты: {_save.Coins}    Подсказки: {_save.Hints}\n\n" +
+                "DAILY\n" +
                 $"🔥 Серия: {_save.Streak} дней\n" +
-                $"Лучший Daily: {best}\n" +
-                $"Завершено Daily: {_save.CompletedDailyCount}\n" +
-                $"Последний Daily: {lastDaily}\n" +
-                $"Подсказки: {_save.Hints}\n" +
+                $"Лучший: {best}\n" +
+                $"Завершено: {_save.CompletedDailyCount}\n" +
+                $"Последний: {lastDaily}\n\n" +
                 $"Косметика: {cosmetics}\n" +
                 $"Выбран след: {CosmeticLabel(_cosmetics.SelectedSkinId)}\n" +
                 $"Покупок применено: {purchases}\n\n" +
-                "Все игровые результаты хранятся на этом устройстве.";
+                "Прогресс хранится локально на этом устройстве.";
         }
 
         private void OpenSettings()
@@ -388,7 +397,7 @@ namespace DontGetSidetracked.Presentation
             SetHomeButtonsVisible(false);
         }
 
-        private void ClosePanel()
+        public void ClosePanel()
         {
             _panelOpen = false;
             _panel.SetActive(false);
