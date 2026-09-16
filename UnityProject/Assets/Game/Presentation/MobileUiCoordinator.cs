@@ -72,6 +72,9 @@ namespace DontGetSidetracked.Presentation
             RuntimePlatformCoordinator platform = FindFirstObjectByType<RuntimePlatformCoordinator>();
             if (TryDismissNotificationPrompt(platform)) return;
 
+            CampaignLevelMenuOverlay campaign = FindFirstObjectByType<CampaignLevelMenuOverlay>();
+            if (TryCloseCampaignPanel(campaign)) return;
+
             MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
             if (TryCloseMetaPanel(meta)) return;
 
@@ -127,8 +130,7 @@ namespace DontGetSidetracked.Presentation
             FieldInfo pointerField = type.GetField("_pointerDown", BindingFlags.Instance | BindingFlags.NonPublic);
             pointerField?.SetValue(bootstrap, false);
             bootstrap.StopAllCoroutines();
-            MethodInfo showHome = type.GetMethod("ShowHome", BindingFlags.Instance | BindingFlags.NonPublic);
-            showHome?.Invoke(bootstrap, null);
+            CampaignRuntimeCoordinator.ReturnHome(bootstrap);
         }
 
         private static void RestartTutorial()
@@ -149,6 +151,19 @@ namespace DontGetSidetracked.Presentation
 
             MethodInfo decline = type.GetMethod("DeclineNotificationValuePrompt", BindingFlags.Instance | BindingFlags.NonPublic);
             decline?.Invoke(platform, null);
+            return true;
+        }
+
+        private static bool TryCloseCampaignPanel(CampaignLevelMenuOverlay campaign)
+        {
+            if (campaign == null) return false;
+            Type type = typeof(CampaignLevelMenuOverlay);
+            FieldInfo panelField = type.GetField("_panel", BindingFlags.Instance | BindingFlags.NonPublic);
+            GameObject panel = panelField?.GetValue(campaign) as GameObject;
+            if (panel == null || !panel.activeSelf) return false;
+
+            MethodInfo close = type.GetMethod("Close", BindingFlags.Instance | BindingFlags.NonPublic);
+            close?.Invoke(campaign, null);
             return true;
         }
 
@@ -228,6 +243,7 @@ namespace DontGetSidetracked.Presentation
         private static bool ShouldFitCanvas(string canvasName) =>
             string.Equals(canvasName, "GameCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "MetaCanvas", StringComparison.Ordinal) ||
+            string.Equals(canvasName, "CampaignCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "RewardedCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "HintCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "ResultEnhancementCanvas", StringComparison.Ordinal) ||
