@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,9 +12,6 @@ namespace DontGetSidetracked.Presentation
     public sealed class TrainingMenuCoordinator : MonoBehaviour
     {
         private GameBootstrap _bootstrap;
-        private FieldInfo _modeField;
-        private FieldInfo _trainingIndexField;
-        private MethodInfo _startTrainingMethod;
         private Button _trainingButton;
         private GameObject _canvas;
         private GameObject _panel;
@@ -46,10 +42,9 @@ namespace DontGetSidetracked.Presentation
                 _nextResolve = Time.unscaledTime + 0.25f;
                 ResolveBootstrap();
             }
-            if (_bootstrap == null || _modeField == null) return;
+            if (_bootstrap == null) return;
 
-            string mode = _modeField.GetValue(_bootstrap)?.ToString() ?? string.Empty;
-            if (!string.Equals(mode, "Home", StringComparison.Ordinal))
+            if (!GameBootstrapRuntimeBridge.IsHome(_bootstrap))
             {
                 _wired = false;
                 if (IsOpen) SetVisible(false);
@@ -69,12 +64,6 @@ namespace DontGetSidetracked.Presentation
         private void ResolveBootstrap()
         {
             _bootstrap = FindFirstObjectByType<GameBootstrap>();
-            if (_bootstrap == null) return;
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
-            Type type = typeof(GameBootstrap);
-            _modeField = type.GetField("_mode", flags);
-            _trainingIndexField = type.GetField("_trainingIndex", flags);
-            _startTrainingMethod = type.GetMethod("StartTraining", flags);
         }
 
         private void ResolveTrainingButton()
@@ -108,13 +97,10 @@ namespace DontGetSidetracked.Presentation
 
         private void StartDifficulty(int difficulty)
         {
-            if (_bootstrap == null || _startTrainingMethod == null || _trainingIndexField == null) return;
-            // GameBootstrap increments _trainingIndex before choosing (index % 3).
-            int beforeIncrement = difficulty == 0 ? 2 : difficulty - 1;
-            _trainingIndexField.SetValue(_bootstrap, beforeIncrement);
+            if (_bootstrap == null || !GameBootstrapRuntimeBridge.IsHome(_bootstrap)) return;
+            if (!GameBootstrapRuntimeBridge.StartTrainingDifficulty(_bootstrap, difficulty)) return;
             SetVisible(false);
             _wired = false;
-            _startTrainingMethod.Invoke(_bootstrap, null);
         }
 
         public void Close() => SetVisible(false);
