@@ -35,12 +35,27 @@ namespace DontGetSidetracked.Presentation
         private bool _updateInFlight;
         private bool _localReminderEnabled;
         private bool _notificationPromptOpen;
+        private bool _notificationPromptDeferredForSession;
         private bool _notificationRequestPending;
         private float _permissionResultEarliestTime;
         private float _nextPolicyPoll;
         private GameObject _updateBlocker;
         private Text _updateStatus;
         private GameObject _notificationPrompt;
+
+        public bool IsNotificationPromptOpen => _notificationPromptOpen;
+
+        /// <summary>
+        /// Android Back dismisses the explanatory prompt only for the current session. This is different
+        /// from the explicit "БЕЗ НАПОМИНАНИЙ" choice, which persists the user's refusal.
+        /// </summary>
+        public bool DismissNotificationPrompt()
+        {
+            if (!_notificationPromptOpen) return false;
+            _notificationPromptDeferredForSession = true;
+            HideNotificationValuePrompt();
+            return true;
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoStart()
@@ -163,7 +178,7 @@ namespace DontGetSidetracked.Presentation
 
         private void TryOfferNotificationPermission()
         {
-            if (!_localReminderEnabled || _notificationRequestPending) return;
+            if (!_localReminderEnabled || _notificationRequestPending || _notificationPromptDeferredForSession) return;
 
             SaveData save = _saveRepository.Load();
             if (save.CompletedDailyCount < 1 || save.NotificationValuePromptShown) return;
@@ -370,7 +385,7 @@ namespace DontGetSidetracked.Presentation
             body.text = "Разрешить локальное напоминание, когда появится новый Daily Challenge?";
 
             CreateButton(_notificationPrompt.transform, "ВКЛЮЧИТЬ", new Vector2(0.10f, 0.12f), new Vector2(0.57f, 0.30f), AcceptNotificationValuePrompt);
-            CreateButton(_notificationPrompt.transform, "НЕ СЕЙЧАС", new Vector2(0.60f, 0.12f), new Vector2(0.90f, 0.30f), DeclineNotificationValuePrompt);
+            CreateButton(_notificationPrompt.transform, "БЕЗ НАПОМИНАНИЙ", new Vector2(0.60f, 0.12f), new Vector2(0.90f, 0.30f), DeclineNotificationValuePrompt);
             _notificationPrompt.SetActive(false);
         }
 
