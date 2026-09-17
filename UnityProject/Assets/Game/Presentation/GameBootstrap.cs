@@ -56,6 +56,7 @@ namespace DontGetSidetracked.Presentation
         private bool _dailyCompleted;
         private bool _referralOfferLoading;
         private bool _deferReferralForSession;
+        private int _navigationRevision;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoStart()
@@ -93,6 +94,7 @@ namespace DontGetSidetracked.Presentation
 
         private void ShowHome()
         {
+            BeginNavigation();
             _mode = Mode.Home;
             _state = RoundState.Idle;
             _referenceGraphic.Clear();
@@ -115,13 +117,15 @@ namespace DontGetSidetracked.Presentation
         {
             if (_referralOfferLoading || _mode != Mode.Home || string.IsNullOrWhiteSpace(_save.PendingReferralId)) return;
             _referralOfferLoading = true;
+            int revision = _navigationRevision;
             string referralId = _save.PendingReferralId;
             _status.text = "ГОТОВИМ ВЫЗОВ ДРУГА…";
 
             try
             {
                 DuelSession loaded = await _duelService.LoadAsync(referralId);
-                if (_mode != Mode.Home || !string.Equals(_save.PendingReferralId, referralId, StringComparison.OrdinalIgnoreCase)) return;
+                if (!IsCurrentNavigation(revision, Mode.Home) ||
+                    !string.Equals(_save.PendingReferralId, referralId, StringComparison.OrdinalIgnoreCase)) return;
 
                 _duelSession = loaded;
                 _title.text = "ВЫЗОВ ДРУГА";
@@ -133,12 +137,20 @@ namespace DontGetSidetracked.Presentation
             catch (Exception error)
             {
                 Debug.LogWarning($"Referral challenge unavailable: {error.Message}");
+                if (!IsCurrentNavigation(revision, Mode.Home) ||
+                    !string.Equals(_save.PendingReferralId, referralId, StringComparison.OrdinalIgnoreCase)) return;
+
                 _deferReferralForSession = true;
                 ShowHome();
             }
             finally
             {
                 _referralOfferLoading = false;
+                if (!IsCurrentNavigation(revision) &&
+                    _mode == Mode.Home &&
+                    !_deferReferralForSession &&
+                    !string.IsNullOrWhiteSpace(_save.PendingReferralId))
+                    TryOfferPendingReferral();
             }
         }
 
@@ -150,6 +162,7 @@ namespace DontGetSidetracked.Presentation
 
         private void StartTutorial()
         {
+            BeginNavigation();
             _mode = Mode.Tutorial;
             _dailyCompleted = false;
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.TutorialStart);
@@ -161,6 +174,7 @@ namespace DontGetSidetracked.Presentation
         {
             if (_state == RoundState.Showing || _state == RoundState.Drawing) return;
 
+            int revision = BeginNavigation();
             _mode = Mode.Daily;
             _state = RoundState.Idle;
             _dailyIndex = 0;
@@ -175,9 +189,12 @@ namespace DontGetSidetracked.Presentation
 
             try
             {
-                _dailySession = await _dailyService.LoadCurrentAsync();
+                DailyLoadResult loaded = await _dailyService.LoadCurrentAsync();
                 _save = _dailyService.Save;
-                _daily = _dailySession.Challenge;
+                if (!IsCurrentNavigation(revision, Mode.Daily)) return;
+
+                _dailySession = loaded;
+                _daily = loaded.Challenge;
                 AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.DailyStart, Params(
                     "challenge_id", _daily.ChallengeId,
                     "route_count", _daily.RouteCount,
@@ -187,6 +204,8 @@ namespace DontGetSidetracked.Presentation
             catch (Exception error)
             {
                 Debug.LogWarning($"Daily unavailable: {error.Message}");
+                if (!IsCurrentNavigation(revision, Mode.Daily)) return;
+
                 _state = RoundState.Idle;
                 _status.text = "Не удалось подготовить Daily.\nТренировка доступна локально.";
                 ConfigureButton(_primary, "ПОВТОРИТЬ", StartDaily);
@@ -199,6 +218,7 @@ namespace DontGetSidetracked.Presentation
         {
             if (_duelSession == null || _state == RoundState.Showing || _state == RoundState.Drawing) return;
 
+            BeginNavigation();
             _mode = Mode.Duel;
             _state = RoundState.Idle;
             _dailyIndex = 0;
@@ -217,6 +237,7 @@ namespace DontGetSidetracked.Presentation
 
         private void StartTraining()
         {
+            BeginNavigation();
             _mode = Mode.Training;
             _dailyCompleted = false;
             _duelSession = null;
@@ -406,67 +427,87 @@ namespace DontGetSidetracked.Presentation
 
         private async void CompleteDaily()
         {
-            int expected = _dailySession?.Challenge?.RouteCount ?? 0;
+            DailyLoadResult session = _dailySession;
+            int expected = session?.Challenge?.RouteCount ?? 0;
             if (expected < 1 || _dailyReplays.Count != expected || _dailyScores.Count != expected) return;
 
+            int revision = _navigationRevision;
+            string challengeId = session.Challenge.ChallengeId;
+            double visibleScore = _lastDailyScore;
             double previousBest = _save.PersonalBest;
-            _status.text = $"DAILY {_lastDailyScore:0.0}%\nСохраняем результат…";
+            List<IReadOnlyList<RecordedPoint>> replays = SnapshotReplays(_dailyReplays);
+            var scores = new List<double>(_dailyScores);
+            _status.text = $"DAILY {visibleScore:0.0}%\nСохраняем результат…";
+
             try
             {
                 DailyAttemptSubmissionResult submission = await _dailyService.CompleteAndSubmitAsync(
-                    _dailySession,
-                    _dailyReplays,
-                    _dailyScores,
+                    session,
+                    replays,
+                    scores,
                     false);
                 _save = _dailyService.Save;
-                _lastDailyScore = submission.ServerScore;
-                _status.text = $"DAILY {_lastDailyScore:0.0}%\n🔥 Серия: {_save.Streak}";
+                double acceptedScore = submission.ServerScore;
 
                 AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.DailyComplete, Params(
-                    "challenge_id", _daily.ChallengeId,
-                    "score", _lastDailyScore,
+                    "challenge_id", challengeId,
+                    "score", acceptedScore,
                     "route_count", expected,
                     "verified_locally", true));
                 if (_save.PersonalBest > previousBest)
                     AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PersonalBest, Params("score", _save.PersonalBest));
+
+                if (!IsCurrentNavigation(revision, Mode.Daily)) return;
+                _lastDailyScore = acceptedScore;
+                _status.text = $"DAILY {_lastDailyScore:0.0}%\n🔥 Серия: {_save.Streak}";
             }
             catch (Exception error)
             {
                 Debug.LogWarning($"Daily completion failed: {error.Message}");
-                _status.text = $"DAILY {_lastDailyScore:0.0}%\nРезультат сохранён на устройстве";
+                if (!IsCurrentNavigation(revision, Mode.Daily)) return;
+                _status.text = $"DAILY {visibleScore:0.0}%\nРезультат сохранён на устройстве";
             }
         }
 
         private async void CompleteDuel()
         {
-            int expected = _duelSession?.Challenge?.RouteCount ?? 0;
+            DuelSession session = _duelSession;
+            int expected = session?.Challenge?.RouteCount ?? 0;
             if (expected < 1 || _dailyReplays.Count != expected || _dailyScores.Count != expected) return;
 
-            _status.text = $"ТЫ: {_lastDailyScore:0.0}%\nДРУГ: {_duelSession.Referral.InviterScore:0.0}%\nСчитаем результат…";
+            int revision = _navigationRevision;
+            string challengeId = session.Challenge.ChallengeId;
+            string referralId = session.Referral.ReferralId;
+            double inviterScore = session.Referral.InviterScore;
+            double visibleScore = _lastDailyScore;
+            List<IReadOnlyList<RecordedPoint>> replays = SnapshotReplays(_dailyReplays);
+            var scores = new List<double>(_dailyScores);
+            _status.text = $"ТЫ: {visibleScore:0.0}%\nДРУГ: {inviterScore:0.0}%\nСчитаем результат…";
+
             try
             {
-                DuelSubmissionResult submission = await _duelService.CompleteAsync(
-                    _duelSession,
-                    _dailyReplays,
-                    _dailyScores);
+                DuelSubmissionResult submission = await _duelService.CompleteAsync(session, replays, scores);
                 _save = _duelService.Save;
-                _lastDailyScore = submission.Score;
-                string outcome = submission.Tied ? "НИЧЬЯ" : submission.Won ? "ПОБЕДА" : "ПОКА НЕ ПОБЕДИЛ";
-                _status.text = $"ТЫ: {_lastDailyScore:0.0}%\nДРУГ: {submission.InviterScore:0.0}%\n{outcome}";
 
                 AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.ChallengeComplete, Params(
-                    "challenge_id", _daily.ChallengeId,
-                    "referrer_id", _duelSession.Referral.ReferralId,
-                    "score", _lastDailyScore,
+                    "challenge_id", challengeId,
+                    "referrer_id", referralId,
+                    "score", submission.Score,
                     "inviter_score", submission.InviterScore,
                     "route_count", expected,
                     "won", submission.Won,
                     "verified_locally", true));
+
+                if (!IsCurrentNavigation(revision, Mode.Duel)) return;
+                _lastDailyScore = submission.Score;
+                string outcome = submission.Tied ? "НИЧЬЯ" : submission.Won ? "ПОБЕДА" : "ПОКА НЕ ПОБЕДИЛ";
+                _status.text = $"ТЫ: {_lastDailyScore:0.0}%\nДРУГ: {submission.InviterScore:0.0}%\n{outcome}";
             }
             catch (Exception error)
             {
                 Debug.LogWarning($"Duel completion failed: {error.Message}");
-                _status.text = $"ТЫ: {_lastDailyScore:0.0}%\nДРУГ: {_duelSession.Referral.InviterScore:0.0}%\nРезультат сохранён на устройстве";
+                if (!IsCurrentNavigation(revision, Mode.Duel)) return;
+                _status.text = $"ТЫ: {visibleScore:0.0}%\nДРУГ: {inviterScore:0.0}%\nРезультат сохранён на устройстве";
             }
         }
 
@@ -478,17 +519,24 @@ namespace DontGetSidetracked.Presentation
 
         private async void ShareCurrentResult()
         {
-            double score = _dailyCompleted ? _lastDailyScore : _lastResultScore;
+            int revision = _navigationRevision;
+            Mode mode = _mode;
+            bool completed = _dailyCompleted;
+            DailyChallengeDefinition daily = _daily;
+            string challengeId = daily?.ChallengeId ?? string.Empty;
+            double score = completed ? _lastDailyScore : _lastResultScore;
+            string playerId = _save.AnonymousPlayerId;
             string challengeUrl = string.Empty;
+
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.ShareClick, Params(
-                "challenge_id", _daily?.ChallengeId ?? string.Empty,
+                "challenge_id", challengeId,
                 "score", score));
 
-            if (_dailyCompleted && _daily != null)
+            if (completed && daily != null)
             {
                 try
                 {
-                    challengeUrl = await _api.CreateChallengeAsync(_save.AnonymousPlayerId, _daily.ChallengeId, score);
+                    challengeUrl = await _api.CreateChallengeAsync(playerId, daily.ChallengeId, score);
                 }
                 catch (Exception error)
                 {
@@ -496,13 +544,15 @@ namespace DontGetSidetracked.Presentation
                 }
             }
 
-            string text = _dailyCompleted
+            if (!IsCurrentNavigation(revision, mode)) return;
+
+            string text = completed
                 ? $"Я прошёл сегодняшний НЕ СБЕЙСЯ! на {score:0.0}%. Сможешь точнее?"
                 : $"Я прошёл НЕ СБЕЙСЯ! на {score:0.0}%. Сможешь точнее?";
             if (!string.IsNullOrWhiteSpace(challengeUrl)) text += "\n" + challengeUrl;
             ShareText(text);
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.ShareComplete, Params(
-                "challenge_id", _daily?.ChallengeId ?? string.Empty,
+                "challenge_id", challengeId,
                 "score", score,
                 "has_challenge_url", !string.IsNullOrWhiteSpace(challengeUrl)));
         }
@@ -666,6 +716,27 @@ namespace DontGetSidetracked.Presentation
             rt.anchorMax = max;
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
+        }
+
+        private int BeginNavigation()
+        {
+            unchecked { _navigationRevision++; }
+            return _navigationRevision;
+        }
+
+        private bool IsCurrentNavigation(int revision) => revision == _navigationRevision;
+
+        private bool IsCurrentNavigation(int revision, Mode mode) =>
+            revision == _navigationRevision && _mode == mode;
+
+        private static List<IReadOnlyList<RecordedPoint>> SnapshotReplays(
+            IReadOnlyList<IReadOnlyList<RecordedPoint>> source)
+        {
+            var result = new List<IReadOnlyList<RecordedPoint>>(source?.Count ?? 0);
+            if (source == null) return result;
+            for (int i = 0; i < source.Count; i++)
+                result.Add(source[i] == null ? null : new List<RecordedPoint>(source[i]));
+            return result;
         }
 
         private static Dictionary<string, object> Params(params object[] pairs)
