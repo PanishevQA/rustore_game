@@ -27,6 +27,7 @@ jobs:
           ads='UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs'
           rewarded='UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs'
           platform='UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs'
+          meta='UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs'
 
           test -f "$bridge"
           grep -q 'public static bool IsIdleHome' "$bridge"
@@ -41,8 +42,9 @@ jobs:
           grep -q 'GameBootstrapRuntimeBridge.IsResult' "$ads"
           grep -q 'GameBootstrapRuntimeBridge.IsIdleHome' "$rewarded"
           grep -q 'GameBootstrapRuntimeBridge.IsIdleHome' "$platform"
+          grep -q 'GameBootstrapRuntimeBridge.IsHome' "$meta"
 
-          for file in "$mobile" "$ads" "$rewarded" "$platform"; do
+          for file in "$mobile" "$ads" "$rewarded" "$platform" "$meta"; do
             if grep -nE 'System\.Reflection|BindingFlags|GetField\(|GetMethod\(' "$file"; then
               echo "Private GameBootstrap reflection leaked outside GameBootstrapRuntimeBridge: $file"
               exit 1
