@@ -20,6 +20,7 @@ namespace DontGetSidetracked.Presentation
 
         private readonly string _path;
         private readonly string _backupPath;
+        private readonly string _tempPath;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetSharedState()
@@ -32,6 +33,7 @@ namespace DontGetSidetracked.Presentation
         {
             _path = Path.Combine(Application.persistentDataPath, fileName);
             _backupPath = _path + ".bak";
+            _tempPath = _path + ".tmp";
         }
 
         public SaveData Load()
@@ -41,7 +43,21 @@ namespace DontGetSidetracked.Presentation
                 if (SharedByPath.TryGetValue(_path, out SaveData shared) && shared != null)
                     return shared;
 
-                SaveData loaded = TryLoad(_path);
+                SaveData primary = TryLoad(_path);
+                SaveData interruptedWrite = TryLoad(_tempPath);
+                SaveData loaded = primary;
+
+                if (interruptedWrite != null && ShouldRecoverInterruptedWrite(primary))
+                {
+                    loaded = interruptedWrite;
+                    PromoteInterruptedWrite(preservePrimaryAsBackup: primary != null);
+                }
+                else if (File.Exists(_tempPath))
+                {
+                    // A stale or malformed temp file must never shadow a known-good primary on future launches.
+                    TryDelete(_tempPath);
+                }
+
                 if (loaded == null)
                 {
                     SaveData backup = TryLoad(_backupPath);
@@ -71,8 +87,7 @@ namespace DontGetSidetracked.Presentation
             lock (SharedGate)
             {
                 data = SaveMigrator.Migrate(data);
-                string tempPath = _path + ".tmp";
-                File.WriteAllText(tempPath, JsonUtility.ToJson(data, false));
+                File.WriteAllText(_tempPath, JsonUtility.ToJson(data, false));
 
                 try
                 {
@@ -83,16 +98,49 @@ namespace DontGetSidetracked.Presentation
                         File.Delete(_path);
                     }
 
-                    File.Move(tempPath, _path);
+                    File.Move(_tempPath, _path);
                     SharedByPath[_path] = data;
                 }
                 catch
                 {
                     // If replacement failed after the primary was removed, immediately restore the known-good backup.
                     RestorePrimaryFromBackup(overwriteExisting: false);
-                    TryDelete(tempPath);
+                    TryDelete(_tempPath);
                     throw;
                 }
+            }
+        }
+
+        private bool ShouldRecoverInterruptedWrite(SaveData primary)
+        {
+            if (primary == null) return true;
+            if (!File.Exists(_tempPath) || !File.Exists(_path)) return false;
+
+            try
+            {
+                return File.GetLastWriteTimeUtc(_tempPath) > File.GetLastWriteTimeUtc(_path);
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"Save temp timestamp check failed for {_path}: {error.Message}");
+                return false;
+            }
+        }
+
+        private void PromoteInterruptedWrite(bool preservePrimaryAsBackup)
+        {
+            try
+            {
+                if (preservePrimaryAsBackup && File.Exists(_path))
+                    File.Copy(_path, _backupPath, true);
+
+                File.Copy(_tempPath, _path, true);
+                TryDelete(_tempPath);
+            }
+            catch (Exception error)
+            {
+                // The recovered object is still kept in memory and the next successful Save will persist it.
+                Debug.LogWarning($"Interrupted save promotion failed for {_path}: {error.Message}");
             }
         }
 
