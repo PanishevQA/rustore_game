@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Reflection;
 using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Gameplay;
@@ -23,25 +21,6 @@ namespace DontGetSidetracked.Presentation
         public static int CurrentChapterNumber => _instance?._level?.ChapterNumber ?? 0;
 
         private GameBootstrap _bootstrap;
-        private Type _bootstrapType;
-        private FieldInfo _modeField;
-        private FieldInfo _stateField;
-        private FieldInfo _dailyCompletedField;
-        private FieldInfo _duelSessionField;
-        private FieldInfo _dailySessionField;
-        private FieldInfo _dailyField;
-        private FieldInfo _saveField;
-        private FieldInfo _titleField;
-        private FieldInfo _statusField;
-        private FieldInfo _primaryField;
-        private FieldInfo _secondaryField;
-        private FieldInfo _shareField;
-        private FieldInfo _lastResultScoreField;
-        private MethodInfo _beginRouteMethod;
-        private MethodInfo _showHomeMethod;
-        private MethodInfo _startDailyMethod;
-        private MethodInfo _shareResultMethod;
-
         private JsonFileSaveRepository _repository;
         private CampaignProgressService _progress;
         private CampaignLevelDefinition _level;
@@ -108,33 +87,34 @@ namespace DontGetSidetracked.Presentation
         private void BeginLevel(GameBootstrap bootstrap, int levelNumber)
         {
             if (bootstrap != null && bootstrap != _bootstrap) ResolveBootstrap(bootstrap);
-            if (_bootstrap == null || _beginRouteMethod == null) return;
+            if (_bootstrap == null) return;
 
-            SaveData save = GetSave() ?? _repository.Load();
+            SaveData save = GameBootstrapRuntimeBridge.Save(_bootstrap) ?? _repository.Load();
             _progress = new CampaignProgressService(_repository, save);
             if (!_progress.IsUnlocked(levelNumber)) return;
 
-            _level = CampaignLevelCatalog.Get(levelNumber);
+            CampaignLevelDefinition level = CampaignLevelCatalog.Get(levelNumber);
+            if (!GameBootstrapRuntimeBridge.PrepareCampaign(_bootstrap)) return;
+
+            _level = level;
             _campaignActive = true;
             _resultHandled = false;
             _homeWired = false;
 
-            SetEnum(_modeField, "Training");
-            SetEnum(_stateField, "Idle");
-            _dailyCompletedField?.SetValue(_bootstrap, false);
-            _duelSessionField?.SetValue(_bootstrap, null);
-            _dailySessionField?.SetValue(_bootstrap, null);
-            _dailyField?.SetValue(_bootstrap, null);
-
-            Text title = Get<Text>(_titleField);
-            Text status = Get<Text>(_statusField);
+            Text title = GameBootstrapRuntimeBridge.Title(_bootstrap);
+            Text status = GameBootstrapRuntimeBridge.Status(_bootstrap);
             if (title != null) title.text = LevelTitle();
             if (status != null) status.text = "ГОТОВЬСЯ";
 
             RouteDefinition route = _level.BuildRoute(new RouteGenerator());
-            object routineObject = _beginRouteMethod.Invoke(_bootstrap, new object[] { route });
-            if (routineObject is IEnumerator routine)
-                _bootstrap.StartCoroutine(routine);
+            if (!GameBootstrapRuntimeBridge.BeginRoute(_bootstrap, route))
+            {
+                _campaignActive = false;
+                _resultHandled = false;
+                _level = null;
+                GameBootstrapRuntimeBridge.ShowHome(_bootstrap);
+                return;
+            }
 
             AnalyticsLifecycle.Service?.Track("level_start", Params(
                 "level", _level.LevelNumber,
@@ -145,30 +125,30 @@ namespace DontGetSidetracked.Presentation
 
         private void MaintainCampaignPresentation()
         {
-            string state = EnumName(_stateField);
-            if (string.Equals(state, "Showing", StringComparison.Ordinal) ||
-                string.Equals(state, "Drawing", StringComparison.Ordinal))
+            if (GameBootstrapRuntimeBridge.IsResult(_bootstrap))
             {
-                Text title = Get<Text>(_titleField);
-                if (title != null) title.text = LevelTitle();
+                if (!_resultHandled) HandleCampaignResult();
                 return;
             }
 
-            if (string.Equals(state, "Result", StringComparison.Ordinal) && !_resultHandled)
-                HandleCampaignResult();
+            if (GameBootstrapRuntimeBridge.IsActiveRound(_bootstrap))
+            {
+                Text title = GameBootstrapRuntimeBridge.Title(_bootstrap);
+                if (title != null) title.text = LevelTitle();
+            }
         }
 
         private void HandleCampaignResult()
         {
             _resultHandled = true;
-            double score = GetDouble(_lastResultScoreField);
-            SaveData save = GetSave() ?? _repository.Load();
+            double score = GameBootstrapRuntimeBridge.LastResultScore(_bootstrap);
+            SaveData save = GameBootstrapRuntimeBridge.Save(_bootstrap) ?? _repository.Load();
             _progress = new CampaignProgressService(_repository, save);
             CampaignLevelCompletion completion = _progress.RecordResult(_level.LevelNumber, score);
-            if (_saveField != null) _saveField.SetValue(_bootstrap, _progress.Save);
+            GameBootstrapRuntimeBridge.ReplaceSave(_bootstrap, _progress.Save);
 
             bool campaignFinished = _level.LevelNumber == CampaignLevelCatalog.TotalLevels && completion.Stars >= 1;
-            Text status = Get<Text>(_statusField);
+            Text status = GameBootstrapRuntimeBridge.Status(_bootstrap);
             if (status != null)
             {
                 string best = completion.NewBest ? " • НОВЫЙ РЕКОРД" : string.Empty;
@@ -186,9 +166,9 @@ namespace DontGetSidetracked.Presentation
                     $"{Stars(completion.Stars)}{best}{rewards}";
             }
 
-            Button primary = Get<Button>(_primaryField);
-            Button secondary = Get<Button>(_secondaryField);
-            Button share = Get<Button>(_shareField);
+            Button primary = GameBootstrapRuntimeBridge.PrimaryButton(_bootstrap);
+            Button secondary = GameBootstrapRuntimeBridge.SecondaryButton(_bootstrap);
+            Button share = GameBootstrapRuntimeBridge.ShareButton(_bootstrap);
 
             if (campaignFinished)
                 Configure(primary, "К УРОВНЯМ", OpenLevelMenu);
@@ -224,7 +204,7 @@ namespace DontGetSidetracked.Presentation
 
         private void ShareCurrentResult()
         {
-            _shareResultMethod?.Invoke(_bootstrap, null);
+            GameBootstrapRuntimeBridge.ShareCurrentResult(_bootstrap);
         }
 
         private void ReturnToHome(GameBootstrap bootstrap)
@@ -233,23 +213,22 @@ namespace DontGetSidetracked.Presentation
             _campaignActive = false;
             _resultHandled = false;
             _level = null;
-            _showHomeMethod?.Invoke(_bootstrap, null);
+            GameBootstrapRuntimeBridge.ShowHome(_bootstrap);
         }
 
         private void MaintainHomeEntry()
         {
-            string mode = EnumName(_modeField);
-            Text title = Get<Text>(_titleField);
-            if (!string.Equals(mode, "Home", StringComparison.Ordinal) ||
+            Text title = GameBootstrapRuntimeBridge.Title(_bootstrap);
+            if (!GameBootstrapRuntimeBridge.IsHome(_bootstrap) ||
                 title == null || !string.Equals(title.text, "НЕ СБЕЙСЯ!", StringComparison.Ordinal))
             {
                 _homeWired = false;
                 return;
             }
 
-            Button primary = Get<Button>(_primaryField);
-            Button secondary = Get<Button>(_secondaryField);
-            Button share = Get<Button>(_shareField);
+            Button primary = GameBootstrapRuntimeBridge.PrimaryButton(_bootstrap);
+            Button secondary = GameBootstrapRuntimeBridge.SecondaryButton(_bootstrap);
+            Button share = GameBootstrapRuntimeBridge.ShareButton(_bootstrap);
             if (primary == null || secondary == null || share == null) return;
 
             if (!_homeWired)
@@ -268,11 +247,11 @@ namespace DontGetSidetracked.Presentation
             if (_statsButton != null) SetAnchors(_statsButton, new Vector2(0.365f, 0.045f), new Vector2(0.635f, 0.105f));
             if (_storeButton != null) SetAnchors(_storeButton, new Vector2(0.650f, 0.045f), new Vector2(0.925f, 0.105f));
 
-            SaveData save = GetSave();
+            SaveData save = GameBootstrapRuntimeBridge.Save(_bootstrap);
             if (save != null)
             {
                 var progress = new CampaignProgressService(_repository, save);
-                Text status = Get<Text>(_statusField);
+                Text status = GameBootstrapRuntimeBridge.Status(_bootstrap);
                 if (status != null)
                     status.text = $"ПРОЙДЕНО {progress.CompletedLevels()}/{CampaignLevelCatalog.TotalLevels}  •  ★ {progress.TotalStars()}\nМОНЕТЫ {save.Coins}  •  DAILY {save.Streak}д";
             }
@@ -281,7 +260,7 @@ namespace DontGetSidetracked.Presentation
         private void StartDaily()
         {
             _homeWired = false;
-            _startDailyMethod?.Invoke(_bootstrap, null);
+            GameBootstrapRuntimeBridge.StartDaily(_bootstrap);
         }
 
         private void ResolveMetaButtons()
@@ -304,49 +283,6 @@ namespace DontGetSidetracked.Presentation
         private void ResolveBootstrap(GameBootstrap explicitBootstrap = null)
         {
             _bootstrap = explicitBootstrap != null ? explicitBootstrap : FindFirstObjectByType<GameBootstrap>();
-            if (_bootstrap == null) return;
-            _bootstrapType = typeof(GameBootstrap);
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
-            _modeField = _bootstrapType.GetField("_mode", flags);
-            _stateField = _bootstrapType.GetField("_state", flags);
-            _dailyCompletedField = _bootstrapType.GetField("_dailyCompleted", flags);
-            _duelSessionField = _bootstrapType.GetField("_duelSession", flags);
-            _dailySessionField = _bootstrapType.GetField("_dailySession", flags);
-            _dailyField = _bootstrapType.GetField("_daily", flags);
-            _saveField = _bootstrapType.GetField("_save", flags);
-            _titleField = _bootstrapType.GetField("_title", flags);
-            _statusField = _bootstrapType.GetField("_status", flags);
-            _primaryField = _bootstrapType.GetField("_primary", flags);
-            _secondaryField = _bootstrapType.GetField("_secondary", flags);
-            _shareField = _bootstrapType.GetField("_share", flags);
-            _lastResultScoreField = _bootstrapType.GetField("_lastResultScore", flags);
-            _beginRouteMethod = _bootstrapType.GetMethod("BeginRoute", flags);
-            _showHomeMethod = _bootstrapType.GetMethod("ShowHome", flags);
-            _startDailyMethod = _bootstrapType.GetMethod("StartDaily", flags);
-            _shareResultMethod = _bootstrapType.GetMethod("ShareCurrentResult", flags);
-        }
-
-        private SaveData GetSave() => _saveField?.GetValue(_bootstrap) as SaveData;
-
-        private T Get<T>(FieldInfo field) where T : class => field?.GetValue(_bootstrap) as T;
-
-        private double GetDouble(FieldInfo field)
-        {
-            object value = field?.GetValue(_bootstrap);
-            return value == null ? 0.0 : Convert.ToDouble(value);
-        }
-
-        private string EnumName(FieldInfo field)
-        {
-            object value = field?.GetValue(_bootstrap);
-            return value?.ToString() ?? string.Empty;
-        }
-
-        private void SetEnum(FieldInfo field, string name)
-        {
-            if (field == null) return;
-            object value = Enum.Parse(field.FieldType, name);
-            field.SetValue(_bootstrap, value);
         }
 
         private static void Configure(Button button, string label, UnityEngine.Events.UnityAction action)
