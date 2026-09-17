@@ -11,6 +11,11 @@ namespace DontGetSidetracked.Platform.RuStore
         public bool IsUpdateInProgress { get; private set; }
         public long AvailableVersionCode { get; private set; }
 
+        /// <summary>
+        /// Refreshes RuStore update state only. The presentation coordinator decides when it is safe
+        /// to launch an update flow after this await completes, so a slow SDK response cannot open
+        /// a flexible update on top of an active gameplay round.
+        /// </summary>
         public async Task CheckForUpdateAsync(bool mandatory)
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -39,11 +44,6 @@ namespace DontGetSidetracked.Platform.RuStore
             }
 
             await completion.Task;
-            if (!IsUpdateAvailable) return;
-
-            // Called only from a safe UI point (home/bootstrap), never during drawing.
-            if (mandatory) await StartImmediateAsync();
-            else await StartFlexibleAsync();
 #else
             IsUpdateAvailable = false;
             IsUpdateInProgress = false;
