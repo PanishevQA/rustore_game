@@ -9,6 +9,14 @@ namespace DontGetSidetracked.Presentation
     {
         public static LocalAnalyticsService Service { get; private set; }
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetRuntimeState()
+        {
+            // Unity Editor can enter Play Mode without a domain reload. Never carry an analytics
+            // session/service instance into the next runtime session.
+            Service = null;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
