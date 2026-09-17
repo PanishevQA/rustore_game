@@ -40,6 +40,8 @@ jobs:
         run: python scripts/validate_async_navigation.py
       - name: Validate platform and store async invariants
         run: python scripts/validate_platform_async.py
+      - name: Validate Campaign runtime bootstrap boundary
+        run: python scripts/validate_campaign_runtime_contract.py
       - name: Guard shared GameBootstrap runtime contract
         shell: bash
         run: |
@@ -50,6 +52,7 @@ jobs:
           rewarded='UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs'
           platform='UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs'
           meta='UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs'
+          campaign='UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs'
 
           test -f "$bridge"
           grep -q 'public static bool IsIdleHome' "$bridge"
@@ -65,8 +68,10 @@ jobs:
           grep -q 'GameBootstrapRuntimeBridge.IsIdleHome' "$rewarded"
           grep -q 'GameBootstrapRuntimeBridge.IsIdleHome' "$platform"
           grep -q 'GameBootstrapRuntimeBridge.IsHome' "$meta"
+          grep -q 'GameBootstrapRuntimeBridge.PrepareCampaign' "$campaign"
+          grep -q 'GameBootstrapRuntimeBridge.BeginRoute' "$campaign"
 
-          for file in "$mobile" "$ads" "$rewarded" "$platform" "$meta"; do
+          for file in "$mobile" "$ads" "$rewarded" "$platform" "$meta" "$campaign"; do
             if grep -nE 'System\.Reflection|BindingFlags|GetField\(|GetMethod\(' "$file"; then
               echo "Private GameBootstrap reflection leaked outside GameBootstrapRuntimeBridge: $file"
               exit 1
