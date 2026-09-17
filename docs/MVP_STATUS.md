@@ -80,7 +80,7 @@
 
 Release-клиент не требует developer-operated backend или собственной БД. Campaign, Daily, Training, progress, economy, settings и cosmetics работают локально. `server/` остаётся только как optional foundation для возможного будущего online leaderboard/authoritative mode.
 
-Remote Config runtime также не зависит от нашего backend: один `RuStoreRemoteConfigRuntime` provider/cache используется gameplay tuning, advertising и compatibility facade; при отсутствии RuStore SDK работают cache/defaults.
+Remote Config runtime также не зависит от нашего backend: один `RuStoreRemoteConfigRuntime` provider/cache используется gameplay tuning, advertising и compatibility facade; при отсутствии рабочего RuStore runtime используются cache/defaults.
 
 ## UI state
 
@@ -105,19 +105,19 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 
 ## RuStore / Android release target
 
-Последняя сверка RuStore targets на 2026-09-16:
+Последняя сверка RuStore targets на 2026-09-17:
 
 - Pay Unity: `11.1.0`;
 - Install Referrer Unity: `10.6.1`;
 - Update Unity: `10.5.1`;
 - Review Unity: `10.5.1`;
-- Remote Config Unity: **`10.5.0`**;
+- Remote Config Unity: **`10.5.1`**;
 - GameCenter Unity: `10.5.2` — optional;
 - RuStore Push не используется: Daily reminder реализован локально;
 - targetSdk baseline: `34` / highest installed;
 - minSdk проекта: `25` из-за Unity 6000.3 baseline.
 
-Install Referrer и Remote Config packages, которые дали compile errors внутри package source на Unity 6.3, **не маскируются как готовая интеграция**: reflection adapters/fallback сохранены, а production preflight требует реально загруженные official Unity client types перед non-development AAB.
+Required RuStore Unity packages теперь закреплены в `UnityProject/Packages/manifest.json`: `ru.rustore.pay` `11.1.0`, `ru.rustore.installreferrer` `10.6.1`, `ru.rustore.remoteconfig` `10.5.1`, `ru.rustore.update` `10.5.1` и `ru.rustore.review` `10.5.1`. Install Referrer/Remote Config adapters по-прежнему изолированы от gameplay и имеют safe fallback, а production preflight требует реально загруженные official Unity client types перед non-development AAB.
 
 ## Что нельзя честно завершить только изменениями в GitHub
 
@@ -126,8 +126,9 @@ Install Referrer и Remote Config packages, которые дали compile erro
 - production package name из RuStore Console;
 - production keystore/key alias;
 - реальные PayClient/RuStore Console параметры;
-- официальный Install Referrer 10.6.1 package и physical-device smoke test;
-- официальный Remote Config 10.5.0 package/AppId и physical-device fallback test;
+- UPM resolve/Unity compile официальных RuStore packages на release-машине;
+- Install Referrer 10.6.1 physical-device smoke test;
+- Remote Config 10.5.1 AppId и physical-device fallback test;
 - официальный Yandex Mobile Ads Unity plugin + реальные block IDs;
 - Pay success/cancel/error/restore через реальный RuStore;
 - deeplink + Install Referrer после реальной установки;

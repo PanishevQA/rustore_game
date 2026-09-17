@@ -102,19 +102,19 @@ Production требует официальный Yandex Unity plugin, define `YA
 
 Проект зафиксирован на Unity `6000.3.24f1`, portrait, `UnityPlayerActivity`, IL2CPP/ARM64 release baseline.
 
-Последняя сверка RuStore targets — 2026-09-16:
+Последняя сверка RuStore targets — 2026-09-17:
 
 - Pay Unity `11.1.0`;
 - Install Referrer Unity `10.6.1`;
 - Update Unity `10.5.1`;
 - Review Unity `10.5.1`;
-- Remote Config Unity `10.5.0`;
+- Remote Config Unity `10.5.1`;
 - GameCenter Unity `10.5.2` — optional, не critical path;
 - RuStore Push не используется: Daily reminders локальные;
 - target API baseline 34 / highest installed;
 - minSdk проекта 25, потому что Unity 6.3 уже не поддерживает API 24 как рабочий baseline.
 
-Install Referrer и Remote Config adapters SDK-isolated через reflection/fallback. Их packages временно отсутствуют в Editor manifest, потому что конкретная package integration дала compile errors на Unity 6.3. Перед production они являются отдельным Android integration gate: официальный package → resolve/compile → physical-device test. Production preflight требует реально загруженные Unity client types, а не только наличие adapter-файлов.
+Официальные RuStore packages закреплены прямо в `UnityProject/Packages/manifest.json`: `ru.rustore.pay` `11.1.0`, `ru.rustore.installreferrer` `10.6.1`, `ru.rustore.remoteconfig` `10.5.1`, `ru.rustore.update` `10.5.1` и `ru.rustore.review` `10.5.1`. Install Referrer и Remote Config остаются изолированы за adapters/fallback, а production preflight требует реально загруженные Unity client types. Перед release всё равно обязательны UPM resolve/compile и physical-device smoke tests с реальными RuStore Console параметрами.
 
 ## Remote Config
 
@@ -167,7 +167,7 @@ Daily reminder планируется через `com.unity.mobile.notifications
 4. Открыть `Assets/Scenes/Main.unity` (ProjectConfigurator создаст её при необходимости).
 5. Нажать Play.
 
-Production-сборка дополнительно требует точный package name из RuStore Console, production signing, PayClient settings, официальный Install Referrer/Remote Config integration, Yandex package/IDs и device tests. Собственный backend URL задавать не требуется.
+Production-сборка дополнительно требует точный package name из RuStore Console, production signing, PayClient/Remote Config AppId настройки, реальные Yandex package/IDs и physical-device tests RuStore flows. Собственный backend URL задавать не требуется.
 
 ## CI
 
