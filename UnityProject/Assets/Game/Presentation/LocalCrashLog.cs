@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using DontGetSidetracked.Platform.Android;
 using UnityEngine;
 
 namespace DontGetSidetracked.Presentation
@@ -16,6 +17,7 @@ namespace DontGetSidetracked.Presentation
         private static readonly object Gate = new object();
         private static string _path;
         private static bool _subscribed;
+        private static RuntimeBuildIdentity _buildIdentity;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetRuntimeState()
@@ -25,6 +27,7 @@ namespace DontGetSidetracked.Presentation
                 Application.logMessageReceivedThreaded -= OnLogMessage;
             _subscribed = false;
             _path = null;
+            _buildIdentity = default;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -32,6 +35,10 @@ namespace DontGetSidetracked.Presentation
         {
             if (_subscribed) return;
             _path = Path.Combine(Application.persistentDataPath, "crash-local.log");
+
+            // Resolve Android package metadata on Unity's main thread before registering the threaded
+            // log callback. BuildEntry then uses only the immutable cached value.
+            _buildIdentity = AndroidBuildIdentity.Current;
             _subscribed = true;
             Application.logMessageReceivedThreaded += OnLogMessage;
 
@@ -68,6 +75,14 @@ namespace DontGetSidetracked.Presentation
                 .Append("] ")
                 .Append(type)
                 .AppendLine();
+            builder.Append("build=")
+                .Append(_buildIdentity.PackageName)
+                .Append('@')
+                .Append(_buildIdentity.Version)
+                .Append(" code=")
+                .Append(_buildIdentity.VersionCode)
+                .Append(" guid=")
+                .AppendLine(_buildIdentity.BuildGuid);
             builder.AppendLine(Clamp(condition, 4096));
             if (!string.IsNullOrWhiteSpace(stackTrace)) builder.AppendLine(Clamp(stackTrace, 12_000));
             builder.AppendLine("---");
