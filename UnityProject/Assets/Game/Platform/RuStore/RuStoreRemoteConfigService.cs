@@ -115,10 +115,10 @@ namespace DontGetSidetracked.Platform.RuStore
         }
 
         public bool RequiresMandatoryUpdate(string currentVersion) =>
-            CompareVersions(currentVersion, MinSupportedVersion) < 0;
+            AppVersionPolicy.Compare(currentVersion, MinSupportedVersion) < 0;
 
         public bool ShouldRecommendUpdate(string currentVersion) =>
-            CompareVersions(currentVersion, RecommendedVersion) < 0;
+            AppVersionPolicy.Compare(currentVersion, RecommendedVersion) < 0;
 
 #if UNITY_ANDROID && !UNITY_EDITOR
         private object GetClient(out Type clientType)
@@ -400,37 +400,17 @@ namespace DontGetSidetracked.Platform.RuStore
             s.dailyReminderHour = Clamp(s.dailyReminderHour, 0, 23, 10);
             if (string.IsNullOrWhiteSpace(s.shareCopyVariant)) s.shareCopyVariant = "A";
             if (string.IsNullOrWhiteSpace(s.storeOfferVariant)) s.storeOfferVariant = "A";
-            if (string.IsNullOrWhiteSpace(s.minSupportedVersion)) s.minSupportedVersion = "0.1.0";
-            if (string.IsNullOrWhiteSpace(s.recommendedVersion)) s.recommendedVersion = s.minSupportedVersion;
+
+            AppVersionRange versions = AppVersionPolicy.NormalizeRange(
+                s.minSupportedVersion,
+                s.recommendedVersion,
+                AppVersionPolicy.SafeDefaultVersion);
+            s.minSupportedVersion = versions.MinSupportedVersion;
+            s.recommendedVersion = versions.RecommendedVersion;
         }
 
         private static int Clamp(int value, int min, int max, int fallback) =>
             value < min || value > max ? fallback : value;
-
-        private static int CompareVersions(string left, string right)
-        {
-            int[] a = ParseVersion(left);
-            int[] b = ParseVersion(right);
-            int count = Math.Max(a.Length, b.Length);
-            for (int i = 0; i < count; i++)
-            {
-                int av = i < a.Length ? a[i] : 0;
-                int bv = i < b.Length ? b[i] : 0;
-                if (av != bv) return av.CompareTo(bv);
-            }
-            return 0;
-        }
-
-        private static int[] ParseVersion(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value)) return new[] { 0 };
-            string core = value.Trim().Split('-', '+')[0];
-            string[] parts = core.Split('.');
-            var result = new int[parts.Length];
-            for (int i = 0; i < parts.Length; i++)
-                result[i] = int.TryParse(parts[i], out int parsed) && parsed >= 0 ? parsed : 0;
-            return result;
-        }
 
         private static Exception Unwrap(Exception error) =>
             error is TargetInvocationException invocation && invocation.InnerException != null
@@ -453,8 +433,8 @@ namespace DontGetSidetracked.Platform.RuStore
             public bool localDailyReminderEnabled = true;
             public int dailyReminderHour = 10;
             public string storeOfferVariant = "A";
-            public string minSupportedVersion = "0.1.0";
-            public string recommendedVersion = "0.1.0";
+            public string minSupportedVersion = AppVersionPolicy.SafeDefaultVersion;
+            public string recommendedVersion = AppVersionPolicy.SafeDefaultVersion;
 
             public static Snapshot CreateDefaults() => new Snapshot();
         }
