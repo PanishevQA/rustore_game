@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Economy;
@@ -24,7 +23,6 @@ namespace DontGetSidetracked.Presentation
         private Text _panelBody;
         private Transform _actionsRoot;
         private GameBootstrap _bootstrap;
-        private FieldInfo _modeField;
         private JsonFileSaveRepository _saveRepository;
         private SaveData _save;
         private StoreService _store;
@@ -77,17 +75,10 @@ namespace DontGetSidetracked.Presentation
         private void ResolveBootstrap()
         {
             _bootstrap = FindFirstObjectByType<GameBootstrap>();
-            _modeField = _bootstrap == null
-                ? null
-                : typeof(GameBootstrap).GetField("_mode", BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
-        private bool IsHomeMode()
-        {
-            if (_bootstrap == null || _modeField == null) return false;
-            object mode = _modeField.GetValue(_bootstrap);
-            return mode != null && string.Equals(mode.ToString(), "Home", StringComparison.Ordinal);
-        }
+        private bool IsHomeMode() =>
+            _bootstrap != null && GameBootstrapRuntimeBridge.IsHome(_bootstrap);
 
         private int BeginPanelNavigation()
         {
