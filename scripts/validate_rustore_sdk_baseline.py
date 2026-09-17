@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 VERSIONS = ROOT / "UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs"
 PACKAGES = ROOT / "UnityProject/Packages/manifest.json"
 MATRIX = ROOT / "docs/RUSTORE_SDK_MATRIX.md"
+CHECKLIST = ROOT / "docs/RUSTORE_RELEASE_CHECKLIST.md"
 
 verified_date = "2026-09-17"
 expected = {
@@ -26,6 +27,7 @@ installed_packages = {
 
 versions_text = VERSIONS.read_text(encoding="utf-8")
 matrix_text = MATRIX.read_text(encoding="utf-8")
+checklist_text = CHECKLIST.read_text(encoding="utf-8")
 manifest_text = PACKAGES.read_text(encoding="utf-8")
 manifest = json.loads(manifest_text)
 dependencies = manifest.get("dependencies") or {}
@@ -57,6 +59,17 @@ if not matrix_text.startswith(f"# RuStore SDK matrix — {verified_date}\n"):
 for name, value in expected.items():
     if value not in matrix_text:
         errors.append(f"RUSTORE_SDK_MATRIX.md does not document the verified {name} version {value}.")
+
+checklist_requirements = {
+    "Pay": f"Pay {expected['Pay']}",
+    "InstallReferrer": f"Install Referrer Unity {expected['InstallReferrer']}",
+    "RemoteConfig": f"текущий проверенный Unity target — **{expected['RemoteConfig']}**",
+}
+for name, marker in checklist_requirements.items():
+    if marker not in checklist_text:
+        errors.append(
+            f"RUSTORE_RELEASE_CHECKLIST.md is not synchronized with the verified {name} baseline {expected[name]}."
+        )
 
 npm_registry = constant("NpmRegistry")
 registries = manifest.get("scopedRegistries") or []
