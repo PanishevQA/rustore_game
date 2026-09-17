@@ -87,7 +87,8 @@ namespace DontGetSidetracked.Presentation
             lock (SharedGate)
             {
                 data = SaveMigrator.Migrate(data);
-                File.WriteAllText(_tempPath, JsonUtility.ToJson(data, false));
+                string tempPath = _tempPath;
+                File.WriteAllText(tempPath, JsonUtility.ToJson(data, false));
 
                 try
                 {
@@ -98,14 +99,14 @@ namespace DontGetSidetracked.Presentation
                         File.Delete(_path);
                     }
 
-                    File.Move(_tempPath, _path);
+                    File.Move(tempPath, _path);
                     SharedByPath[_path] = data;
                 }
                 catch
                 {
                     // If replacement failed after the primary was removed, immediately restore the known-good backup.
                     RestorePrimaryFromBackup(overwriteExisting: false);
-                    TryDelete(_tempPath);
+                    TryDelete(tempPath);
                     throw;
                 }
             }
