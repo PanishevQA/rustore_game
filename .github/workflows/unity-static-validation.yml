@@ -18,24 +18,34 @@ jobs:
         run: python scripts/validate_async_navigation.py
       - name: Validate platform and store async invariants
         run: python scripts/validate_platform_async.py
-      - name: Guard mobile lifecycle reflection boundary
+      - name: Guard shared GameBootstrap runtime contract
         shell: bash
         run: |
           set -euo pipefail
           bridge='UnityProject/Assets/Game/Presentation/GameBootstrapRuntimeBridge.cs'
           mobile='UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs'
+          ads='UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs'
+          rewarded='UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs'
 
           test -f "$bridge"
+          grep -q 'public static bool IsIdleHome' "$bridge"
+          grep -q 'public static bool IsResult' "$bridge"
+
           grep -q 'GameBootstrapRuntimeBridge.IsHome' "$mobile"
           grep -q 'GameBootstrapRuntimeBridge.IsActiveRound' "$mobile"
           grep -q 'GameBootstrapRuntimeBridge.IsTutorial' "$mobile"
           grep -q 'GameBootstrapRuntimeBridge.AbortToHome' "$mobile"
           grep -q 'GameBootstrapRuntimeBridge.RestartTutorial' "$mobile"
+          grep -q 'GameBootstrapRuntimeBridge.IsIdleHome' "$ads"
+          grep -q 'GameBootstrapRuntimeBridge.IsResult' "$ads"
+          grep -q 'GameBootstrapRuntimeBridge.IsIdleHome' "$rewarded"
 
-          if grep -nE 'System\.Reflection|BindingFlags|GetField\(|GetMethod\(' "$mobile"; then
-            echo 'Private GameBootstrap reflection leaked back into MobileUiCoordinator.'
-            exit 1
-          fi
+          for file in "$mobile" "$ads" "$rewarded"; do
+            if grep -nE 'System\.Reflection|BindingFlags|GetField\(|GetMethod\(' "$file"; then
+              echo "Private GameBootstrap reflection leaked outside GameBootstrapRuntimeBridge: $file"
+              exit 1
+            fi
+          done
 
           grep -q 'BindingFlags.Instance | BindingFlags.NonPublic' "$bridge"
           grep -q 'ReportMissingContractIfNeeded' "$bridge"
