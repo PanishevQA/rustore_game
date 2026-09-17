@@ -34,14 +34,26 @@ namespace DontGetSidetracked.Social
 
         public static bool IsValidReferralId(string value)
         {
-            // L3 self-contained tokens are up to 36 chars for a 3-route Daily.
+            // Current checksummed L4 tokens are 40 chars for a 3-route Daily. Keep some headroom
+            // for generic/legacy referral IDs while reserving L1/L2/L3/L4 prefixes for our codec.
             if (string.IsNullOrWhiteSpace(value) || value.Length < 4 || value.Length > 48) return false;
             for (int i = 0; i < value.Length; i++)
             {
                 char c = value[i];
                 if (!char.IsLetterOrDigit(c) && c != '-' && c != '_') return false;
             }
+
+            string normalized = value.ToUpperInvariant();
+            if (HasReservedChallengePrefix(normalized))
+                return OfflineChallengeCodec.TryDecode(normalized, out _);
+
             return true;
         }
+
+        private static bool HasReservedChallengePrefix(string value) =>
+            value.StartsWith("L1", StringComparison.Ordinal) ||
+            value.StartsWith("L2", StringComparison.Ordinal) ||
+            value.StartsWith("L3", StringComparison.Ordinal) ||
+            value.StartsWith("L4", StringComparison.Ordinal);
     }
 }
