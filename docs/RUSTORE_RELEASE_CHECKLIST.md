@@ -26,7 +26,7 @@
 - [ ] `referrerId` сохраняется сразу после первого успешного чтения: RuStore выдаёт его одноразово и хранит ограниченное время.
 - [ ] RuStore install URL использует официальный формат `https://www.rustore.ru/catalog/app/<package>?referrerId=<value>`.
 - [ ] В `RuStoreRemoteConfigSettings.AppId` указан реальный App ID из RuStore Console.
-- [ ] Production integration использует официальный Remote Config package версии, повторно проверенной перед release; текущий официальный Unity target — **10.5.0**.
+- [ ] Production integration использует официальный Remote Config package версии, повторно проверенной перед release; текущий проверенный Unity target — **10.5.1** (официальный релиз на 2026-09-17).
 - [ ] `RuStoreRemoteConfigRuntime` является единственным shared runtime provider; gameplay tuning, ads и platform policy читают один snapshot/cache.
 - [ ] В RuStore Console заведены ключи с корректными типами: `route_display_time_easy_ms`, `route_display_time_medium_ms`, `route_display_time_hard_ms`, `daily_route_count`, `rewarded_enabled`, `interstitial_enabled`, `interstitial_min_rounds`, `interstitial_cooldown_sec`, `share_copy_variant`, `review_min_sessions`, `local_daily_reminder_enabled`, `daily_reminder_hour`, `store_offer_variant`, `min_supported_version`, `recommended_version`.
 - [ ] Четыре gameplay-ключа Daily (`daily_route_count` и три `route_display_time_*`) настроены **глобально без audience targeting/A-B сегментации**; иначе пользователи одного UTC-дня могут получить разные условия.
