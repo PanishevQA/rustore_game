@@ -44,6 +44,8 @@ jobs:
         run: python scripts/validate_campaign_runtime_contract.py
       - name: Validate result share ownership and stale navigation
         run: python scripts/validate_result_share_ownership.py
+      - name: Validate Training and Hint runtime bootstrap boundary
+        run: python scripts/validate_training_hint_runtime_contract.py
       - name: Guard shared GameBootstrap runtime contract
         shell: bash
         run: |
@@ -56,6 +58,8 @@ jobs:
           meta='UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs'
           campaign='UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs'
           result='UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs'
+          training='UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs'
+          hint='UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs'
 
           test -f "$bridge"
           grep -q 'public static bool IsIdleHome' "$bridge"
@@ -74,8 +78,10 @@ jobs:
           grep -q 'GameBootstrapRuntimeBridge.PrepareCampaign' "$campaign"
           grep -q 'GameBootstrapRuntimeBridge.BeginRoute' "$campaign"
           grep -q 'GameBootstrapRuntimeBridge.TryCaptureResult' "$result"
+          grep -q 'GameBootstrapRuntimeBridge.StartTrainingDifficulty' "$training"
+          grep -q 'GameBootstrapRuntimeBridge.TryCaptureHintContext' "$hint"
 
-          for file in "$mobile" "$ads" "$rewarded" "$platform" "$meta" "$campaign" "$result"; do
+          for file in "$mobile" "$ads" "$rewarded" "$platform" "$meta" "$campaign" "$result" "$training" "$hint"; do
             if grep -nE 'System\.Reflection|BindingFlags|GetField\(|GetMethod\(' "$file"; then
               echo "Private GameBootstrap reflection leaked outside GameBootstrapRuntimeBridge: $file"
               exit 1
