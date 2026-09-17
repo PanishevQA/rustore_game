@@ -47,7 +47,7 @@ namespace DontGetSidetracked.Presentation
                 SaveData interruptedWrite = TryLoad(_tempPath);
                 SaveData loaded = primary;
 
-                if (interruptedWrite != null && ShouldRecoverInterruptedWrite(primary))
+                if (ShouldRecoverInterruptedWrite(primary, interruptedWrite))
                 {
                     loaded = interruptedWrite;
                     PromoteInterruptedWrite(preservePrimaryAsBackup: primary != null);
@@ -111,14 +111,19 @@ namespace DontGetSidetracked.Presentation
             }
         }
 
-        private bool ShouldRecoverInterruptedWrite(SaveData primary)
+        private bool ShouldRecoverInterruptedWrite(SaveData primary, SaveData interruptedWrite)
         {
-            if (primary == null) return true;
+            bool primaryValid = primary != null;
+            bool tempValid = interruptedWrite != null;
+            if (!tempValid || !primaryValid)
+                return SaveRecoveryPolicy.ShouldRecoverInterruptedWrite(primaryValid, tempValid, default, default);
             if (!File.Exists(_tempPath) || !File.Exists(_path)) return false;
 
             try
             {
-                return File.GetLastWriteTimeUtc(_tempPath) > File.GetLastWriteTimeUtc(_path);
+                DateTime primaryWriteUtc = File.GetLastWriteTimeUtc(_path);
+                DateTime tempWriteUtc = File.GetLastWriteTimeUtc(_tempPath);
+                return SaveRecoveryPolicy.ShouldRecoverInterruptedWrite(true, true, primaryWriteUtc, tempWriteUtc);
             }
             catch (Exception error)
             {
