@@ -8,6 +8,8 @@
 
 Обычные production validators (`IProcessSceneWithReport` / `IPreprocessBuildWithReport`) запускаются самим `BuildPipeline.BuildPlayer`. Если обязательная конфигурация отсутствует или выглядит как placeholder, AAB должен завершиться ошибкой до выпуска артефакта.
 
+Перед началом сборки entrypoint удаляет старый AAB, старый `.release.json` и незавершённый `.tmp` по целевому пути. Если новая сборка или запись metadata завершается ошибкой, частичный AAB и metadata удаляются. Поэтому после failed build по целевому пути не остаётся старый AAB, который можно случайно принять за свежий релиз.
+
 ## Сборка из Unity Editor
 
 Используйте меню:
@@ -18,7 +20,7 @@
 
 `UnityProject/Builds/Android/nesbeisya-<version>-<versionCode>.aab`
 
-Рядом создаётся `<имя>.release.json` с package name, public version, versionCode, Unity version, Unity build GUID, UTC timestamp, Git commit (если передан), именем AAB, фактическим размером и SHA-256 артефакта.
+Рядом создаётся `<имя>.release.json` с package name, public version, versionCode, Unity version, Unity build GUID, UTC timestamp, Git commit (если передан), именем AAB, фактическим размером и SHA-256 артефакта. Metadata сначала полностью записывается во временный файл и только затем переименовывается в финальный `.release.json`.
 
 ## Batchmode
 
