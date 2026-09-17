@@ -1,16 +1,22 @@
-# RuStore SDK matrix — 2026-09-16
+# RuStore SDK matrix — 2026-09-17
 
 Сверено с актуальными официальными RuStore Unity-страницами на дату выше. Перед **каждой** production-сборкой версии и repository requirements нужно проверить ещё раз: документация и registry могут обновляться независимо.
 
 | SDK | Release target | Состояние проекта |
 |---|---:|---|
-| Pay Unity | 11.1.0 | установлен в `Packages/manifest.json`; старый Billing SDK/BillingClient integration запрещён |
+| Pay Unity | 11.1.0 | установлен в `Packages/manifest.json`; старый Billing SDK/BillingClient integration запрещён; production дополнительно защищён `RuStorePayReleaseContractValidator` |
 | Install Referrer Unity | 10.6.1 | актуальный release target; Editor package временно не установлен из-за compile-regression package source на Unity 6.3; adapter/reflection fallback сохранён; перед release обязателен официальный package + Android device test |
 | Update Unity | 10.5.1 | установлен; adapter реализован |
 | Review Unity | 10.5.1 | установлен; запрос только после positive event |
 | GameCenter Unity | 10.5.2 | optional, не source of truth; package не нужен для базового gameplay |
-| Remote Config Unity | 10.5.0 | официальная Unity-страница RuStore помечает 10.5.0 как актуальную версию; adapter/cache/default реализованы; Editor package временно не установлен; перед production нужен официальный package/AppId + Android test |
+| Remote Config Unity | 10.5.0 | актуальная официальная Unity-линия; adapter/cache/default реализованы; Editor package временно не установлен; перед production нужен официальный package/AppId + Android test |
 | Push Unity | — | **не используется в MVP**; Daily reminder реализован локально через Unity Mobile Notifications, поэтому Push package/version не pin-ится |
+
+## Baseline verification
+
+`RuStoreSdkVersions.LastVerifiedUtc` должен совпадать с датой этой матрицы. CI проверяет дату и все release targets как единый baseline, чтобы версия одного SDK не могла быть изменена без явной повторной сверки набора интеграций.
+
+На 2026-09-17 официальные Unity-страницы подтверждают следующие release targets: Pay `11.1.0`, Install Referrer `10.6.1`, Update `10.5.1`, Review `10.5.1`, GameCenter `10.5.2`, Remote Config `10.5.0`.
 
 ## Android baseline
 
@@ -20,9 +26,9 @@
 
 ## Репозитории и package integration
 
-Текущий Editor baseline использует scoped registry `https://nexus-external.rustore.ru/repository/npm-unity-rustore-exposed/`, scope `ru.rustore`, и Maven `https://nexus-external.rustore.ru/repository/maven-rustore-exposed` в release constants. Актуальные GitFlic-ветки Pay/Update уже показывают новый `rustore.ru` npm registry; часть help/readme-страниц других SDK ещё содержит переходный `vkteam` URL.
+Текущий Editor baseline использует scoped registry `https://nexus-external.rustore.ru/repository/npm-unity-rustore-exposed/`, scope `ru.rustore`, и Maven `https://nexus-external.rustore.ru/repository/maven-rustore-exposed` в release constants. В официальной документации отдельных SDK всё ещё встречаются переходные registry URL, поэтому адрес нельзя менять по одному примеру из одной страницы.
 
-Поэтому registry нельзя менять по одному кэшированному примеру. Непосредственно перед release нужно проверить **конкретный SDK release**, фактический package resolve и актуальные RuStore migration notices. Старый `artifactory-external.vkpartner.ru` запрещён.
+Registry меняется только после проверки **конкретных pinned packages**, успешного package resolve в закреплённой версии Unity и полного regression-test. Старый `artifactory-external.vkpartner.ru` запрещён.
 
 ## Install Referrer
 
@@ -30,7 +36,7 @@
 
 ## Remote Config
 
-Актуальная официальная Unity-страница на дату проверки — **10.5.0**. Production preflight не считает adapter/fallback достаточной интеграцией: перед AAB должен быть реально загружен официальный `RuStoreRemoteConfigClient`, задан AppId и выполнен Android fallback/device test.
+Актуальная официальная Unity-линия на дату проверки — **10.5.0**. Production preflight не считает adapter/fallback достаточной интеграцией: перед AAB должен быть реально загружен официальный `RuStoreRemoteConfigClient`, задан AppId и выполнен Android fallback/device test.
 
 Runtime использует один `RuStoreRemoteConfigRuntime` instance. Gameplay tuning, review/update policy и локальные Daily reminders читают один общий snapshot/cache; при Unity Play без Domain Reload provider пересоздаётся на `SubsystemRegistration`.
 
