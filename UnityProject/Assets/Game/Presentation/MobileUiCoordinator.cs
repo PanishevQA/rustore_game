@@ -6,18 +6,18 @@ using UnityEngine;
 namespace DontGetSidetracked.Presentation
 {
     /// <summary>
-    /// Mobile-only presentation glue: keeps runtime-created canvases inside the device safe area,
+    /// Mobile-only presentation glue: keeps runtime-created content inside the device safe area,
     /// provides predictable Android Back behaviour and prevents half-finished rounds from resuming
     /// after the app was backgrounded.
     ///
     /// Safe area is applied to a dedicated wrapper under each Canvas instead of rewriting the anchors
-    /// of gameplay/layout elements themselves. This prevents LateUpdate layout coordinators from
-    /// accidentally undoing notch/inset protection.
+    /// of gameplay/layout elements themselves. Full-bleed visual backgrounds remain outside the wrapper.
     /// </summary>
     [DefaultExecutionOrder(20000)]
     public sealed class MobileUiCoordinator : MonoBehaviour
     {
         private const string SafeAreaRootName = "SafeAreaRoot";
+        private const string FullBleedBackgroundName = "VisualBackground";
 
         private readonly Dictionary<Canvas, RectTransform> _safeRoots =
             new Dictionary<Canvas, RectTransform>();
@@ -221,7 +221,8 @@ namespace DontGetSidetracked.Presentation
             for (int i = 0; i < canvasTransform.childCount; i++)
             {
                 Transform child = canvasTransform.GetChild(i);
-                if (child == safeRoot) continue;
+                if (child == safeRoot || string.Equals(child.name, FullBleedBackgroundName, StringComparison.Ordinal))
+                    continue;
                 if (child is RectTransform rect) toMove.Add(rect);
             }
 
