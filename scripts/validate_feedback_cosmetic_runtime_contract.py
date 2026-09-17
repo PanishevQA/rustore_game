@@ -22,7 +22,8 @@ for needle in (
         raise SystemExit(f"Feedback runtime bridge contract is missing: {needle}")
 
 for needle in (
-    "GameBootstrapRuntimeBridge.IsActiveRound(_bootstrap)",
+    "GameBootstrapRuntimeBridge.TryCaptureHintContext(_bootstrap, out GameBootstrapHintContext context)",
+    "!context.IsDrawing",
     'GameObject.Find("GameCanvas")',
     'string.Equals(graphics[i].name, "Player", StringComparison.Ordinal)',
     "_playerGraphic.color = desired",
@@ -30,10 +31,10 @@ for needle in (
     if needle not in cosmetic:
         raise SystemExit(f"Cosmetic visual/runtime contract is missing: {needle}")
 
-# Result colors must remain owned by GameBootstrap; cosmetic code may act only while an active route exists.
-active_index = cosmetic.find("if (!GameBootstrapRuntimeBridge.IsActiveRound(_bootstrap)) return;")
+# Result colors must remain owned by GameBootstrap; cosmetic code may mutate Player only after Drawing was confirmed.
+drawing_index = cosmetic.find("!context.IsDrawing")
 color_index = cosmetic.find("_playerGraphic.color = desired")
-if active_index < 0 or color_index < 0 or active_index > color_index:
-    raise SystemExit("Cosmetic trail color must be gated by active-round state before mutating the Player graphic.")
+if drawing_index < 0 or color_index < 0 or drawing_index > color_index:
+    raise SystemExit("Cosmetic trail color must be gated by Drawing state before mutating the Player graphic.")
 
 print("Feedback and cosmetic runtime contract validation passed.")
