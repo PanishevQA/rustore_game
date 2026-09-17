@@ -31,16 +31,17 @@ namespace DontGetSidetracked.Presentation
         private static void OnDeepLinkActivated(string url)
         {
             if (!ReferralLinkParser.TryParse(url, out string referralId)) return;
+            if (!ReferralRuntimePolicy.TryNormalizeForCurrentRuntime(referralId, out string normalized)) return;
 
             var repository = new JsonFileSaveRepository();
             SaveData save = repository.Load();
-            save.PendingReferralId = referralId;
+            save.PendingReferralId = normalized;
             repository.Save(save);
 
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.ChallengeOpen,
                 new System.Collections.Generic.Dictionary<string, object>
                 {
-                    ["referrer_id"] = referralId,
+                    ["referrer_id"] = normalized,
                     ["source"] = "deeplink"
                 });
             if (AnalyticsLifecycle.Service != null) _ = AnalyticsLifecycle.Service.FlushAsync();
