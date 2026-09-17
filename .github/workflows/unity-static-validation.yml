@@ -14,6 +14,8 @@ jobs:
           python-version: '3.13'
       - name: Validate Unity project structure and release-critical pins
         run: python scripts/validate_unity_project.py
+      - name: Validate async navigation invariants
+        run: python scripts/validate_async_navigation.py
       - name: Guard mobile lifecycle reflection boundary
         shell: bash
         run: |
