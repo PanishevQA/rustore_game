@@ -65,29 +65,43 @@ namespace DontGetSidetracked.EditorTools
                 throw new BuildFailedException("Could not resolve the production AAB output directory.");
             Directory.CreateDirectory(directory);
 
-            var options = new BuildPlayerOptions
-            {
-                scenes = scenes,
-                locationPathName = outputPath,
-                target = BuildTarget.Android,
-                options = BuildOptions.None
-            };
-
-            BuildReport report = BuildPipeline.BuildPlayer(options);
-            if (report.summary.result != BuildResult.Succeeded)
-            {
-                throw new BuildFailedException(
-                    $"Production Android build failed: {report.summary.result}; " +
-                    $"errors={report.summary.totalErrors}; warnings={report.summary.totalWarnings}.");
-            }
-
-            if (!File.Exists(outputPath))
-                throw new BuildFailedException("Unity reported success but the production AAB file was not created: " + outputPath);
-
             string metadataPath = Path.ChangeExtension(outputPath, ".release.json");
-            WriteReleaseMetadata(metadataPath, outputPath, report.summary);
+            string metadataTempPath = metadataPath + ".tmp";
+            DeleteStaleReleaseFile(outputPath);
+            DeleteStaleReleaseFile(metadataPath);
+            DeleteStaleReleaseFile(metadataTempPath);
 
-            Debug.Log($"Production Android AAB created: {outputPath}\nRelease metadata: {metadataPath}");
+            try
+            {
+                var options = new BuildPlayerOptions
+                {
+                    scenes = scenes,
+                    locationPathName = outputPath,
+                    target = BuildTarget.Android,
+                    options = BuildOptions.None
+                };
+
+                BuildReport report = BuildPipeline.BuildPlayer(options);
+                if (report.summary.result != BuildResult.Succeeded)
+                {
+                    throw new BuildFailedException(
+                        $"Production Android build failed: {report.summary.result}; " +
+                        $"errors={report.summary.totalErrors}; warnings={report.summary.totalWarnings}.");
+                }
+
+                if (!File.Exists(outputPath))
+                    throw new BuildFailedException("Unity reported success but the production AAB file was not created: " + outputPath);
+
+                WriteReleaseMetadata(metadataPath, metadataTempPath, outputPath, report.summary);
+                Debug.Log($"Production Android AAB created: {outputPath}\nRelease metadata: {metadataPath}");
+            }
+            catch
+            {
+                TryDeleteFailedReleaseFile(outputPath);
+                TryDeleteFailedReleaseFile(metadataPath);
+                TryDeleteFailedReleaseFile(metadataTempPath);
+                throw;
+            }
         }
 
         private static string ResolveOutputPath()
@@ -115,7 +129,11 @@ namespace DontGetSidetracked.EditorTools
             return Path.GetFullPath(path);
         }
 
-        private static void WriteReleaseMetadata(string metadataPath, string outputPath, BuildSummary summary)
+        private static void WriteReleaseMetadata(
+            string metadataPath,
+            string metadataTempPath,
+            string outputPath,
+            BuildSummary summary)
         {
             string gitCommit = Environment.GetEnvironmentVariable(GitShaEnvironmentVariable);
             if (string.IsNullOrWhiteSpace(gitCommit))
@@ -138,7 +156,34 @@ namespace DontGetSidetracked.EditorTools
                 unityReportedSizeBytes = summary.totalSize
             };
 
-            File.WriteAllText(metadataPath, JsonUtility.ToJson(metadata, true));
+            File.WriteAllText(metadataTempPath, JsonUtility.ToJson(metadata, true));
+            File.Move(metadataTempPath, metadataPath);
+        }
+
+        private static void DeleteStaleReleaseFile(string path)
+        {
+            if (!File.Exists(path)) return;
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception error)
+            {
+                throw new BuildFailedException($"Could not remove stale release artifact '{path}': {error.Message}");
+            }
+        }
+
+        private static void TryDeleteFailedReleaseFile(string path)
+        {
+            if (!File.Exists(path)) return;
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"Could not clean failed release artifact '{path}': {error.Message}");
+            }
         }
 
         private static string ComputeSha256(string path)

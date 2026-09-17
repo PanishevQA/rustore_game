@@ -30,6 +30,15 @@ required = {
     'NESBEISYA_RELEASE_OUTPUT': "Production build must support an explicit output path for automation.",
     'Path.GetExtension(path), ".aab"': "Production build output must be restricted to AAB files.",
     'Path.ChangeExtension(outputPath, ".release.json")': "Production build must emit release metadata next to the AAB.",
+    'string metadataTempPath = metadataPath + ".tmp";': "Release metadata publication must use a temp file.",
+    'DeleteStaleReleaseFile(outputPath);': "Stale AAB must be removed before a new production build starts.",
+    'DeleteStaleReleaseFile(metadataPath);': "Stale release metadata must be removed before a new production build starts.",
+    'DeleteStaleReleaseFile(metadataTempPath);': "Stale metadata temp files must be removed before a new production build starts.",
+    'TryDeleteFailedReleaseFile(outputPath);': "Failed/partial AAB must be removed on build failure.",
+    'TryDeleteFailedReleaseFile(metadataPath);': "Failed/stale release metadata must be removed on build failure.",
+    'TryDeleteFailedReleaseFile(metadataTempPath);': "Failed metadata temp files must be removed on build failure.",
+    'File.WriteAllText(metadataTempPath, JsonUtility.ToJson(metadata, true));': "Release metadata must be fully written to temp before publication.",
+    'File.Move(metadataTempPath, metadataPath);': "Release metadata must be published with temp-to-final replacement.",
     'packageName = PlayerSettings.GetApplicationIdentifier': "Release metadata must record the Android package name.",
     'version = PlayerSettings.bundleVersion': "Release metadata must record the public version.",
     'versionCode = PlayerSettings.Android.bundleVersionCode': "Release metadata must record the Android versionCode.",
@@ -41,7 +50,6 @@ required = {
     'builtAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture)': "Release metadata must record an unambiguous UTC build timestamp.",
     'GITHUB_SHA': "Release metadata must support the GitHub commit SHA.",
     'RELEASE_GIT_SHA': "Local/batch builds must be able to provide an explicit Git SHA.",
-    'JsonUtility.ToJson(metadata, true)': "Release metadata must be serialized as readable JSON.",
 }
 
 errors = [message for needle, message in required.items() if needle not in text]
@@ -59,6 +67,7 @@ for required_doc_text in (
     "NESBEISYA_RELEASE_OUTPUT",
     ".release.json",
     "verify_release_artifact.py",
+    "не остаётся старый AAB",
     "RUSTORE_RELEASE_CHECKLIST.md",
 ):
     if required_doc_text not in doc:
