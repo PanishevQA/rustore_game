@@ -36,6 +36,7 @@ namespace DontGetSidetracked.Presentation
         private static readonly FieldInfo LastResultScoreField = typeof(GameBootstrap).GetField("_lastResultScore", PrivateInstance);
 
         private static readonly MethodInfo StartTutorialMethod = typeof(GameBootstrap).GetMethod("StartTutorial", PrivateInstance);
+        private static readonly MethodInfo BeginNavigationMethod = typeof(GameBootstrap).GetMethod("BeginNavigation", PrivateInstance);
         private static readonly MethodInfo BeginRouteMethod = typeof(GameBootstrap).GetMethod("BeginRoute", PrivateInstance);
         private static readonly MethodInfo ShowHomeMethod = typeof(GameBootstrap).GetMethod("ShowHome", PrivateInstance);
         private static readonly MethodInfo StartDailyMethod = typeof(GameBootstrap).GetMethod("StartDaily", PrivateInstance);
@@ -122,6 +123,7 @@ namespace DontGetSidetracked.Presentation
 
             try
             {
+                BeginNavigationMethod.Invoke(bootstrap, null);
                 SetEnum(bootstrap, ModeField, "Training");
                 SetEnum(bootstrap, StateField, "Idle");
                 DailyCompletedField.SetValue(bootstrap, false);
@@ -265,8 +267,8 @@ namespace DontGetSidetracked.Presentation
                    DuelSessionField != null && DailySessionField != null && DailyField != null &&
                    SaveField != null && TitleField != null && StatusField != null &&
                    PrimaryField != null && SecondaryField != null && ShareField != null &&
-                   LastResultScoreField != null && BeginRouteMethod != null && ShowHomeMethod != null &&
-                   StartDailyMethod != null && ShareCurrentResultMethod != null;
+                   LastResultScoreField != null && BeginNavigationMethod != null && BeginRouteMethod != null &&
+                   ShowHomeMethod != null && StartDailyMethod != null && ShareCurrentResultMethod != null;
         }
 
         private static void ReportMissingContractIfNeeded()
