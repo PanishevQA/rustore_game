@@ -1,13 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Daily;
 using DontGetSidetracked.Gameplay;
-using DontGetSidetracked.Network;
-using DontGetSidetracked.Social;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,23 +13,11 @@ namespace DontGetSidetracked.Presentation
     /// <summary>
     /// Adds result-only presentation without changing the input/scoring loop:
     /// score medals, perfect pulse, per-Daily personal records, PNG share cards and Duel rematch UX.
+    /// Campaign shares are owned here too so the internal Training bootstrap mode never leaks to users.
     /// </summary>
     public sealed class ResultEnhancementCoordinator : MonoBehaviour
     {
         private GameBootstrap _bootstrap;
-        private Type _bootstrapType;
-        private FieldInfo _stateField;
-        private FieldInfo _modeField;
-        private FieldInfo _dailyCompletedField;
-        private FieldInfo _lastResultScoreField;
-        private FieldInfo _lastDailyScoreField;
-        private FieldInfo _dailyField;
-        private FieldInfo _routeField;
-        private FieldInfo _recordingField;
-        private FieldInfo _duelSessionField;
-        private FieldInfo _apiField;
-        private FieldInfo _primaryField;
-        private FieldInfo _saveField;
 
         private readonly DailyBestService _dailyBest = new DailyBestService();
         private JsonFileSaveRepository _saveRepository;
@@ -66,9 +51,9 @@ namespace DontGetSidetracked.Presentation
         private void Update()
         {
             if (_bootstrap == null) ResolveBootstrap();
-            if (_bootstrap == null || _stateField == null) return;
+            if (_bootstrap == null) return;
 
-            bool isResult = string.Equals(GetEnumName(_stateField), "Result", StringComparison.Ordinal);
+            bool isResult = GameBootstrapRuntimeBridge.IsResult(_bootstrap);
             if (!isResult)
             {
                 if (_wasResult)
@@ -92,12 +77,18 @@ namespace DontGetSidetracked.Presentation
 
         private void HandleEnteredResult()
         {
-            string mode = GetEnumName(_modeField);
-            bool dailyCompleted = GetBool(_dailyCompletedField);
-            bool aggregate = dailyCompleted &&
+            if (!GameBootstrapRuntimeBridge.TryCaptureResult(_bootstrap, out GameBootstrapResultSnapshot snapshot))
+            {
+                SetResultUiVisible(false);
+                return;
+            }
+
+            bool campaign = CampaignRuntimeCoordinator.IsCampaignActive;
+            string mode = snapshot.ModeName;
+            bool aggregate = snapshot.DailyCompleted &&
                              (string.Equals(mode, "Daily", StringComparison.Ordinal) ||
                               string.Equals(mode, "Duel", StringComparison.Ordinal));
-            double score = aggregate ? GetDouble(_lastDailyScoreField) : GetDouble(_lastResultScoreField);
+            double score = aggregate ? snapshot.LastDailyScore : snapshot.LastResultScore;
             ScoreCelebration celebration = ScoreCelebrationPolicy.Evaluate(score);
 
             _badge.text = string.IsNullOrWhiteSpace(celebration.Icon)
@@ -107,22 +98,24 @@ namespace DontGetSidetracked.Presentation
             _recordLabel.text = string.Empty;
             SetResultUiVisible(true);
 
+            string analyticsMode = campaign ? "Campaign" : mode;
             if (celebration.Tier != ScoreMedalTier.None)
             {
                 AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.MedalEarned, Params(
                     "tier", celebration.Tier.ToString(),
                     "score", score,
-                    "mode", mode));
+                    "mode", analyticsMode));
             }
 
-            if (string.Equals(mode, "Daily", StringComparison.Ordinal) && dailyCompleted)
-                ApplyDailyRecord(score);
+            if (!campaign && string.Equals(mode, "Daily", StringComparison.Ordinal) && snapshot.DailyCompleted)
+                ApplyDailyRecord(snapshot, score);
 
-            bool shareable = string.Equals(mode, "Training", StringComparison.Ordinal) || aggregate;
+            bool shareable = campaign || string.Equals(mode, "Training", StringComparison.Ordinal) || aggregate;
             _cardButton.gameObject.SetActive(shareable);
+            _cardButtonText.text = campaign ? "📸 КАРТОЧКА УРОВНЯ" : "📸 КАРТОЧКА";
 
-            if (string.Equals(mode, "Duel", StringComparison.Ordinal) && dailyCompleted)
-                ConfigureRematch(score);
+            if (!campaign && string.Equals(mode, "Duel", StringComparison.Ordinal) && snapshot.DailyCompleted)
+                ConfigureRematch(snapshot, score);
 
             if (celebration.PlayPerfectEffect)
             {
@@ -131,15 +124,15 @@ namespace DontGetSidetracked.Presentation
             }
         }
 
-        private void ApplyDailyRecord(double score)
+        private void ApplyDailyRecord(GameBootstrapResultSnapshot snapshot, double score)
         {
-            DailyChallengeDefinition daily = _dailyField?.GetValue(_bootstrap) as DailyChallengeDefinition;
+            DailyChallengeDefinition daily = snapshot.Daily;
             if (daily == null || string.IsNullOrWhiteSpace(daily.ChallengeId)) return;
 
-            SaveData save = _saveField?.GetValue(_bootstrap) as SaveData;
-            if (save == null) save = _saveRepository.Load();
+            SaveData save = snapshot.Save ?? _saveRepository.Load();
             DailyBestUpdate update = _dailyBest.Apply(save, daily.ChallengeId, score);
             _saveRepository.Save(save);
+            GameBootstrapRuntimeBridge.ReplaceSave(_bootstrap, save);
 
             if (!update.IsNewRecord) return;
             _recordLabel.text = update.PreviousBest > 0.0
@@ -152,16 +145,15 @@ namespace DontGetSidetracked.Presentation
                 "score", update.BestScore));
         }
 
-        private void ConfigureRematch(double score)
+        private static void ConfigureRematch(GameBootstrapResultSnapshot snapshot, double score)
         {
-            Button primary = _primaryField?.GetValue(_bootstrap) as Button;
+            Button primary = snapshot.PrimaryButton;
             if (primary == null) return;
             Text label = primary.GetComponentInChildren<Text>(true);
             if (label != null) label.text = "РЕВАНШ";
 
-            DuelSession duel = _duelSessionField?.GetValue(_bootstrap) as DuelSession;
-            string referralId = duel?.Referral?.ReferralId ?? string.Empty;
-            double rivalScore = duel?.Referral?.InviterScore ?? 0.0;
+            string referralId = snapshot.DuelSession?.Referral?.ReferralId ?? string.Empty;
+            double rivalScore = snapshot.DuelSession?.Referral?.InviterScore ?? 0.0;
             primary.onClick.AddListener(() => AnalyticsLifecycle.Service?.Track(
                 AnalyticsEventNames.DuelRematch,
                 Params("referrer_id", referralId, "previous_score", score, "rival_score", rivalScore)));
@@ -170,58 +162,86 @@ namespace DontGetSidetracked.Presentation
         private async void ShareCard()
         {
             if (_shareBusy || _bootstrap == null) return;
+            if (!GameBootstrapRuntimeBridge.TryCaptureResult(_bootstrap, out GameBootstrapResultSnapshot snapshot)) return;
+
+            int revision = snapshot.NavigationRevision;
+            bool campaign = CampaignRuntimeCoordinator.IsCampaignActive;
+            int campaignLevel = campaign ? CampaignRuntimeCoordinator.CurrentLevelNumber : 0;
+            int campaignChapter = campaign ? CampaignRuntimeCoordinator.CurrentChapterNumber : 0;
+
             _shareBusy = true;
             _cardButton.interactable = false;
             _cardButtonText.text = "ГОТОВИМ КАРТОЧКУ…";
 
             try
             {
-                string mode = GetEnumName(_modeField);
-                bool dailyCompleted = GetBool(_dailyCompletedField);
-                bool aggregate = dailyCompleted &&
+                string mode = snapshot.ModeName;
+                bool aggregate = snapshot.DailyCompleted &&
                                  (string.Equals(mode, "Daily", StringComparison.Ordinal) ||
                                   string.Equals(mode, "Duel", StringComparison.Ordinal));
-                double score = aggregate ? GetDouble(_lastDailyScoreField) : GetDouble(_lastResultScoreField);
-                RouteDefinition route = _routeField?.GetValue(_bootstrap) as RouteDefinition;
-                var recording = _recordingField?.GetValue(_bootstrap) as List<RecordedPoint>;
-                DailyChallengeDefinition daily = _dailyField?.GetValue(_bootstrap) as DailyChallengeDefinition;
-                DuelSession duel = _duelSessionField?.GetValue(_bootstrap) as DuelSession;
-                UnityGameApi api = _apiField?.GetValue(_bootstrap) as UnityGameApi;
+                double score = aggregate ? snapshot.LastDailyScore : snapshot.LastResultScore;
+                RouteDefinition route = snapshot.Route;
+                List<RecordedPoint> recording = snapshot.Recording;
+                DailyChallengeDefinition daily = snapshot.Daily;
 
                 if (route == null || recording == null || recording.Count < 2)
                     throw new InvalidOperationException("Result trajectory is not available for the share card.");
+                if (campaign && (campaignLevel <= 0 || campaignChapter <= 0))
+                    throw new InvalidOperationException("Campaign result identity is not available for the share card.");
 
                 string challengeUrl = string.Empty;
-                if (aggregate && daily != null && api != null)
+                if (!campaign && aggregate && daily != null && snapshot.Api != null)
                 {
-                    SaveData save = _saveField?.GetValue(_bootstrap) as SaveData ?? _saveRepository.Load();
-                    challengeUrl = await api.CreateChallengeAsync(save.AnonymousPlayerId, daily.ChallengeId, score);
+                    SaveData save = snapshot.Save ?? _saveRepository.Load();
+                    challengeUrl = await snapshot.Api.CreateChallengeAsync(save.AnonymousPlayerId, daily.ChallengeId, score);
+
+                    if (!GameBootstrapRuntimeBridge.IsCurrentNavigation(_bootstrap, revision) ||
+                        !GameBootstrapRuntimeBridge.IsResult(_bootstrap))
+                        return;
                 }
+
+                if (campaign &&
+                    (!CampaignRuntimeCoordinator.IsCampaignActive ||
+                     CampaignRuntimeCoordinator.CurrentLevelNumber != campaignLevel ||
+                     CampaignRuntimeCoordinator.CurrentChapterNumber != campaignChapter))
+                    return;
 
                 var model = new ResultShareCardModel
                 {
-                    ModeLabel = ModeLabel(mode),
-                    ChallengeLabel = daily?.ChallengeId ?? "Тренировка",
+                    ModeLabel = campaign ? "КАМПАНИЯ" : ModeLabel(mode),
+                    ChallengeLabel = campaign
+                        ? $"УРОВЕНЬ {campaignLevel} • {CampaignLevelCatalog.ChapterName(campaignChapter)}"
+                        : daily?.ChallengeId ?? "Тренировка",
                     Score = score,
                     Celebration = ScoreCelebrationPolicy.Evaluate(score),
                     ReferencePoints = route.ReferencePoints,
-                    PlayerPoints = new List<RecordedPoint>(recording),
-                    HasRivalScore = string.Equals(mode, "Duel", StringComparison.Ordinal) && duel != null,
-                    RivalScore = duel?.Referral?.InviterScore ?? 0.0
+                    PlayerPoints = recording,
+                    HasRivalScore = !campaign && string.Equals(mode, "Duel", StringComparison.Ordinal) && snapshot.DuelSession != null,
+                    RivalScore = campaign ? 0.0 : snapshot.DuelSession?.Referral?.InviterScore ?? 0.0
                 };
 
                 byte[] png = ResultShareCardRenderer.RenderPng(model);
-                string text = aggregate
-                    ? $"Я набрал {score:0.0}% в НЕ СБЕЙСЯ! Сможешь точнее?"
-                    : $"Мой результат в НЕ СБЕЙСЯ! — {score:0.0}%. Сможешь точнее?";
+                string text;
+                if (campaign)
+                    text = $"Уровень {campaignLevel} в НЕ СБЕЙСЯ! — {score:0.0}%. Сможешь точнее?";
+                else if (aggregate)
+                    text = $"Я набрал {score:0.0}% в НЕ СБЕЙСЯ! Сможешь точнее?";
+                else
+                    text = $"Мой результат в НЕ СБЕЙСЯ! — {score:0.0}%. Сможешь точнее?";
                 if (!string.IsNullOrWhiteSpace(challengeUrl)) text += "\n" + challengeUrl;
 
                 bool imageShared = NativeImageShare.Share(png, text);
-                AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.ShareCard, Params(
-                    "mode", mode,
+                Dictionary<string, object> analytics = Params(
+                    "mode", campaign ? "Campaign" : mode,
                     "score", score,
                     "image_shared", imageShared,
-                    "has_challenge_url", !string.IsNullOrWhiteSpace(challengeUrl)));
+                    "has_challenge_url", !string.IsNullOrWhiteSpace(challengeUrl));
+                if (campaign)
+                {
+                    analytics["level"] = campaignLevel;
+                    analytics["chapter"] = campaignChapter;
+                }
+                AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.ShareCard, analytics);
             }
             catch (Exception error)
             {
@@ -231,7 +251,10 @@ namespace DontGetSidetracked.Presentation
             {
                 _shareBusy = false;
                 if (_cardButton != null) _cardButton.interactable = true;
-                if (_cardButtonText != null) _cardButtonText.text = "📸 КАРТОЧКА";
+                if (_cardButtonText != null)
+                    _cardButtonText.text = CampaignRuntimeCoordinator.IsCampaignActive
+                        ? "📸 КАРТОЧКА УРОВНЯ"
+                        : "📸 КАРТОЧКА";
             }
         }
 
@@ -257,26 +280,7 @@ namespace DontGetSidetracked.Presentation
         private void ResolveBootstrap()
         {
             _bootstrap = FindFirstObjectByType<GameBootstrap>();
-            if (_bootstrap == null) return;
-            _bootstrapType = typeof(GameBootstrap);
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
-            _stateField = _bootstrapType.GetField("_state", flags);
-            _modeField = _bootstrapType.GetField("_mode", flags);
-            _dailyCompletedField = _bootstrapType.GetField("_dailyCompleted", flags);
-            _lastResultScoreField = _bootstrapType.GetField("_lastResultScore", flags);
-            _lastDailyScoreField = _bootstrapType.GetField("_lastDailyScore", flags);
-            _dailyField = _bootstrapType.GetField("_daily", flags);
-            _routeField = _bootstrapType.GetField("_route", flags);
-            _recordingField = _bootstrapType.GetField("_recording", flags);
-            _duelSessionField = _bootstrapType.GetField("_duelSession", flags);
-            _apiField = _bootstrapType.GetField("_api", flags);
-            _primaryField = _bootstrapType.GetField("_primary", flags);
-            _saveField = _bootstrapType.GetField("_save", flags);
         }
-
-        private string GetEnumName(FieldInfo field) => field?.GetValue(_bootstrap)?.ToString() ?? string.Empty;
-        private bool GetBool(FieldInfo field) => field?.GetValue(_bootstrap) is bool value && value;
-        private double GetDouble(FieldInfo field) => field?.GetValue(_bootstrap) is double value ? value : 0.0;
 
         private void BuildUi()
         {

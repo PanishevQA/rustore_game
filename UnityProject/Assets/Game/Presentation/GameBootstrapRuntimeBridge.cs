@@ -1,8 +1,11 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Gameplay;
+using DontGetSidetracked.Network;
+using DontGetSidetracked.Social;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,6 +37,11 @@ namespace DontGetSidetracked.Presentation
         private static readonly FieldInfo SecondaryField = typeof(GameBootstrap).GetField("_secondary", PrivateInstance);
         private static readonly FieldInfo ShareField = typeof(GameBootstrap).GetField("_share", PrivateInstance);
         private static readonly FieldInfo LastResultScoreField = typeof(GameBootstrap).GetField("_lastResultScore", PrivateInstance);
+        private static readonly FieldInfo LastDailyScoreField = typeof(GameBootstrap).GetField("_lastDailyScore", PrivateInstance);
+        private static readonly FieldInfo RouteField = typeof(GameBootstrap).GetField("_route", PrivateInstance);
+        private static readonly FieldInfo RecordingField = typeof(GameBootstrap).GetField("_recording", PrivateInstance);
+        private static readonly FieldInfo ApiField = typeof(GameBootstrap).GetField("_api", PrivateInstance);
+        private static readonly FieldInfo NavigationRevisionField = typeof(GameBootstrap).GetField("_navigationRevision", PrivateInstance);
 
         private static readonly MethodInfo StartTutorialMethod = typeof(GameBootstrap).GetMethod("StartTutorial", PrivateInstance);
         private static readonly MethodInfo BeginNavigationMethod = typeof(GameBootstrap).GetMethod("BeginNavigation", PrivateInstance);
@@ -109,8 +117,58 @@ namespace DontGetSidetracked.Presentation
                 return 0.0;
             }
 
-            object value = LastResultScoreField.GetValue(bootstrap);
-            return value == null ? 0.0 : Convert.ToDouble(value);
+            return ReadDouble(bootstrap, LastResultScoreField);
+        }
+
+        public static int NavigationRevision(GameBootstrap bootstrap)
+        {
+            if (bootstrap == null || NavigationRevisionField == null)
+            {
+                ReportMissingContractIfNeeded();
+                return int.MinValue;
+            }
+
+            return NavigationRevisionField.GetValue(bootstrap) is int value ? value : int.MinValue;
+        }
+
+        public static bool IsCurrentNavigation(GameBootstrap bootstrap, int revision) =>
+            bootstrap != null && revision != int.MinValue && NavigationRevision(bootstrap) == revision;
+
+        public static bool TryCaptureResult(GameBootstrap bootstrap, out GameBootstrapResultSnapshot snapshot)
+        {
+            snapshot = null;
+            if (bootstrap == null || !ResultContractAvailable())
+            {
+                ReportMissingContractIfNeeded();
+                return false;
+            }
+
+            try
+            {
+                List<RecordedPoint> recording = RecordingField.GetValue(bootstrap) as List<RecordedPoint>;
+                snapshot = new GameBootstrapResultSnapshot
+                {
+                    ModeName = ReadEnumName(bootstrap, ModeField),
+                    DailyCompleted = ReadBool(bootstrap, DailyCompletedField),
+                    LastResultScore = ReadDouble(bootstrap, LastResultScoreField),
+                    LastDailyScore = ReadDouble(bootstrap, LastDailyScoreField),
+                    Daily = DailyField.GetValue(bootstrap) as DailyChallengeDefinition,
+                    Route = RouteField.GetValue(bootstrap) as RouteDefinition,
+                    Recording = recording == null ? new List<RecordedPoint>() : new List<RecordedPoint>(recording),
+                    DuelSession = DuelSessionField.GetValue(bootstrap) as DuelSession,
+                    Api = ApiField.GetValue(bootstrap) as UnityGameApi,
+                    Save = SaveField.GetValue(bootstrap) as SaveData,
+                    PrimaryButton = PrimaryField.GetValue(bootstrap) as Button,
+                    NavigationRevision = NavigationRevision(bootstrap)
+                };
+                return true;
+            }
+            catch (Exception error)
+            {
+                Debug.LogError($"GameBootstrap runtime bridge failed to capture result snapshot: {error.Message}");
+                snapshot = null;
+                return false;
+            }
         }
 
         public static bool PrepareCampaign(GameBootstrap bootstrap)
@@ -226,6 +284,12 @@ namespace DontGetSidetracked.Presentation
             return field.GetValue(bootstrap) as T;
         }
 
+        private static bool ReadBool(GameBootstrap bootstrap, FieldInfo field) =>
+            field?.GetValue(bootstrap) is bool value && value;
+
+        private static double ReadDouble(GameBootstrap bootstrap, FieldInfo field) =>
+            field?.GetValue(bootstrap) is double value ? value : 0.0;
+
         private static string ReadEnumName(GameBootstrap bootstrap, FieldInfo field)
         {
             if (bootstrap == null || field == null)
@@ -271,11 +335,19 @@ namespace DontGetSidetracked.Presentation
                    ShowHomeMethod != null && StartDailyMethod != null && ShareCurrentResultMethod != null;
         }
 
+        private static bool ResultContractAvailable()
+        {
+            return ModeField != null && StateField != null && DailyCompletedField != null &&
+                   LastResultScoreField != null && LastDailyScoreField != null && DailyField != null &&
+                   RouteField != null && RecordingField != null && DuelSessionField != null &&
+                   ApiField != null && SaveField != null && PrimaryField != null && NavigationRevisionField != null;
+        }
+
         private static void ReportMissingContractIfNeeded()
         {
             if (_missingContractReported ||
                 (ModeField != null && StateField != null && PointerDownField != null &&
-                 StartTutorialMethod != null && CampaignContractAvailable()))
+                 StartTutorialMethod != null && CampaignContractAvailable() && ResultContractAvailable()))
                 return;
 
             _missingContractReported = true;
@@ -283,5 +355,21 @@ namespace DontGetSidetracked.Presentation
                 "GameBootstrap private runtime contract changed. Compatibility fallback is active; " +
                 "update GameBootstrapRuntimeBridge before release.");
         }
+    }
+
+    internal sealed class GameBootstrapResultSnapshot
+    {
+        public string ModeName;
+        public bool DailyCompleted;
+        public double LastResultScore;
+        public double LastDailyScore;
+        public DailyChallengeDefinition Daily;
+        public RouteDefinition Route;
+        public List<RecordedPoint> Recording;
+        public DuelSession DuelSession;
+        public UnityGameApi Api;
+        public SaveData Save;
+        public Button PrimaryButton;
+        public int NavigationRevision;
     }
 }
