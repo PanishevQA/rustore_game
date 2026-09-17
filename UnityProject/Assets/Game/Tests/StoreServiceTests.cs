@@ -146,6 +146,37 @@ namespace DontGetSidetracked.Tests
             Assert.That(save.Inventory, Does.Contain("skin_gold"));
         }
 
+        [Test]
+        public async Task RestoreNonConsumables_IsIdempotentEvenWithDuplicateOwnershipRows()
+        {
+            var save = SaveData.CreateNew();
+            var payments = new FakePayments
+            {
+                Restored = new[]
+                {
+                    ProductIds.StarterPack,
+                    ProductIds.StarterPack,
+                    ProductIds.RemoveAds,
+                    ProductIds.SkinNeon,
+                    ProductIds.SkinRetro,
+                    ProductIds.Hints10
+                }
+            };
+            var store = new StoreService(payments, new MemorySaveRepository(save), save);
+
+            int firstChanged = await store.RestoreAsync();
+            int secondChanged = await store.RestoreAsync();
+
+            Assert.That(firstChanged, Is.GreaterThan(0));
+            Assert.That(secondChanged, Is.EqualTo(0));
+            Assert.That(save.Hints, Is.EqualTo(0), "Consumables must never be restored as durable ownership.");
+            Assert.That(save.Entitlements.FindAll(x => x == ProductIds.StarterPack).Count, Is.EqualTo(1));
+            Assert.That(save.Entitlements.FindAll(x => x == ProductIds.RemoveAds).Count, Is.EqualTo(1));
+            Assert.That(save.Inventory.FindAll(x => x == ProductIds.SkinNeon).Count, Is.EqualTo(1));
+            Assert.That(save.Inventory.FindAll(x => x == ProductIds.SkinRetro).Count, Is.EqualTo(1));
+            Assert.That(save.Inventory.FindAll(x => x == "skin_gold").Count, Is.EqualTo(1));
+        }
+
         private sealed class MemorySaveRepository : ISaveRepository
         {
             private SaveData _save;
