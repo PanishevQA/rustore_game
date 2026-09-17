@@ -22,6 +22,7 @@ jobs:
           test -f UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           test -f UnityProject/Assets/Game/Presentation/CampaignVisualThemeCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/ExtendedUiThemeCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/ReferralRuntimePolicy.cs
           test -f UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
           test -f UnityProject/Assets/Game/Editor/LocalQaTools.cs
 
@@ -45,6 +46,12 @@ jobs:
           grep -q 'public void ClosePanel' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           test ! -f UnityProject/Assets/Game/Presentation/CampaignMetaSummaryCoordinator.cs
 
+          # Async RuStore callbacks must not overwrite a newer Meta screen after navigation/close.
+          grep -q 'BeginPanelNavigation' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'IsCurrentPanel(revision)' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q '_lastStoreProducts' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q '_panelRevision++' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+
           # Mobile Back uses stable overlay contracts instead of private-state reflection for product overlays.
           grep -q 'public bool IsOpen' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'public void Close()' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
@@ -54,7 +61,17 @@ jobs:
           grep -q 'training.Close()' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
           grep -q 'campaign.IsOpen' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
           grep -q 'campaign.Close()' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
-          grep -q 'meta.IsPanelOpen' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'public bool IsNotificationPromptOpen' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
+          grep -q 'public bool DismissNotificationPrompt()' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
+          grep -q '_notificationPromptDeferredForSession' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
+          grep -q 'platform.DismissNotificationPrompt()' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+
+          # Safe-area geometry belongs to a wrapper, never to individual layout anchors. Full-bleed background stays outside.
+          grep -q 'SafeAreaRootName = "SafeAreaRoot"' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+          grep -q 'FullBleedBackgroundName = "VisualBackground"' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+          grep -q 'safeRoot.anchorMin = safeMin' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+          grep -q 'safeRoot.anchorMax = safeMax' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+          grep -q 'SetParent(safeRoot, false)' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
 
           # Earned currency must have a real, bounded local use without replacing RuStore prices.
           grep -q 'HintPriceCoins = 30' UnityProject/Assets/Game/Economy/LocalRewardEconomyService.cs
@@ -102,16 +119,42 @@ jobs:
             exit 1
           fi
 
+          # Optional HTTP compatibility path must preserve the same 1..3 Daily route-count contract.
+          grep -q 'int expected = challenge.RouteCount' UnityProject/Assets/Game/Network/UnityGameApi.cs
+          grep -q 'new RouteAttemptRequestDto\[expected\]' UnityProject/Assets/Game/Network/UnityGameApi.cs
+          if grep -n 'replays.Count != 3' UnityProject/Assets/Game/Network/UnityGameApi.cs; then
+            echo 'Legacy fixed three-route assumption returned to UnityGameApi.'
+            exit 1
+          fi
+
           # Campaign analytics must survive the bounded local analytics allow-list.
           grep -q 'LevelStart = "level_start"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
           grep -q 'LevelComplete = "level_complete"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
           grep -q 'CampaignReward = "campaign_reward"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
           grep -q 'CoinSpend = "coin_spend"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
 
-          # Rewarded hint is opt-in and must not overlap the primary campaign CTA again.
+          # Rewarded hint is opt-in and both ad formats must stay behind every Home overlay/update blocker.
           grep -q 'new Vector2(0.20f, 0.276f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'ShowRewardedAsync' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'save.Hints++' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'training.IsOpen' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'campaign.IsOpen' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'MandatoryUpdateCanvas' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'training.IsOpen' UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs
+          grep -q 'campaign.IsOpen' UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs
+          grep -q 'MandatoryUpdateCanvas' UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs
+          grep -q 'RuntimeInitializeLoadType.SubsystemRegistration' UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs
+
+          # Offline runtime accepts only locally decodable challenge referrals and clears permanently bad pending IDs.
+          grep -q 'OfflineChallengeCodec.TryDecode' UnityProject/Assets/Game/Presentation/ReferralRuntimePolicy.cs
+          grep -q 'save.PendingReferralId = string.Empty' UnityProject/Assets/Game/Presentation/ReferralRuntimePolicy.cs
+          grep -q 'ReferralRuntimePolicy.TryNormalizeForCurrentRuntime' UnityProject/Assets/Game/Presentation/InstallReferrerCapture.cs
+          grep -q 'ReferralRuntimePolicy.TryNormalizeForCurrentRuntime' UnityProject/Assets/Game/Presentation/ReferralDeepLinkReceiver.cs
+
+          # Local diagnostics/session services reset static runtime state for Editor Play without domain reload.
+          grep -q 'RuntimeInitializeLoadType.SubsystemRegistration' UnityProject/Assets/Game/Presentation/AnalyticsLifecycle.cs
+          grep -q 'Service = null' UnityProject/Assets/Game/Presentation/AnalyticsLifecycle.cs
+          grep -q 'RuntimeInitializeLoadType.SubsystemRegistration' UnityProject/Assets/Game/Presentation/LocalCrashLog.cs
 
           # Daily reminders stay local, continue across missed app launches, and never pop over active gameplay.
           grep -q 'RepeatInterval = TimeSpan.FromDays(1)' UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
