@@ -49,6 +49,7 @@ namespace DontGetSidetracked.EditorTools
             }
 
             EditorUserBuildSettings.buildAppBundle = true;
+            EditorUserBuildSettings.development = false;
 
             string[] scenes = EditorBuildSettings.scenes
                 .Where(scene => scene.enabled && !string.IsNullOrWhiteSpace(scene.path))
@@ -83,7 +84,7 @@ namespace DontGetSidetracked.EditorTools
                 throw new BuildFailedException("Unity reported success but the production AAB file was not created: " + outputPath);
 
             string metadataPath = Path.ChangeExtension(outputPath, ".release.json");
-            WriteReleaseMetadata(metadataPath, outputPath);
+            WriteReleaseMetadata(metadataPath, outputPath, report.summary);
 
             Debug.Log($"Production Android AAB created: {outputPath}\nRelease metadata: {metadataPath}");
         }
@@ -113,7 +114,7 @@ namespace DontGetSidetracked.EditorTools
             return Path.GetFullPath(path);
         }
 
-        private static void WriteReleaseMetadata(string metadataPath, string outputPath)
+        private static void WriteReleaseMetadata(string metadataPath, string outputPath, BuildSummary summary)
         {
             string gitCommit = Environment.GetEnvironmentVariable(GitShaEnvironmentVariable);
             if (string.IsNullOrWhiteSpace(gitCommit))
@@ -125,9 +126,12 @@ namespace DontGetSidetracked.EditorTools
                 version = PlayerSettings.bundleVersion ?? string.Empty,
                 versionCode = PlayerSettings.Android.bundleVersionCode,
                 unityVersion = Application.unityVersion ?? string.Empty,
+                buildGuid = summary.guid.ToString(),
                 builtAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
                 gitCommit = gitCommit ?? string.Empty,
-                outputPath = Path.GetFullPath(outputPath)
+                artifactFile = Path.GetFileName(outputPath),
+                outputPath = Path.GetFullPath(outputPath),
+                totalSizeBytes = summary.totalSize
             };
 
             File.WriteAllText(metadataPath, JsonUtility.ToJson(metadata, true));
@@ -149,9 +153,12 @@ namespace DontGetSidetracked.EditorTools
             public string version;
             public int versionCode;
             public string unityVersion;
+            public string buildGuid;
             public string builtAtUtc;
             public string gitCommit;
+            public string artifactFile;
             public string outputPath;
+            public ulong totalSizeBytes;
         }
     }
 }
