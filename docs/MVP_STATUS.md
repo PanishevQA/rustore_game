@@ -1,4 +1,4 @@
-# Состояние проекта — 2026-09-16
+# Состояние проекта — 2026-09-17
 
 > Проект не оценивается одним процентом «готовности»: repo-side функционал, визуальная приёмка и внешняя Android/RuStore интеграция проверяются разными способами.
 
@@ -45,8 +45,10 @@
 - streak, personal best и per-Daily best;
 - Training с явным выбором **Easy / Medium / Hard / Random**;
 - friend Duel;
-- self-contained L3 challenge token (date/seed/version/routeCount/display-times/score);
-- backward compatibility L1/L2;
+- текущий self-contained **L4 challenge token**: date/seed/version/routeCount/display-times/score + 16-bit checksum;
+- backward compatibility L1/L2/L3;
+- legacy L3 reshare сохраняет identity и выпускает новый L4;
+- битый L4 checksum отклоняется и codec, и `ReferralLinkParser`;
 - rematch;
 - text share + PNG result card;
 - deeplink/referrer adapters без нашего backend;
@@ -99,7 +101,7 @@ Meta/Training/Campaign overlays имеют публичные open/close state c
 5. `unity-static-validation`;
 6. `product-flow-guard`.
 
-Pure suite покрывает deterministic routes, scoring, Daily, save migrations/repair, campaign 60-level catalog, star thresholds, unlocks, reward idempotency и coin→hint exchange. Guards защищают offline architecture, viral token fairness, Android manifest/share contracts, RuStore targets, shared save и видимые Campaign/Training flows.
+Pure suite покрывает deterministic routes, scoring, Daily, save migrations/repair, campaign 60-level catalog, star thresholds, unlocks, reward idempotency, coin→hint exchange и L4 checksum/legacy challenge compatibility. Guards защищают offline architecture, viral token fairness/checksum, Android manifest/share contracts, RuStore targets, shared save и видимые Campaign/Training flows.
 
 ## RuStore / Android release target
 
