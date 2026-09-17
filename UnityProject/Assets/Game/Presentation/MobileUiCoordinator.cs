@@ -147,17 +147,8 @@ namespace DontGetSidetracked.Presentation
             startTutorial?.Invoke(bootstrap, null);
         }
 
-        private static bool TryDismissNotificationPrompt(RuntimePlatformCoordinator platform)
-        {
-            if (platform == null) return false;
-            Type type = typeof(RuntimePlatformCoordinator);
-            FieldInfo openField = type.GetField("_notificationPromptOpen", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (!(openField?.GetValue(platform) is bool isOpen) || !isOpen) return false;
-
-            MethodInfo decline = type.GetMethod("DeclineNotificationValuePrompt", BindingFlags.Instance | BindingFlags.NonPublic);
-            decline?.Invoke(platform, null);
-            return true;
-        }
+        private static bool TryDismissNotificationPrompt(RuntimePlatformCoordinator platform) =>
+            platform != null && platform.IsNotificationPromptOpen && platform.DismissNotificationPrompt();
 
         private static bool TryCloseMetaPanel(MetaMenuOverlay meta)
         {
