@@ -23,12 +23,15 @@ missing = [value for value in required if value not in text]
 if missing:
     raise SystemExit("Async navigation contract missing: " + ", ".join(missing))
 
-# Async completion code must not read mutable current session identifiers after await.
-for forbidden in [
-    '"challenge_id", _daily.ChallengeId',
-    '"referrer_id", _duelSession.Referral.ReferralId',
-]:
-    if forbidden in text:
-        raise SystemExit(f"Mutable async state leaked into completion callback: {forbidden}")
+# Completion methods must use captured session identity after await, not mutable current fields.
+daily_completion = text.split("private async void CompleteDaily()", 1)[1].split("private async void CompleteDuel()", 1)[0]
+duel_completion = text.split("private async void CompleteDuel()", 1)[1].split("private void NextDailyRoute()", 1)[0]
+
+if '"challenge_id", _daily.ChallengeId' in daily_completion:
+    raise SystemExit("Daily completion reads mutable _daily identity after await.")
+if '"challenge_id", _daily.ChallengeId' in duel_completion:
+    raise SystemExit("Duel completion reads mutable _daily identity after await.")
+if '"referrer_id", _duelSession.Referral.ReferralId' in duel_completion:
+    raise SystemExit("Duel completion reads mutable _duelSession identity after await.")
 
 print("Async navigation validation passed.")
