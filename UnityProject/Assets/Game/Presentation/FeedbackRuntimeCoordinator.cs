@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using DontGetSidetracked.Core;
 using UnityEngine;
 
@@ -22,9 +21,7 @@ namespace DontGetSidetracked.Presentation
         private AudioClip _positiveClip;
         private AudioClip _neutralClip;
         private GameBootstrap _bootstrap;
-        private FieldInfo _stateField;
-        private FieldInfo _scoreField;
-        private string _previousState = string.Empty;
+        private bool _wasResult;
         private float _nextPoll;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -61,19 +58,12 @@ namespace DontGetSidetracked.Presentation
             if (Time.unscaledTime < _nextPoll) return;
             _nextPoll = Time.unscaledTime + 0.05f;
             if (_bootstrap == null) ResolveBootstrap();
-            if (_bootstrap == null || _stateField == null) return;
+            if (_bootstrap == null) return;
 
-            string state = _stateField.GetValue(_bootstrap)?.ToString() ?? string.Empty;
-            if (!string.Equals(_previousState, "Result", StringComparison.Ordinal) &&
-                string.Equals(state, "Result", StringComparison.Ordinal))
-            {
-                double score = 0;
-                object value = _scoreField?.GetValue(_bootstrap);
-                if (value is double result) score = result;
-                PlayResultFeedback(score);
-            }
-
-            _previousState = state;
+            bool isResult = GameBootstrapRuntimeBridge.IsResult(_bootstrap);
+            if (!_wasResult && isResult)
+                PlayResultFeedback(GameBootstrapRuntimeBridge.LastResultScore(_bootstrap));
+            _wasResult = isResult;
         }
 
         public static void PreviewSound()
@@ -108,18 +98,7 @@ namespace DontGetSidetracked.Presentation
         private void ResolveBootstrap()
         {
             _bootstrap = FindFirstObjectByType<GameBootstrap>();
-            if (_bootstrap == null)
-            {
-                _stateField = null;
-                _scoreField = null;
-                _previousState = string.Empty;
-                return;
-            }
-
-            Type type = typeof(GameBootstrap);
-            _stateField = type.GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic);
-            _scoreField = type.GetField("_lastResultScore", BindingFlags.Instance | BindingFlags.NonPublic);
-            _previousState = _stateField?.GetValue(_bootstrap)?.ToString() ?? string.Empty;
+            _wasResult = _bootstrap != null && GameBootstrapRuntimeBridge.IsResult(_bootstrap);
         }
 
         private static AudioClip CreateTone(string name, float frequency, float durationSeconds)
