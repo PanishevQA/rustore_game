@@ -42,12 +42,15 @@ namespace DontGetSidetracked.Presentation
         private static readonly FieldInfo RecordingField = typeof(GameBootstrap).GetField("_recording", PrivateInstance);
         private static readonly FieldInfo ApiField = typeof(GameBootstrap).GetField("_api", PrivateInstance);
         private static readonly FieldInfo NavigationRevisionField = typeof(GameBootstrap).GetField("_navigationRevision", PrivateInstance);
+        private static readonly FieldInfo TrainingIndexField = typeof(GameBootstrap).GetField("_trainingIndex", PrivateInstance);
+        private static readonly FieldInfo ReferenceGraphicField = typeof(GameBootstrap).GetField("_referenceGraphic", PrivateInstance);
 
         private static readonly MethodInfo StartTutorialMethod = typeof(GameBootstrap).GetMethod("StartTutorial", PrivateInstance);
         private static readonly MethodInfo BeginNavigationMethod = typeof(GameBootstrap).GetMethod("BeginNavigation", PrivateInstance);
         private static readonly MethodInfo BeginRouteMethod = typeof(GameBootstrap).GetMethod("BeginRoute", PrivateInstance);
         private static readonly MethodInfo ShowHomeMethod = typeof(GameBootstrap).GetMethod("ShowHome", PrivateInstance);
         private static readonly MethodInfo StartDailyMethod = typeof(GameBootstrap).GetMethod("StartDaily", PrivateInstance);
+        private static readonly MethodInfo StartTrainingMethod = typeof(GameBootstrap).GetMethod("StartTraining", PrivateInstance);
         private static readonly MethodInfo ShareCurrentResultMethod = typeof(GameBootstrap).GetMethod("ShareCurrentResult", PrivateInstance);
 
         private static bool _missingContractReported;
@@ -87,8 +90,6 @@ namespace DontGetSidetracked.Presentation
             if (StateField == null)
             {
                 ReportMissingContractIfNeeded();
-                // Fail safe: if the legacy state contract changed, never allow a non-Home screen
-                // to resume as if an interrupted gesture/preview was still valid.
                 return !IsHome(bootstrap);
             }
 
@@ -169,6 +170,76 @@ namespace DontGetSidetracked.Presentation
                 snapshot = null;
                 return false;
             }
+        }
+
+        public static bool StartTrainingDifficulty(GameBootstrap bootstrap, int difficulty)
+        {
+            if (bootstrap == null || difficulty < 0 || difficulty > 2 ||
+                TrainingIndexField == null || StartTrainingMethod == null)
+            {
+                ReportMissingContractIfNeeded();
+                return false;
+            }
+
+            try
+            {
+                // GameBootstrap increments _trainingIndex before selecting (_trainingIndex % 3).
+                int beforeIncrement = difficulty == 0 ? 2 : difficulty - 1;
+                TrainingIndexField.SetValue(bootstrap, beforeIncrement);
+                StartTrainingMethod.Invoke(bootstrap, null);
+                return true;
+            }
+            catch (Exception error)
+            {
+                Debug.LogError($"GameBootstrap runtime bridge failed to start Training: {error.Message}");
+                return false;
+            }
+        }
+
+        public static bool TryCaptureHintContext(GameBootstrap bootstrap, out GameBootstrapHintContext context)
+        {
+            context = null;
+            if (bootstrap == null || !TrainingHintContractAvailable())
+            {
+                ReportMissingContractIfNeeded();
+                return false;
+            }
+
+            context = new GameBootstrapHintContext
+            {
+                ModeName = ReadEnumName(bootstrap, ModeField),
+                IsDrawing = string.Equals(ReadEnumName(bootstrap, StateField), "Drawing", StringComparison.Ordinal),
+                PointerDown = ReadBool(bootstrap, PointerDownField),
+                Route = RouteField.GetValue(bootstrap) as RouteDefinition,
+                Daily = DailyField.GetValue(bootstrap) as DailyChallengeDefinition
+            };
+            return true;
+        }
+
+        public static bool ShowHintReference(GameBootstrap bootstrap, RouteDefinition route)
+        {
+            if (bootstrap == null || route == null || ReferenceGraphicField == null)
+            {
+                ReportMissingContractIfNeeded();
+                return false;
+            }
+
+            RouteDefinition current = RouteField?.GetValue(bootstrap) as RouteDefinition;
+            RouteGraphic reference = ReferenceGraphicField.GetValue(bootstrap) as RouteGraphic;
+            if (!ReferenceEquals(current, route) || reference == null) return false;
+
+            reference.color = new Color(0.1f, 0.9f, 1f, 0.9f);
+            reference.SetPoints(route.ReferencePoints);
+            return true;
+        }
+
+        public static void ClearHintReferenceIfCurrentDrawing(GameBootstrap bootstrap, RouteDefinition route)
+        {
+            if (bootstrap == null || route == null || ReferenceGraphicField == null) return;
+            string state = ReadEnumName(bootstrap, StateField);
+            RouteDefinition current = RouteField?.GetValue(bootstrap) as RouteDefinition;
+            if (!string.Equals(state, "Drawing", StringComparison.Ordinal) || !ReferenceEquals(current, route)) return;
+            (ReferenceGraphicField.GetValue(bootstrap) as RouteGraphic)?.Clear();
         }
 
         public static bool PrepareCampaign(GameBootstrap bootstrap)
@@ -343,11 +414,19 @@ namespace DontGetSidetracked.Presentation
                    ApiField != null && SaveField != null && PrimaryField != null && NavigationRevisionField != null;
         }
 
+        private static bool TrainingHintContractAvailable()
+        {
+            return ModeField != null && StateField != null && PointerDownField != null &&
+                   RouteField != null && DailyField != null && TrainingIndexField != null &&
+                   ReferenceGraphicField != null && StartTrainingMethod != null;
+        }
+
         private static void ReportMissingContractIfNeeded()
         {
             if (_missingContractReported ||
                 (ModeField != null && StateField != null && PointerDownField != null &&
-                 StartTutorialMethod != null && CampaignContractAvailable() && ResultContractAvailable()))
+                 StartTutorialMethod != null && CampaignContractAvailable() && ResultContractAvailable() &&
+                 TrainingHintContractAvailable()))
                 return;
 
             _missingContractReported = true;
@@ -371,5 +450,14 @@ namespace DontGetSidetracked.Presentation
         public SaveData Save;
         public Button PrimaryButton;
         public int NavigationRevision;
+    }
+
+    internal sealed class GameBootstrapHintContext
+    {
+        public string ModeName;
+        public bool IsDrawing;
+        public bool PointerDown;
+        public RouteDefinition Route;
+        public DailyChallengeDefinition Daily;
     }
 }
