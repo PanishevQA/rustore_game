@@ -6,8 +6,8 @@ using UnityEngine;
 namespace DontGetSidetracked.Presentation
 {
     /// <summary>
-    /// Applies the locally selected trail cosmetic only while a route is active.
-    /// The Player graphic is empty during preview, and Result colors remain score-driven in GameBootstrap.
+    /// Applies the locally selected trail cosmetic only during Drawing.
+    /// Result colors remain score-driven in GameBootstrap for readability.
     /// </summary>
     public sealed class CosmeticRuntimeCoordinator : MonoBehaviour
     {
@@ -38,7 +38,8 @@ namespace DontGetSidetracked.Presentation
             _nextPoll = Time.unscaledTime + 0.2f;
             if (_bootstrap == null || _playerGraphic == null) ResolveRuntime();
             if (_bootstrap == null || _playerGraphic == null) return;
-            if (!GameBootstrapRuntimeBridge.IsActiveRound(_bootstrap)) return;
+            if (!GameBootstrapRuntimeBridge.TryCaptureHintContext(_bootstrap, out GameBootstrapHintContext context) ||
+                !context.IsDrawing) return;
 
             SaveData save = _saveRepository.Load();
             var selection = new CosmeticSelectionService(_saveRepository, save);
