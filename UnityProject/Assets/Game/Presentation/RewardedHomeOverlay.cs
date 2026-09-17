@@ -133,7 +133,9 @@ namespace DontGetSidetracked.Presentation
             if (campaign != null && campaign.IsOpen) return true;
 
             RuntimePlatformCoordinator platform = FindFirstObjectByType<RuntimePlatformCoordinator>();
-            return platform != null && platform.IsNotificationPromptOpen;
+            if (platform != null && platform.IsNotificationPromptOpen) return true;
+
+            return GameObject.Find("MandatoryUpdateCanvas") != null;
         }
 
         private void ResolveBootstrap()
@@ -165,7 +167,6 @@ namespace DontGetSidetracked.Presentation
             var go = new GameObject("RewardedHint", typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(_canvas.transform, false);
             RectTransform rect = go.GetComponent<RectTransform>();
-            // Dedicated strip between the Home hero (ends around .305) and the Levels CTA (ends at .270).
             rect.anchorMin = new Vector2(0.20f, 0.276f);
             rect.anchorMax = new Vector2(0.80f, 0.301f);
             rect.offsetMin = Vector2.zero;
