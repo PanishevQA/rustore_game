@@ -12,7 +12,7 @@ namespace DontGetSidetracked.Presentation
 {
     /// <summary>
     /// Small opt-in rewarded surface for the offline MVP. A completed reward grants one local hint.
-    /// It is visible only on Home and never interrupts an active game session.
+    /// It is visible only on unobstructed Home and never interrupts an active game session or menu.
     /// </summary>
     public sealed class RewardedHomeOverlay : MonoBehaviour
     {
@@ -57,14 +57,14 @@ namespace DontGetSidetracked.Presentation
                            ads != null &&
                            ads.IsRewardedReady &&
                            IsSafeHome() &&
-                           !IsMetaPanelOpen();
+                           !IsAnyHomeOverlayOpen();
             SetVisible(visible);
             if (visible) RefreshLabel();
         }
 
         private async void ClaimRewardedHint()
         {
-            if (_inProgress) return;
+            if (_inProgress || IsAnyHomeOverlayOpen()) return;
             IAdService ads = AdRuntimeCoordinator.Ads;
             if (ads == null || !ads.IsRewardedReady || !IsSafeHome()) return;
 
@@ -121,10 +121,19 @@ namespace DontGetSidetracked.Presentation
                    string.Equals(state.ToString(), "Idle", StringComparison.Ordinal);
         }
 
-        private static bool IsMetaPanelOpen()
+        private static bool IsAnyHomeOverlayOpen()
         {
             MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
-            return meta != null && meta.IsPanelOpen;
+            if (meta != null && meta.IsPanelOpen) return true;
+
+            TrainingMenuCoordinator training = FindFirstObjectByType<TrainingMenuCoordinator>();
+            if (training != null && training.IsOpen) return true;
+
+            CampaignLevelMenuOverlay campaign = FindFirstObjectByType<CampaignLevelMenuOverlay>();
+            if (campaign != null && campaign.IsOpen) return true;
+
+            RuntimePlatformCoordinator platform = FindFirstObjectByType<RuntimePlatformCoordinator>();
+            return platform != null && platform.IsNotificationPromptOpen;
         }
 
         private void ResolveBootstrap()
