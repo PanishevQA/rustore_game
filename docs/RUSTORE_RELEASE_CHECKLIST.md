@@ -83,16 +83,18 @@
 
 - [ ] Share содержит `nesbeisya://challenge/<token>` для установленной игры.
 - [ ] Share содержит RuStore install URL с тем же token в `referrerId` для нового пользователя.
-- [ ] Challenge token L3 содержит дату, seed, generatorVersion, `routeCount`, exact display-time profile и score отправителя.
+- [ ] Текущий Challenge token **L4** содержит дату, seed, generatorVersion, `routeCount`, exact display-time profile, score отправителя и 16-bit checksum payload.
 - [ ] L1 challenge tokens продолжают открываться как 3 маршрута с default display times.
 - [ ] L2 challenge tokens продолжают сохранять routeCount и открываются с default display times.
+- [ ] Legacy L3 tokens продолжают сохранять routeCount + exact display-time profile и корректно открываются.
 - [ ] Install Referrer читается один раз и сохраняется локально до обработки.
 - [ ] После установки приложение восстанавливает тот же duel без обращения к нашей БД.
 - [ ] Seed + generatorVersion + routeCount приглашённого challenge совпадают с challenge отправителя.
-- [ ] Exact display time каждого маршрута L3 совпадает с challenge отправителя даже после изменения Remote Config на устройстве друга.
-- [ ] Reshare уже полученного L3 challenge сохраняет исходные seed/version/routeCount/display-times, меняя только score нового отправителя.
+- [ ] Exact display time каждого маршрута L4 совпадает с challenge отправителя даже после изменения Remote Config на устройстве друга.
+- [ ] Reshare legacy L3 challenge сохраняет исходные seed/version/routeCount/display-times, меняет только score нового отправителя и выпускает новый L4 token.
 - [ ] Повреждённый/невалидный token отклоняется безопасно и не ломает Home.
-- [ ] Максимальный трёхмаршрутный L3 token корректно проходит deeplink + Install Referrer путь.
+- [ ] Single-character mutation текущего L4 payload/checksum отклоняется `OfflineChallengeCodec` и `ReferralLinkParser`.
+- [ ] Максимальный трёхмаршрутный L4 token имеет 40 символов и корректно проходит deeplink + Install Referrer путь.
 
 ## Daily / gameplay
 
