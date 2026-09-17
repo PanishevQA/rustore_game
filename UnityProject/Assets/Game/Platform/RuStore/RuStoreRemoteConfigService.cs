@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using DontGetSidetracked.Core;
 using DontGetSidetracked.Platform.Android;
 using DontGetSidetracked.Services;
 using UnityEngine;
@@ -18,6 +19,9 @@ namespace DontGetSidetracked.Platform.RuStore
         private readonly string _appId;
         private readonly string _account;
         private readonly string _cachePath;
+        private readonly string _cacheBackupPath;
+        private readonly string _cacheTempPath;
+        private readonly object _cacheGate = new object();
         private Snapshot _snapshot;
 
         public string MinSupportedVersion => _snapshot.minSupportedVersion;
@@ -28,6 +32,8 @@ namespace DontGetSidetracked.Platform.RuStore
             _appId = appId ?? string.Empty;
             _account = account ?? string.Empty;
             _cachePath = Path.Combine(Application.persistentDataPath, cacheFileName);
+            _cacheBackupPath = _cachePath + ".bak";
+            _cacheTempPath = _cachePath + ".tmp";
             _snapshot = LoadCache() ?? Snapshot.CreateDefaults();
             Normalize(_snapshot);
         }
@@ -358,30 +364,137 @@ namespace DontGetSidetracked.Platform.RuStore
 
         private Snapshot LoadCache()
         {
-            try
+            lock (_cacheGate)
             {
-                if (!File.Exists(_cachePath)) return null;
-                return JsonUtility.FromJson<Snapshot>(File.ReadAllText(_cachePath));
-            }
-            catch (Exception error)
-            {
-                Debug.LogWarning($"RuStore Remote Config cache ignored: {error.Message}");
+                Snapshot primary = TryLoadCacheFile(_cachePath);
+                Snapshot interruptedWrite = TryLoadCacheFile(_cacheTempPath);
+                Snapshot loaded = primary;
+
+                if (ShouldRecoverInterruptedCache(primary, interruptedWrite))
+                {
+                    loaded = interruptedWrite;
+                    PromoteInterruptedCache(preservePrimaryAsBackup: primary != null);
+                }
+                else if (File.Exists(_cacheTempPath))
+                {
+                    TryDelete(_cacheTempPath);
+                }
+
+                if (loaded != null) return loaded;
+
+                Snapshot backup = TryLoadCacheFile(_cacheBackupPath);
+                if (backup != null)
+                {
+                    RestoreCacheFromBackup(overwriteExisting: true);
+                    return backup;
+                }
+
+                TryDelete(_cachePath);
+                TryDelete(_cacheBackupPath);
+                TryDelete(_cacheTempPath);
                 return null;
             }
         }
 
         private void SaveCache()
         {
+            lock (_cacheGate)
+            {
+                string tempPath = _cacheTempPath;
+                try
+                {
+                    File.WriteAllText(tempPath, JsonUtility.ToJson(_snapshot));
+                    if (File.Exists(_cachePath))
+                    {
+                        File.Copy(_cachePath, _cacheBackupPath, true);
+                        File.Delete(_cachePath);
+                    }
+                    File.Move(tempPath, _cachePath);
+                }
+                catch (Exception error)
+                {
+                    RestoreCacheFromBackup(overwriteExisting: false);
+                    TryDelete(tempPath);
+                    Debug.LogWarning($"RuStore Remote Config cache save failed: {error.Message}");
+                }
+            }
+        }
+
+        private bool ShouldRecoverInterruptedCache(Snapshot primary, Snapshot interruptedWrite)
+        {
+            bool primaryValid = primary != null;
+            bool tempValid = interruptedWrite != null;
+            if (!tempValid || !primaryValid)
+                return SaveRecoveryPolicy.ShouldRecoverInterruptedWrite(primaryValid, tempValid, default, default);
+            if (!File.Exists(_cachePath) || !File.Exists(_cacheTempPath)) return false;
+
             try
             {
-                string temp = _cachePath + ".tmp";
-                File.WriteAllText(temp, JsonUtility.ToJson(_snapshot));
-                if (File.Exists(_cachePath)) File.Delete(_cachePath);
-                File.Move(temp, _cachePath);
+                DateTime primaryWriteUtc = File.GetLastWriteTimeUtc(_cachePath);
+                DateTime tempWriteUtc = File.GetLastWriteTimeUtc(_cacheTempPath);
+                return SaveRecoveryPolicy.ShouldRecoverInterruptedWrite(true, true, primaryWriteUtc, tempWriteUtc);
             }
             catch (Exception error)
             {
-                Debug.LogWarning($"RuStore Remote Config cache save failed: {error.Message}");
+                Debug.LogWarning($"RuStore Remote Config cache timestamp check failed: {error.Message}");
+                return false;
+            }
+        }
+
+        private void PromoteInterruptedCache(bool preservePrimaryAsBackup)
+        {
+            try
+            {
+                if (preservePrimaryAsBackup && File.Exists(_cachePath))
+                    File.Copy(_cachePath, _cacheBackupPath, true);
+
+                File.Copy(_cacheTempPath, _cachePath, true);
+                TryDelete(_cacheTempPath);
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"RuStore Remote Config interrupted cache recovery failed: {error.Message}");
+            }
+        }
+
+        private void RestoreCacheFromBackup(bool overwriteExisting)
+        {
+            if (!File.Exists(_cacheBackupPath)) return;
+            if (!overwriteExisting && File.Exists(_cachePath)) return;
+            try
+            {
+                File.Copy(_cacheBackupPath, _cachePath, true);
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"RuStore Remote Config backup restore failed: {error.Message}");
+            }
+        }
+
+        private static Snapshot TryLoadCacheFile(string path)
+        {
+            if (!File.Exists(path)) return null;
+            try
+            {
+                return JsonUtility.FromJson<Snapshot>(File.ReadAllText(path));
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"RuStore Remote Config cache ignored ({Path.GetFileName(path)}): {error.Message}");
+                return null;
+            }
+        }
+
+        private static void TryDelete(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"RuStore Remote Config stale cache file could not be removed ({Path.GetFileName(path)}): {error.Message}");
             }
         }
 
