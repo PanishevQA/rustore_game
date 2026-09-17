@@ -30,7 +30,9 @@ namespace DontGetSidetracked.Presentation
         private StoreService _store;
         private CosmeticSelectionService _cosmetics;
         private GameSettingsService _settings;
+        private IReadOnlyList<StoreProduct> _lastStoreProducts;
         private bool _panelOpen;
+        private int _panelRevision;
         private float _nextVisibilityCheck;
 
         public bool IsPanelOpen => _panelOpen;
@@ -87,9 +89,18 @@ namespace DontGetSidetracked.Presentation
             return mode != null && string.Equals(mode.ToString(), "Home", StringComparison.Ordinal);
         }
 
-        private void OpenStatistics()
+        private int BeginPanelNavigation()
         {
             _panelOpen = true;
+            _panelRevision++;
+            return _panelRevision;
+        }
+
+        private bool IsCurrentPanel(int revision) => _panelOpen && revision == _panelRevision;
+
+        private void OpenStatistics()
+        {
+            BeginPanelNavigation();
             RebuildLocalServices();
             ShowPanel("СТАТИСТИКА", BuildStatisticsText());
             AddAction("НАСТРОЙКИ", OpenSettings);
@@ -124,7 +135,7 @@ namespace DontGetSidetracked.Presentation
 
         private void OpenSettings()
         {
-            _panelOpen = true;
+            BeginPanelNavigation();
             RebuildLocalServices();
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.SettingsOpen, Params("surface", "meta"));
             RenderSettings();
@@ -173,7 +184,7 @@ namespace DontGetSidetracked.Presentation
 
         private void OpenCosmetics()
         {
-            _panelOpen = true;
+            BeginPanelNavigation();
             RebuildLocalServices();
             RenderCosmetics();
         }
@@ -224,7 +235,7 @@ namespace DontGetSidetracked.Presentation
 
         private async void OpenStore()
         {
-            _panelOpen = true;
+            int revision = BeginPanelNavigation();
             ShowPanel("МАГАЗИН", "Загружаем каталог RuStore…");
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.StoreOpen, Params("surface", "home"));
 
@@ -232,11 +243,14 @@ namespace DontGetSidetracked.Presentation
             {
                 RebuildLocalServices();
                 IReadOnlyList<StoreProduct> products = await _store.LoadCatalogAsync();
+                if (!IsCurrentPanel(revision)) return;
+                _lastStoreProducts = products;
                 RenderStore(products);
             }
             catch (Exception error)
             {
                 Debug.LogWarning($"Store unavailable: {error.Message}");
+                if (!IsCurrentPanel(revision)) return;
                 _panelBody.text = "Магазин сейчас недоступен. Игра продолжает работать полностью локально.";
                 ClearActions();
                 AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases);
@@ -244,10 +258,11 @@ namespace DontGetSidetracked.Presentation
             }
         }
 
-        private void RenderStore(IReadOnlyList<StoreProduct> products)
+        private void RenderStore(IReadOnlyList<StoreProduct> products, string message = null)
         {
             ClearActions();
-            _panelBody.text = $"Подсказки: {_store.Save.Hints}\nЦена всегда приходит из RuStore.";
+            string prefix = string.IsNullOrWhiteSpace(message) ? string.Empty : message + "\n\n";
+            _panelBody.text = prefix + $"Подсказки: {_store.Save.Hints}\nЦена всегда приходит из RuStore.";
 
             if (products == null || products.Count == 0)
             {
@@ -277,6 +292,7 @@ namespace DontGetSidetracked.Presentation
 
         private async void Purchase(string productId)
         {
+            int revision = _panelRevision;
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseStart, Params("product_id", productId));
             _panelBody.text = $"Покупка {ProductLabel(productId)}…";
             SetActionsInteractable(false);
@@ -285,12 +301,15 @@ namespace DontGetSidetracked.Presentation
             {
                 StorePurchaseResult result = await _store.PurchaseAsync(productId);
                 _save = _store.Save;
+                if (!IsCurrentPanel(revision)) return;
+
                 if (result?.Payment?.Outcome == PurchaseOutcome.Completed && result.Verified)
                 {
                     AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseSuccess, Params("product_id", productId));
-                    _panelBody.text = result.GrantApplied
+                    string message = result.GrantApplied
                         ? "Покупка подтверждена RuStore и применена на этом устройстве."
                         : "Покупка уже была применена ранее.";
+                    RenderStore(_lastStoreProducts, message);
                 }
                 else if (result?.Payment?.Outcome == PurchaseOutcome.Cancelled)
                 {
@@ -313,34 +332,39 @@ namespace DontGetSidetracked.Presentation
                 AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseError, Params(
                     "product_id", productId,
                     "error", error.Message));
-                _panelBody.text = "Ошибка покупки. Товар не выдан.";
+                if (IsCurrentPanel(revision))
+                    _panelBody.text = "Ошибка покупки. Товар не выдан.";
             }
             finally
             {
-                SetActionsInteractable(true);
+                if (IsCurrentPanel(revision)) SetActionsInteractable(true);
             }
         }
 
         private async void RestorePurchases()
         {
+            int revision = _panelRevision;
             _panelBody.text = "Восстанавливаем подтверждённые покупки RuStore…";
             SetActionsInteractable(false);
             try
             {
                 int restored = await _store.RestoreAsync();
                 _save = _store.Save;
-                _panelBody.text = restored > 0
+                if (!IsCurrentPanel(revision)) return;
+                string message = restored > 0
                     ? $"Восстановлено: {restored}."
                     : "Новых покупок для восстановления нет.";
+                RenderStore(_lastStoreProducts, message);
             }
             catch (Exception error)
             {
                 Debug.LogWarning($"Restore purchases failed: {error.Message}");
-                _panelBody.text = "Не удалось восстановить покупки. Попробуйте позже.";
+                if (IsCurrentPanel(revision))
+                    _panelBody.text = "Не удалось восстановить покупки. Попробуйте позже.";
             }
             finally
             {
-                SetActionsInteractable(true);
+                if (IsCurrentPanel(revision)) SetActionsInteractable(true);
             }
         }
 
@@ -399,6 +423,7 @@ namespace DontGetSidetracked.Presentation
 
         public void ClosePanel()
         {
+            _panelRevision++;
             _panelOpen = false;
             _panel.SetActive(false);
         }
