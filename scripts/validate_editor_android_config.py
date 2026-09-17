@@ -5,6 +5,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "UnityProject/Assets/Game/Editor/ProjectConfigurator.cs"
 RELEASE = ROOT / "UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs"
+VERSION_GUARD = ROOT / "UnityProject/Assets/Game/Editor/ProductionReleaseVersionValidator.cs"
 errors: list[str] = []
 
 
@@ -16,6 +17,7 @@ def require(text: str, needle: str, message: str) -> None:
 def main() -> int:
     config = CONFIG.read_text(encoding="utf-8")
     release = RELEASE.read_text(encoding="utf-8")
+    version_guard = VERSION_GUARD.read_text(encoding="utf-8")
 
     require(config, "ShouldAssignDevelopmentPackageName(currentPackage)",
             "Editor bootstrap must preserve explicitly configured production package names.")
@@ -29,6 +31,8 @@ def main() -> int:
             "Editor bootstrap may only raise an older explicit target to the verified API 34 baseline.")
     require(config, "(int)currentMinimum < (int)AndroidSdkVersions.AndroidApiLevel25",
             "Editor bootstrap may only raise an older min SDK to the Unity 6.3 baseline.")
+    require(config, "public const string DevelopmentVersion = \"0.1.0\"",
+            "Editor development version fallback must remain explicit and reviewable.")
 
     # API 34 is a verified floor, not a ceiling. Auto and explicit newer targets must remain valid.
     require(release, "AndroidSdkVersions targetSdk = PlayerSettings.Android.targetSdkVersion",
@@ -45,6 +49,17 @@ def main() -> int:
     require(release, "AndroidArchitecture.ARM64", "Production preflight must require ARM64.")
     require(release, "EditorUserBuildSettings.buildAppBundle", "Production preflight must require AAB output.")
     require(release, "useCustomKeystore", "Production preflight must require custom Android signing.")
+
+    require(version_guard, "IPreprocessBuildWithReport",
+            "Production release version guard must run automatically before Android builds.")
+    require(version_guard, "BuildOptions.Development",
+            "Development Android builds must remain exempt from the production version guard.")
+    require(version_guard, "ProjectConfigurator.DevelopmentVersion",
+            "Production guard must reject the exact Editor development-version fallback.")
+    require(version_guard, "PlayerSettings.bundleVersion",
+            "Production version guard must validate the actual Unity public version.")
+    require(version_guard, "BuildFailedException",
+            "Production version violations must fail closed before the Android artifact is built.")
 
     if errors:
         print("Android editor/release configuration guard FAILED:")
