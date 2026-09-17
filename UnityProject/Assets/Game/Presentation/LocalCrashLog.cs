@@ -17,6 +17,16 @@ namespace DontGetSidetracked.Presentation
         private static string _path;
         private static bool _subscribed;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetRuntimeState()
+        {
+            // Covers Editor Play Mode without domain reload and avoids duplicate threaded log handlers.
+            if (_subscribed)
+                Application.logMessageReceivedThreaded -= OnLogMessage;
+            _subscribed = false;
+            _path = null;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
@@ -92,8 +102,6 @@ namespace DontGetSidetracked.Presentation
 
         private void OnDestroy()
         {
-            // The root is DontDestroyOnLoad and normally lives for the entire process. Unsubscribe on teardown
-            // so domain reloads in the Editor cannot accumulate duplicate handlers.
             if (!_subscribed) return;
             Application.logMessageReceivedThreaded -= OnLogMessage;
             _subscribed = false;
