@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 
 namespace DontGetSidetracked.Presentation
@@ -50,7 +49,7 @@ namespace DontGetSidetracked.Presentation
         {
             if (paused)
             {
-                AbortOnlyActiveGesture();
+                AbortActiveRoundForPause();
                 return;
             }
 
@@ -90,61 +89,30 @@ namespace DontGetSidetracked.Presentation
                 return;
             }
 
-            Type type = typeof(GameBootstrap);
-            FieldInfo modeField = type.GetField("_mode", BindingFlags.Instance | BindingFlags.NonPublic);
-            object mode = modeField?.GetValue(bootstrap);
-            if (mode != null && string.Equals(mode.ToString(), "Home", StringComparison.Ordinal))
+            if (GameBootstrapRuntimeBridge.IsHome(bootstrap))
             {
                 Application.Quit();
                 return;
             }
 
-            AbortToHome(bootstrap);
+            GameBootstrapRuntimeBridge.AbortToHome(bootstrap);
         }
 
-        private void AbortOnlyActiveGesture()
+        private void AbortActiveRoundForPause()
         {
             GameBootstrap bootstrap = FindFirstObjectByType<GameBootstrap>();
-            if (bootstrap == null) return;
+            if (bootstrap == null || !GameBootstrapRuntimeBridge.IsActiveRound(bootstrap)) return;
 
-            Type type = typeof(GameBootstrap);
-            FieldInfo stateField = type.GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic);
-            FieldInfo modeField = type.GetField("_mode", BindingFlags.Instance | BindingFlags.NonPublic);
-            string state = stateField?.GetValue(bootstrap)?.ToString() ?? string.Empty;
-            string mode = modeField?.GetValue(bootstrap)?.ToString() ?? string.Empty;
-
-            if (!string.Equals(state, "Showing", StringComparison.Ordinal) &&
-                !string.Equals(state, "Drawing", StringComparison.Ordinal)) return;
-
-            if (string.Equals(mode, "Tutorial", StringComparison.Ordinal))
+            if (GameBootstrapRuntimeBridge.IsTutorial(bootstrap))
                 _restartTutorialOnResume = true;
 
-            AbortToHome(bootstrap);
-        }
-
-        private static void AbortToHome(GameBootstrap bootstrap = null)
-        {
-            if (bootstrap == null) bootstrap = FindFirstObjectByType<GameBootstrap>();
-            if (bootstrap == null) return;
-
-            Type type = typeof(GameBootstrap);
-            FieldInfo modeField = type.GetField("_mode", BindingFlags.Instance | BindingFlags.NonPublic);
-            object mode = modeField?.GetValue(bootstrap);
-            if (mode != null && string.Equals(mode.ToString(), "Home", StringComparison.Ordinal)) return;
-
-            FieldInfo pointerField = type.GetField("_pointerDown", BindingFlags.Instance | BindingFlags.NonPublic);
-            pointerField?.SetValue(bootstrap, false);
-            bootstrap.StopAllCoroutines();
-            CampaignRuntimeCoordinator.ReturnHome(bootstrap);
+            GameBootstrapRuntimeBridge.AbortToHome(bootstrap);
         }
 
         private static void RestartTutorial()
         {
             GameBootstrap bootstrap = FindFirstObjectByType<GameBootstrap>();
-            if (bootstrap == null) return;
-            Type type = typeof(GameBootstrap);
-            MethodInfo startTutorial = type.GetMethod("StartTutorial", BindingFlags.Instance | BindingFlags.NonPublic);
-            startTutorial?.Invoke(bootstrap, null);
+            GameBootstrapRuntimeBridge.RestartTutorial(bootstrap);
         }
 
         private static bool TryDismissNotificationPrompt(RuntimePlatformCoordinator platform) =>
