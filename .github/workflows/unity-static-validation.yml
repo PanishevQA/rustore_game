@@ -85,7 +85,7 @@ jobs:
           grep -q 'GameBootstrapRuntimeBridge.StartTrainingDifficulty' "$training"
           grep -q 'GameBootstrapRuntimeBridge.TryCaptureHintContext' "$hint"
           grep -q 'GameBootstrapRuntimeBridge.IsResult' "$feedback"
-          grep -q 'GameBootstrapRuntimeBridge.IsActiveRound' "$cosmetic"
+          grep -q 'GameBootstrapRuntimeBridge.TryCaptureHintContext' "$cosmetic"
 
           for file in "$mobile" "$ads" "$rewarded" "$platform" "$meta" "$campaign" "$result" "$training" "$hint" "$feedback" "$cosmetic"; do
             if grep -nE 'System\.Reflection|BindingFlags|GetField\(|GetMethod\(' "$file"; then
