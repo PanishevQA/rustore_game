@@ -31,6 +31,15 @@ namespace DontGetSidetracked.Presentation
 
         public static bool IsActiveRound(GameBootstrap bootstrap)
         {
+            if (bootstrap == null) return false;
+            if (StateField == null)
+            {
+                ReportMissingContractIfNeeded();
+                // Fail safe: if the legacy state contract changed, never allow a non-Home screen
+                // to resume as if an interrupted gesture/preview was still valid.
+                return !IsHome(bootstrap);
+            }
+
             string state = ReadEnumName(bootstrap, StateField);
             return string.Equals(state, "Showing", StringComparison.Ordinal) ||
                    string.Equals(state, "Drawing", StringComparison.Ordinal);
@@ -57,7 +66,14 @@ namespace DontGetSidetracked.Presentation
                 return;
             }
 
-            StartTutorialMethod.Invoke(bootstrap, null);
+            try
+            {
+                StartTutorialMethod.Invoke(bootstrap, null);
+            }
+            catch (Exception error)
+            {
+                Debug.LogError($"GameBootstrap runtime bridge failed to restart Tutorial: {error.Message}");
+            }
         }
 
         private static string ReadEnumName(GameBootstrap bootstrap, FieldInfo field)
@@ -79,7 +95,7 @@ namespace DontGetSidetracked.Presentation
 
             _missingContractReported = true;
             Debug.LogError(
-                "GameBootstrap private runtime contract changed. Mobile lifecycle fallback may be degraded; " +
+                "GameBootstrap private runtime contract changed. Mobile lifecycle fallback is active; " +
                 "update GameBootstrapRuntimeBridge before release.");
         }
     }
