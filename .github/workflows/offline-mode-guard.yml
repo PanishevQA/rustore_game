@@ -80,7 +80,8 @@ jobs:
           grep -q 'IsSelectable' UnityProject/Assets/Game/Economy/CosmeticSelectionService.cs
           grep -q 'OpenCosmetics' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           grep -q 'CosmeticSelectionService' UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
-          grep -q 'string.Equals(state, "Drawing"' UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
+          grep -q 'GameBootstrapRuntimeBridge.TryCaptureHintContext' UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
+          grep -q '!context.IsDrawing' UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
 
           # Sound/Haptics settings must control real feedback, not decorative toggles. Haptics use Android View
           # feedback and therefore must not add an explicit VIBRATE permission to our custom manifest.

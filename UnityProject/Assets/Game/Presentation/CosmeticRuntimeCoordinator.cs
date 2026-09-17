@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Economy;
 using UnityEngine;
@@ -14,8 +13,7 @@ namespace DontGetSidetracked.Presentation
     {
         private JsonFileSaveRepository _saveRepository;
         private GameBootstrap _bootstrap;
-        private FieldInfo _stateField;
-        private FieldInfo _playerGraphicField;
+        private RouteGraphic _playerGraphic;
         private float _nextPoll;
         private string _lastSkin = string.Empty;
 
@@ -31,46 +29,43 @@ namespace DontGetSidetracked.Presentation
         private void Awake()
         {
             _saveRepository = new JsonFileSaveRepository();
-            ResolveBootstrap();
+            ResolveRuntime();
         }
 
         private void Update()
         {
             if (Time.unscaledTime < _nextPoll) return;
             _nextPoll = Time.unscaledTime + 0.2f;
-            if (_bootstrap == null) ResolveBootstrap();
-            if (_bootstrap == null || _stateField == null || _playerGraphicField == null) return;
-
-            string state = _stateField.GetValue(_bootstrap)?.ToString() ?? string.Empty;
-            if (!string.Equals(state, "Drawing", StringComparison.Ordinal)) return;
+            if (_bootstrap == null || _playerGraphic == null) ResolveRuntime();
+            if (_bootstrap == null || _playerGraphic == null) return;
+            if (!GameBootstrapRuntimeBridge.TryCaptureHintContext(_bootstrap, out GameBootstrapHintContext context) ||
+                !context.IsDrawing) return;
 
             SaveData save = _saveRepository.Load();
             var selection = new CosmeticSelectionService(_saveRepository, save);
             string skin = selection.SelectedSkinId;
-            RouteGraphic player = _playerGraphicField.GetValue(_bootstrap) as RouteGraphic;
-            if (player == null) return;
-
             Color desired = ColorFor(skin);
-            if (!string.Equals(_lastSkin, skin, StringComparison.Ordinal) || player.color != desired)
+            if (!string.Equals(_lastSkin, skin, StringComparison.Ordinal) || _playerGraphic.color != desired)
             {
                 _lastSkin = skin;
-                player.color = desired;
+                _playerGraphic.color = desired;
             }
         }
 
-        private void ResolveBootstrap()
+        private void ResolveRuntime()
         {
             _bootstrap = FindFirstObjectByType<GameBootstrap>();
-            if (_bootstrap == null)
-            {
-                _stateField = null;
-                _playerGraphicField = null;
-                return;
-            }
+            _playerGraphic = null;
 
-            Type type = typeof(GameBootstrap);
-            _stateField = type.GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic);
-            _playerGraphicField = type.GetField("_playerGraphic", BindingFlags.Instance | BindingFlags.NonPublic);
+            GameObject gameCanvas = GameObject.Find("GameCanvas");
+            if (gameCanvas == null) return;
+            RouteGraphic[] graphics = gameCanvas.GetComponentsInChildren<RouteGraphic>(true);
+            for (int i = 0; i < graphics.Length; i++)
+            {
+                if (!string.Equals(graphics[i].name, "Player", StringComparison.Ordinal)) continue;
+                _playerGraphic = graphics[i];
+                break;
+            }
         }
 
         private static Color ColorFor(string skinId)
