@@ -113,7 +113,7 @@ namespace DontGetSidetracked.EditorTools
             if (!File.Exists(path)) return false;
 
             string text = File.ReadAllText(path);
-            string pattern = @"\bconst\s+string\s+" + Regex.Escape(constantName) + @"\s*=\s*\"([^\"]*)\"\s*;";
+            string pattern = @"\bconst\s+string\s+" + Regex.Escape(constantName) + "\\s*=\\s*\"([^\"]*)\"\\s*;";
             Match match = Regex.Match(text, pattern, RegexOptions.CultureInvariant);
             if (!match.Success) return false;
 
