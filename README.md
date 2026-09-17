@@ -50,7 +50,7 @@ Daily строится из UTC-даты и `generatorVersion`. Remote Config м
 
 ### Friend Duel
 
-Сервер не нужен. L3 challenge token содержит date, seed, generatorVersion, routeCount, exact display-time profile и score отправителя. L1/L2 остаются backward-compatible. Share содержит `nesbeisya://challenge/<token>` и официальный RuStore install URL `https://www.rustore.ru/catalog/app/<package>?referrerId=<token>`.
+Сервер не нужен. Текущий **L4 challenge token** содержит date, seed, generatorVersion, routeCount, exact display-time profile и score отправителя, а также 16-bit checksum для обнаружения повреждения/подмены payload. Legacy L1/L2/L3 остаются backward-compatible; при reshare старого L3 challenge identity сохраняется, а новая ссылка кодируется как L4. Share содержит `nesbeisya://challenge/<token>` и официальный RuStore install URL `https://www.rustore.ru/catalog/app/<package>?referrerId=<token>`.
 
 ## Результат и прогресс
 
@@ -175,7 +175,7 @@ Production-сборка дополнительно требует точный p
 
 - `pure-csharp-tests` — generator/scoring/Daily/Duel/Economy/Campaign/save repair rules;
 - `backend-tests` — только optional future backend;
-- `offline-mode-guard` — offline/L3/config/store invariants;
+- `offline-mode-guard` — offline/L4 checksum/config/store invariants и legacy L1–L3 compatibility;
 - `rustore-dependency-guard` — RuStore targets/registry isolation;
 - `unity-static-validation` — manifest/asmdef/project/release-preflight structure;
 - `product-flow-guard` — Campaign, rewards, coin→hint, shared save, Training/overlay contracts.
