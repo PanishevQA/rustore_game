@@ -26,6 +26,8 @@ jobs:
         run: python scripts/validate_build_observability.py
       - name: Validate Remote Config build identity
         run: python scripts/validate_remote_config_build_identity.py
+      - name: Validate Remote Config version policy
+        run: python scripts/validate_remote_config_version_policy.py
       - name: Validate release placeholder contract
         run: python scripts/validate_release_placeholders.py
       - name: Validate async navigation invariants
