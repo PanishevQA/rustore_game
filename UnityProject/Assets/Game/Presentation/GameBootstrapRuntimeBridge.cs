@@ -7,7 +7,7 @@ namespace DontGetSidetracked.Presentation
     /// <summary>
     /// Narrow compatibility boundary for runtime coordinators that still need to observe/control
     /// GameBootstrap's legacy private state. Reflection is resolved once here instead of being
-    /// repeated throughout Android lifecycle/navigation code.
+    /// repeated throughout presentation/lifecycle code.
     ///
     /// Keep new presentation code off private GameBootstrap members; this adapter can disappear
     /// once GameBootstrap exposes a dedicated runtime navigation contract.
@@ -28,6 +28,29 @@ namespace DontGetSidetracked.Presentation
 
         public static bool IsTutorial(GameBootstrap bootstrap) =>
             string.Equals(ReadEnumName(bootstrap, ModeField), "Tutorial", StringComparison.Ordinal);
+
+        public static bool IsIdleHome(GameBootstrap bootstrap)
+        {
+            if (!IsHome(bootstrap)) return false;
+            if (StateField == null)
+            {
+                ReportMissingContractIfNeeded();
+                return false;
+            }
+
+            return string.Equals(ReadEnumName(bootstrap, StateField), "Idle", StringComparison.Ordinal);
+        }
+
+        public static bool IsResult(GameBootstrap bootstrap)
+        {
+            if (bootstrap == null || StateField == null)
+            {
+                ReportMissingContractIfNeeded();
+                return false;
+            }
+
+            return string.Equals(ReadEnumName(bootstrap, StateField), "Result", StringComparison.Ordinal);
+        }
 
         public static bool IsActiveRound(GameBootstrap bootstrap)
         {
