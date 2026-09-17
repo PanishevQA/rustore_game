@@ -16,6 +16,32 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
+        public void ProductionShareLinks_UseChallengeDeepLinkAndRuStoreReferrerId()
+        {
+            var date = new DateTime(2026, 9, 17, 0, 0, 0, DateTimeKind.Utc);
+            string token = OfflineChallengeCodec.Encode(
+                date,
+                123456,
+                RouteGenerator.CurrentGeneratorVersion,
+                3,
+                new[] { 4200, 3600, 2900 },
+                91.2);
+
+            string deepLink = OfflineChallengeCodec.BuildDeepLink(token);
+            string installUrl = OfflineChallengeCodec.BuildInstallUrl("com.example.nesbeisya", token);
+
+            Assert.That(deepLink, Is.EqualTo("nesbeisya://challenge/" + token));
+            Assert.That(
+                installUrl,
+                Is.EqualTo("https://www.rustore.ru/catalog/app/com.example.nesbeisya?referrerId=" + token));
+            Assert.That(ReferralLinkParser.TryParse(deepLink, out string parsed), Is.True);
+            Assert.That(parsed, Is.EqualTo(token));
+
+            // The RuStore catalog URL is an installation/referrer transport, not an in-app gameplay deeplink.
+            Assert.That(ReferralLinkParser.TryParse(installUrl, out _), Is.False);
+        }
+
+        [Test]
         public void ParsesMaximumCurrentL4ChallengeToken()
         {
             var date = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);

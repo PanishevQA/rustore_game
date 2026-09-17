@@ -18,6 +18,8 @@ jobs:
         run: python scripts/validate_rustore_sdk_baseline.py
       - name: Validate RuStore Pay release contract
         run: python scripts/validate_rustore_pay_release.py
+      - name: Validate referral and Install Referrer release contract
+        run: python scripts/validate_referral_release.py
       - name: Validate async navigation invariants
         run: python scripts/validate_async_navigation.py
       - name: Validate platform and store async invariants
