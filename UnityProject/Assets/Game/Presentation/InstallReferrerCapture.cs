@@ -2,7 +2,6 @@ using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Platform.RuStore;
 using DontGetSidetracked.Services;
-using DontGetSidetracked.Social;
 using UnityEngine;
 
 namespace DontGetSidetracked.Presentation
@@ -10,7 +9,7 @@ namespace DontGetSidetracked.Presentation
     /// <summary>
     /// Captures RuStore's one-shot install referrer as early as possible and persists it
     /// before any network request. A failed SDK request is retried on a later launch;
-    /// a successful null result is considered consumed, matching RuStore semantics.
+    /// a successful null/invalid result is considered consumed, matching one-shot semantics.
     /// </summary>
     public sealed class InstallReferrerCapture : MonoBehaviour
     {
@@ -37,9 +36,9 @@ namespace DontGetSidetracked.Presentation
             save.InstallReferrerConsumed = true;
 
             if (string.IsNullOrWhiteSpace(save.PendingReferralId) &&
-                ReferralLinkParser.IsValidReferralId(result.ReferrerId))
+                ReferralRuntimePolicy.TryNormalizeForCurrentRuntime(result.ReferrerId, out string normalized))
             {
-                save.PendingReferralId = result.ReferrerId.ToUpperInvariant();
+                save.PendingReferralId = normalized;
                 AnalyticsLifecycle.Service?.Track(
                     AnalyticsEventNames.ChallengeOpen,
                     new System.Collections.Generic.Dictionary<string, object>
