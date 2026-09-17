@@ -13,7 +13,7 @@ namespace DontGetSidetracked.Presentation
 {
     /// <summary>
     /// Runtime bridge for ads. It observes presentation state without leaking the ad SDK into gameplay.
-    /// Interstitials are considered only after a completed round and only after returning to an idle Home screen.
+    /// Interstitials are considered only after a completed round and only on an unobstructed idle Home screen.
     /// </summary>
     public sealed class AdRuntimeCoordinator : MonoBehaviour
     {
@@ -29,6 +29,14 @@ namespace DontGetSidetracked.Presentation
         private string _lastState = string.Empty;
         private bool _showInProgress;
         private float _nextPoll;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetRuntimeState()
+        {
+            // Unity Editor can enter Play Mode without a domain reload. Never expose a provider
+            // instance that belongs to the previous runtime session.
+            Ads = null;
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoStart()
@@ -67,8 +75,7 @@ namespace DontGetSidetracked.Presentation
                 _lastState = state;
             }
 
-            if (_showInProgress || !IsSafeHome()) return;
-            if (IsMetaPanelOpen()) return;
+            if (_showInProgress || !IsSafeHome() || IsAnyHomeOverlayOpen()) return;
 
             SaveData save = _saveRepository.Load();
             bool removeAds = save.Entitlements != null &&
@@ -81,13 +88,13 @@ namespace DontGetSidetracked.Presentation
 
         private async void ShowInterstitialSafeAsync()
         {
-            if (_showInProgress) return;
+            if (_showInProgress || IsAnyHomeOverlayOpen()) return;
             _showInProgress = true;
             try
             {
                 bool shown = await _interstitial.TryShowBetweenSessionsAsync(
                     removeAdsEntitlement: HasRemoveAds(),
-                    gameplayActive: !IsSafeHome());
+                    gameplayActive: !IsSafeHome() || IsAnyHomeOverlayOpen());
                 if (shown)
                 {
                     AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.InterstitialShow,
@@ -125,10 +132,22 @@ namespace DontGetSidetracked.Presentation
                    string.Equals(state.ToString(), "Idle", StringComparison.Ordinal);
         }
 
-        private static bool IsMetaPanelOpen()
+        private static bool IsAnyHomeOverlayOpen()
         {
             MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
-            return meta != null && meta.IsPanelOpen;
+            if (meta != null && meta.IsPanelOpen) return true;
+
+            TrainingMenuCoordinator training = FindFirstObjectByType<TrainingMenuCoordinator>();
+            if (training != null && training.IsOpen) return true;
+
+            CampaignLevelMenuOverlay campaign = FindFirstObjectByType<CampaignLevelMenuOverlay>();
+            if (campaign != null && campaign.IsOpen) return true;
+
+            RuntimePlatformCoordinator platform = FindFirstObjectByType<RuntimePlatformCoordinator>();
+            if (platform != null && platform.IsNotificationPromptOpen) return true;
+
+            // MandatoryUpdateCanvas exists only while the blocking update UI is active.
+            return GameObject.Find("MandatoryUpdateCanvas") != null;
         }
 
         private void ResolveBootstrap()
