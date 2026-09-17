@@ -11,6 +11,7 @@ namespace DontGetSidetracked.Presentation
 {
     /// <summary>
     /// Local-only campaign browser. Shows one chapter (10 levels) at a time and never touches network state.
+    /// Runtime ownership is resolved when opened/actions run so the persistent overlay never acts on a destroyed bootstrap.
     /// </summary>
     public sealed class CampaignLevelMenuOverlay : MonoBehaviour
     {
@@ -33,7 +34,6 @@ namespace DontGetSidetracked.Presentation
 
         public static void OpenFor(GameBootstrap bootstrap)
         {
-            if (bootstrap == null) return;
             if (_instance == null)
             {
                 var root = new GameObject("CampaignLevelMenuOverlay");
@@ -56,9 +56,21 @@ namespace DontGetSidetracked.Presentation
             SetVisible(false);
         }
 
+        private void LateUpdate()
+        {
+            if (!IsOpen) return;
+            if (ResolveLiveBootstrap() == null) Close();
+        }
+
         private void Open(GameBootstrap bootstrap)
         {
-            _bootstrap = bootstrap;
+            _bootstrap = ResolveLiveBootstrap(bootstrap);
+            if (_bootstrap == null)
+            {
+                Close();
+                return;
+            }
+
             ReloadProgress();
             _chapter = Mathf.Clamp(
                 ((_progress.HighestUnlockedLevel - 1) / CampaignLevelCatalog.LevelsPerChapter) + 1,
@@ -127,8 +139,12 @@ namespace DontGetSidetracked.Presentation
         {
             ReloadProgress();
             if (!_progress.IsUnlocked(levelNumber)) return;
-            SetVisible(false);
-            CampaignRuntimeCoordinator.StartLevel(_bootstrap, levelNumber);
+
+            GameBootstrap owner = ResolveLiveBootstrap();
+            if (owner == null) return;
+
+            Close();
+            CampaignRuntimeCoordinator.StartLevel(owner, levelNumber);
         }
 
         private void PreviousChapter()
@@ -164,11 +180,35 @@ namespace DontGetSidetracked.Presentation
 
         private void GoHome()
         {
-            SetVisible(false);
-            CampaignRuntimeCoordinator.ReturnHome(_bootstrap);
+            GameBootstrap owner = ResolveLiveBootstrap();
+            if (owner == null)
+            {
+                Close();
+                return;
+            }
+
+            Close();
+            CampaignRuntimeCoordinator.ReturnHome(owner);
         }
 
-        public void Close() => SetVisible(false);
+        public void Close()
+        {
+            SetVisible(false);
+            _bootstrap = null;
+        }
+
+        private GameBootstrap ResolveLiveBootstrap(GameBootstrap preferred = null)
+        {
+            if (preferred != null)
+            {
+                _bootstrap = preferred;
+                return _bootstrap;
+            }
+
+            if (_bootstrap != null) return _bootstrap;
+            _bootstrap = FindFirstObjectByType<GameBootstrap>();
+            return _bootstrap;
+        }
 
         private void SetVisible(bool visible)
         {
