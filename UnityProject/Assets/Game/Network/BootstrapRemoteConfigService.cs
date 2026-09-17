@@ -12,14 +12,13 @@ namespace DontGetSidetracked.Network
     /// </summary>
     public sealed class BootstrapRemoteConfigService : IRemoteConfigService
     {
-        private const string DefaultVersion = "0.1.0";
         private readonly RuStoreRemoteConfigService _provider;
 
         public string MinSupportedVersion =>
-            string.IsNullOrWhiteSpace(_provider.MinSupportedVersion) ? DefaultVersion : _provider.MinSupportedVersion;
+            AppVersionPolicy.NormalizeOrFallback(_provider.MinSupportedVersion);
 
         public string RecommendedVersion =>
-            string.IsNullOrWhiteSpace(_provider.RecommendedVersion) ? MinSupportedVersion : _provider.RecommendedVersion;
+            AppVersionPolicy.NormalizeRange(MinSupportedVersion, _provider.RecommendedVersion).RecommendedVersion;
 
         public string ServerTimeUtc => string.Empty;
 
@@ -47,39 +46,16 @@ namespace DontGetSidetracked.Network
         public string GetString(string key, string fallback) => _provider.GetString(key, fallback);
 
         public bool RequiresMandatoryUpdate(string currentVersion) =>
-            Compare(currentVersion, MinSupportedVersion) < 0;
+            AppVersionPolicy.Compare(currentVersion, MinSupportedVersion) < 0;
 
         public bool ShouldRecommendUpdate(string currentVersion) =>
-            Compare(currentVersion, RecommendedVersion) < 0;
+            AppVersionPolicy.Compare(currentVersion, RecommendedVersion) < 0;
 
-        public static int Compare(string left, string right)
-        {
-            int[] a = Parse(left);
-            int[] b = Parse(right);
-            int count = Math.Max(a.Length, b.Length);
-            for (int i = 0; i < count; i++)
-            {
-                int av = i < a.Length ? a[i] : 0;
-                int bv = i < b.Length ? b[i] : 0;
-                if (av != bv) return av.CompareTo(bv);
-            }
-            return 0;
-        }
-
-        private static int[] Parse(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value)) return new[] { 0 };
-            string core = value.Trim().Split('-', '+')[0];
-            string[] parts = core.Split('.');
-            var result = new int[parts.Length];
-            for (int i = 0; i < parts.Length; i++)
-                result[i] = int.TryParse(parts[i], out int parsed) && parsed >= 0 ? parsed : 0;
-            return result;
-        }
+        public static int Compare(string left, string right) => AppVersionPolicy.Compare(left, right);
     }
 
     public static class VersionPolicy
     {
-        public static int Compare(string left, string right) => BootstrapRemoteConfigService.Compare(left, right);
+        public static int Compare(string left, string right) => AppVersionPolicy.Compare(left, right);
     }
 }
