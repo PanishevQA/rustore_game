@@ -22,6 +22,8 @@ jobs:
         run: python scripts/validate_referral_release.py
       - name: Validate Android editor and release configuration
         run: python scripts/validate_editor_android_config.py
+      - name: Validate release build observability
+        run: python scripts/validate_build_observability.py
       - name: Validate async navigation invariants
         run: python scripts/validate_async_navigation.py
       - name: Validate platform and store async invariants
