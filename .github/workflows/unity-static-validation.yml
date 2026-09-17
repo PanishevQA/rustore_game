@@ -42,6 +42,8 @@ jobs:
         run: python scripts/validate_platform_async.py
       - name: Validate Campaign runtime bootstrap boundary
         run: python scripts/validate_campaign_runtime_contract.py
+      - name: Validate Campaign overlay lifecycle ownership
+        run: python scripts/validate_campaign_overlay_lifecycle.py
       - name: Validate result share ownership and stale navigation
         run: python scripts/validate_result_share_ownership.py
       - name: Validate Training and Hint runtime bootstrap boundary
