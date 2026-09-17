@@ -14,3 +14,24 @@ jobs:
           python-version: '3.13'
       - name: Validate Unity project structure and release-critical pins
         run: python scripts/validate_unity_project.py
+      - name: Guard mobile lifecycle reflection boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          bridge='UnityProject/Assets/Game/Presentation/GameBootstrapRuntimeBridge.cs'
+          mobile='UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs'
+
+          test -f "$bridge"
+          grep -q 'GameBootstrapRuntimeBridge.IsHome' "$mobile"
+          grep -q 'GameBootstrapRuntimeBridge.IsActiveRound' "$mobile"
+          grep -q 'GameBootstrapRuntimeBridge.IsTutorial' "$mobile"
+          grep -q 'GameBootstrapRuntimeBridge.AbortToHome' "$mobile"
+          grep -q 'GameBootstrapRuntimeBridge.RestartTutorial' "$mobile"
+
+          if grep -nE 'System\.Reflection|BindingFlags|GetField\(|GetMethod\(' "$mobile"; then
+            echo 'Private GameBootstrap reflection leaked back into MobileUiCoordinator.'
+            exit 1
+          fi
+
+          grep -q 'BindingFlags.Instance | BindingFlags.NonPublic' "$bridge"
+          grep -q 'ReportMissingContractIfNeeded' "$bridge"
