@@ -34,11 +34,13 @@ jobs:
           grep -q 'SeedForDate' UnityProject/Assets/Game/Social/OfflineGameApi.cs
           grep -q 'BuildInstallUrl' UnityProject/Assets/Game/Social/OfflineGameApi.cs
 
-          # Friend challenges must remain self-contained. L3 carries route count + exact display-time profile,
-          # while legacy L1/L2 tokens stay readable for backward compatibility.
-          grep -q 'private const string Prefix = "L3"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          # Friend challenges must remain self-contained. Current L4 carries the full L3 payload plus
+          # a checksum; legacy L1/L2/L3 tokens stay readable for backward compatibility.
+          grep -q 'private const string Prefix = "L4"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
           grep -q 'private const string LegacyV1Prefix = "L1"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
           grep -q 'private const string LegacyV2Prefix = "L2"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'private const string LegacyV3Prefix = "L3"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'CalculateChecksum' UnityProject/Assets/Game/Social/OfflineGameApi.cs
           grep -q 'GetCurrentDisplayTimes' UnityProject/Assets/Game/Social/OfflineGameApi.cs
           grep -q 'displayTimeEasyMs' UnityProject/Assets/Game/Social/OfflineGameApi.cs
           grep -q 'displayTimeMediumMs' UnityProject/Assets/Game/Social/OfflineGameApi.cs
@@ -95,7 +97,7 @@ jobs:
           fi
           grep -q '"HintCanvas"' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
 
-          # Result juice must stay useful rather than decorative: stable score medals, bounded per-Daily records,
+          # Result presentation must stay useful rather than decorative: stable score medals, bounded per-Daily records,
           # a real PNG card through FileProvider, and a Duel rematch affordance.
           grep -q 'DailyBests' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'PerfectEffectThreshold' UnityProject/Assets/Game/Gameplay/ScoreCelebrationPolicy.cs
@@ -109,8 +111,9 @@ jobs:
           grep -q 'nesbeisya_file_paths' UnityProject/Assets/Plugins/Android/AndroidManifest.xml
           grep -q '"ResultEnhancementCanvas"' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
 
-          # Remote Config controls session tuning but never route geometry.
-          grep -q 'RuStoreRemoteConfigService' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs
+          # Remote Config controls session tuning but never route geometry, and all compatibility callers
+          # must resolve the same shared RuStoreRemoteConfigRuntime provider.
+          grep -q 'RuStoreRemoteConfigRuntime.Service' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs
           grep -q 'RuStoreRemoteConfigClient' UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
           grep -q 'daily_route_count' UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
           grep -q 'route_display_time_easy_ms' UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
