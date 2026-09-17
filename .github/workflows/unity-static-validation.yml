@@ -14,6 +14,8 @@ jobs:
           python-version: '3.13'
       - name: Validate Unity project structure and release-critical pins
         run: python scripts/validate_unity_project.py
+      - name: Validate RuStore SDK verified baseline
+        run: python scripts/validate_rustore_sdk_baseline.py
       - name: Validate RuStore Pay release contract
         run: python scripts/validate_rustore_pay_release.py
       - name: Validate async navigation invariants
