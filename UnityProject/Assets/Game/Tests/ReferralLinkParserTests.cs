@@ -53,6 +53,13 @@ namespace DontGetSidetracked.Tests
             Assert.That(ReferralLinkParser.TryParse("nesbeisya://challenge/" + corrupted, out _), Is.False);
         }
 
+        [TestCase("nesbeisya://challenge/L5ABCDEF")]
+        [TestCase("nesbeisya://challenge/L9_NOT_A_REAL_VERSION")]
+        public void RejectsUnknownVersionedChallengeNamespace(string input)
+        {
+            Assert.That(ReferralLinkParser.TryParse(input, out _), Is.False);
+        }
+
         [TestCase("")]
         [TestCase("nesbeisya://settings")]
         [TestCase("nesbeisya://challenge/../bad")]
