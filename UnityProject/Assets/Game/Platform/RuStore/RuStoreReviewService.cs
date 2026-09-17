@@ -19,10 +19,20 @@ namespace DontGetSidetracked.Platform.RuStore
                 manager.RequestReviewFlow(
                     onFailure: error => completion.TrySetException(
                         new InvalidOperationException($"RuStore review prepare failed: {error}")),
-                    onSuccess: () => manager.LaunchReviewFlow(
-                        onFailure: error => completion.TrySetException(
-                            new InvalidOperationException($"RuStore review launch failed: {error}")),
-                        onSuccess: () => completion.TrySetResult(true)));
+                    onSuccess: () =>
+                    {
+                        if (!PlatformUiLaunchGate.CanLaunchNow())
+                        {
+                            completion.TrySetException(new InvalidOperationException(
+                                "RuStore review launch skipped because the current UI is no longer safe."));
+                            return;
+                        }
+
+                        manager.LaunchReviewFlow(
+                            onFailure: error => completion.TrySetException(
+                                new InvalidOperationException($"RuStore review launch failed: {error}")),
+                            onSuccess: () => completion.TrySetResult(true));
+                    });
             }
             catch (Exception error)
             {

@@ -16,6 +16,8 @@ jobs:
         run: python scripts/validate_unity_project.py
       - name: Validate async navigation invariants
         run: python scripts/validate_async_navigation.py
+      - name: Validate platform and store async invariants
+        run: python scripts/validate_platform_async.py
       - name: Guard mobile lifecycle reflection boundary
         shell: bash
         run: |

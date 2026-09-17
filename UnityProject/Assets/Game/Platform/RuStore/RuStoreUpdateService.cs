@@ -11,6 +11,11 @@ namespace DontGetSidetracked.Platform.RuStore
         public bool IsUpdateInProgress { get; private set; }
         public long AvailableVersionCode { get; private set; }
 
+        /// <summary>
+        /// Refreshes RuStore update state, then launches the update only at the final safe point.
+        /// Mandatory updates are allowed to take over immediately; optional flexible updates must
+        /// pass the presentation-owned PlatformUiLaunchGate after the asynchronous SDK check.
+        /// </summary>
         public async Task CheckForUpdateAsync(bool mandatory)
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -41,9 +46,14 @@ namespace DontGetSidetracked.Platform.RuStore
             await completion.Task;
             if (!IsUpdateAvailable) return;
 
-            // Called only from a safe UI point (home/bootstrap), never during drawing.
-            if (mandatory) await StartImmediateAsync();
-            else await StartFlexibleAsync();
+            if (mandatory)
+            {
+                await StartImmediateAsync();
+                return;
+            }
+
+            if (PlatformUiLaunchGate.CanLaunchNow())
+                await StartFlexibleAsync();
 #else
             IsUpdateAvailable = false;
             IsUpdateInProgress = false;

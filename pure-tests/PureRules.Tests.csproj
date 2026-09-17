@@ -34,6 +34,7 @@
     <Compile Include="../UnityProject/Assets/Game/Tests/DuelSessionServiceTests.cs" Link="Tests/DuelSessionServiceTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/ReviewPolicyTests.cs" Link="Tests/ReviewPolicyTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/StoreServiceTests.cs" Link="Tests/StoreServiceTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/PlatformUiLaunchGateTests.cs" Link="Tests/PlatformUiLaunchGateTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/CosmeticSelectionServiceTests.cs" Link="Tests/CosmeticSelectionServiceTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/GameSettingsServiceTests.cs" Link="Tests/GameSettingsServiceTests.cs" />
     <Compile Include="../UnityProject/Assets/Game/Tests/ResultEnhancementPolicyTests.cs" Link="Tests/ResultEnhancementPolicyTests.cs" />
