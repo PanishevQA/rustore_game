@@ -5,18 +5,18 @@
 | SDK | Release target | Состояние проекта |
 |---|---:|---|
 | Pay Unity | 11.1.0 | установлен в `Packages/manifest.json`; старый Billing SDK/BillingClient integration запрещён; production дополнительно защищён `RuStorePayReleaseContractValidator` |
-| Install Referrer Unity | 10.6.1 | актуальный release target; Editor package временно не установлен из-за compile-regression package source на Unity 6.3; adapter/reflection fallback сохранён; перед release обязателен официальный package + Android device test |
+| Install Referrer Unity | 10.6.1 | установлен и закреплён в `Packages/manifest.json`; adapter сохраняет one-shot referrer локально; перед release обязателен Android device test |
 | Update Unity | 10.5.1 | установлен; adapter реализован |
 | Review Unity | 10.5.1 | установлен; запрос только после positive event |
 | GameCenter Unity | 10.5.2 | optional, не source of truth; package не нужен для базового gameplay |
-| Remote Config Unity | 10.5.0 | актуальная официальная Unity-линия; adapter/cache/default реализованы; Editor package временно не установлен; перед production нужен официальный package/AppId + Android test |
+| Remote Config Unity | 10.5.1 | установлен и закреплён в `Packages/manifest.json`; adapter/cache/default реализованы; production требует реальный AppId + Android test |
 | Push Unity | — | **не используется в MVP**; Daily reminder реализован локально через Unity Mobile Notifications, поэтому Push package/version не pin-ится |
 
 ## Baseline verification
 
-`RuStoreSdkVersions.LastVerifiedUtc` должен совпадать с датой этой матрицы. CI проверяет дату и все release targets как единый baseline, чтобы версия одного SDK не могла быть изменена без явной повторной сверки набора интеграций.
+`RuStoreSdkVersions.LastVerifiedUtc` должен совпадать с датой этой матрицы. CI проверяет дату, release targets и обязательные installed packages как единый baseline, чтобы версия одного SDK или наличие runtime package не могли быть изменены без явной повторной сверки набора интеграций.
 
-На 2026-09-17 официальные Unity-страницы подтверждают следующие release targets: Pay `11.1.0`, Install Referrer `10.6.1`, Update `10.5.1`, Review `10.5.1`, GameCenter `10.5.2`, Remote Config `10.5.0`.
+На 2026-09-17 официальные Unity-источники подтверждают следующие release targets: Pay `11.1.0`, Install Referrer `10.6.1`, Update `10.5.1`, Review `10.5.1`, GameCenter `10.5.2`, Remote Config `10.5.1`.
 
 ## Android baseline
 
@@ -32,11 +32,11 @@ Registry меняется только после проверки **конкр�
 
 ## Install Referrer
 
-Актуальная Unity-линия — 10.6.1. RuStore принимает install URL вида `https://www.rustore.ru/catalog/app/<package>?referrerId=<value>`. Referrer одноразовый: после успешного чтения приложение должно сразу сохранить `referrerId`; невыданный referrer хранится ограниченное время. Для serverless challenge `referrerId` содержит self-contained challenge token.
+Актуальная Unity-линия — 10.6.1. Пакет `ru.rustore.installreferrer` закреплён в `Packages/manifest.json`, чтобы clean checkout не зависел от ручного импорта SDK. RuStore принимает install URL вида `https://www.rustore.ru/catalog/app/<package>?referrerId=<value>`. Referrer одноразовый: после успешного чтения приложение должно сразу сохранить `referrerId`; невыданный referrer хранится ограниченное время. Для serverless challenge `referrerId` содержит self-contained challenge token.
 
 ## Remote Config
 
-Актуальная официальная Unity-линия на дату проверки — **10.5.0**. Production preflight не считает adapter/fallback достаточной интеграцией: перед AAB должен быть реально загружен официальный `RuStoreRemoteConfigClient`, задан AppId и выполнен Android fallback/device test.
+Актуальная официальная Unity-линия на дату проверки — **10.5.1**. Пакет `ru.rustore.remoteconfig` закреплён в `Packages/manifest.json`, поэтому production integration воспроизводится из clean checkout. Production preflight дополнительно требует реально загруженный `RuStoreRemoteConfigClient`, заданный AppId и Android fallback/device test.
 
 Runtime использует один `RuStoreRemoteConfigRuntime` instance. Gameplay tuning, review/update policy и локальные Daily reminders читают один общий snapshot/cache; при Unity Play без Domain Reload provider пересоздаётся на `SubsystemRegistration`.
 
