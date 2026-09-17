@@ -16,7 +16,7 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
-        public void ParsesMaximumCurrentL3ChallengeToken()
+        public void ParsesMaximumCurrentL4ChallengeToken()
         {
             var date = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
             string token = OfflineChallengeCodec.Encode(
@@ -27,9 +27,30 @@ namespace DontGetSidetracked.Tests
                 new[] { 4200, 3600, 2900 },
                 91.2);
 
-            Assert.That(token.Length, Is.EqualTo(36));
+            // L4 = L3 payload (36 chars for three routes) + 4 hex checksum chars.
+            Assert.That(token.Length, Is.EqualTo(40));
+            Assert.That(token.StartsWith("L4", StringComparison.Ordinal), Is.True);
             Assert.That(ReferralLinkParser.TryParse("nesbeisya://challenge/" + token, out string referralId), Is.True);
             Assert.That(referralId, Is.EqualTo(token));
+        }
+
+        [Test]
+        public void RejectsCorruptedCurrentL4Checksum()
+        {
+            var date = new DateTime(2026, 9, 15, 0, 0, 0, DateTimeKind.Utc);
+            string token = OfflineChallengeCodec.Encode(
+                date,
+                123456,
+                RouteGenerator.CurrentGeneratorVersion,
+                3,
+                new[] { 4200, 3600, 2900 },
+                91.2);
+
+            char replacement = token[token.Length - 1] == '0' ? '1' : '0';
+            string corrupted = token.Substring(0, token.Length - 1) + replacement;
+
+            Assert.That(OfflineChallengeCodec.TryDecode(corrupted, out _), Is.False);
+            Assert.That(ReferralLinkParser.TryParse("nesbeisya://challenge/" + corrupted, out _), Is.False);
         }
 
         [TestCase("")]
@@ -44,7 +65,10 @@ namespace DontGetSidetracked.Tests
         [TestCase("L3")]
         [TestCase("L320260915")]
         [TestCase("L32026091500000001013FFFF3E8")]
-        public void CodecRejectsMalformedL3WithoutThrowing(string token)
+        [TestCase("L4")]
+        [TestCase("L420260915")]
+        [TestCase("L42026091500000001013FFFF3E8ABCD")]
+        public void CodecRejectsMalformedChallengeTokensWithoutThrowing(string token)
         {
             Assert.DoesNotThrow(() =>
             {
