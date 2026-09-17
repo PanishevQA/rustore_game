@@ -1,3 +1,4 @@
+using System;
 using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Social;
@@ -35,6 +36,8 @@ namespace DontGetSidetracked.Presentation
 
             var repository = new JsonFileSaveRepository();
             SaveData save = repository.Load();
+            if (string.Equals(save.PendingReferralId, normalized, StringComparison.Ordinal)) return;
+
             save.PendingReferralId = normalized;
             repository.Save(save);
 
