@@ -29,7 +29,7 @@ Release-клиент **не требует собственного backend, с�
 | Core | fixed-point, RNG, SaveData v13, migrations/repair, settings/reminder policy |
 | Gameplay | RouteGenerator, ScoreCalculator, Campaign catalog/progression rules, DailyChallengeFactory, runtime tuning |
 | Daily | DailySessionService, streak, review policy, per-Daily best |
-| Social | OfflineGameApi, L1/L2/L3 challenge codec, referral parser, DuelSessionService |
+| Social | OfflineGameApi, L1/L2/L3/L4 challenge codec, referral parser, DuelSessionService |
 | Economy | StoreService, campaign/local rewards, cosmetics, entitlements, idempotent grants |
 | Monetization | rewarded/interstitial policies и provider boundary |
 | Analytics | bounded device-only event journal |
@@ -90,14 +90,14 @@ Training бесконечный и локальный. Перед запуско
 
 ## Friend challenge / viral loop
 
-Вызов другу не требует lookup в нашей БД. Self-contained **L3 token** хранит дату, seed, generatorVersion, routeCount, exact display times и score отправителя.
+Вызов другу не требует lookup в нашей БД. Текущий self-contained **L4 token** хранит дату, seed, generatorVersion, routeCount, exact display times и score отправителя, а также 16-bit checksum payload. Checksum обнаруживает случайное повреждение и простую подмену символов до запуска Duel.
 
 Share содержит:
 
 1. `nesbeisya://challenge/<token>` для установленной игры;
 2. официальный RuStore install URL `https://www.rustore.ru/catalog/app/<package>?referrerId=<token>`.
 
-L1/L2 decoder сохранён для обратной совместимости. L3 фиксирует routeCount и timing, поэтому изменение Remote Config на устройстве друга не меняет условия Duel.
+Backward compatibility сохраняется для L1/L2/L3. L3 уже фиксировал routeCount и timing; L4 сохраняет тот же payload и добавляет checksum. При reshare legacy L3 identity не меняется, но новая ссылка выпускается в формате L4. `ReferralLinkParser` резервирует префиксы L1–L4 за codec и не пропускает битый checksummed token как generic referral ID.
 
 ## Сохранения и единый runtime state
 
@@ -208,6 +208,6 @@ Credentials, keystore и build artifacts защищены `.gitignore`.
 - `rustore-dependency-guard`;
 - `unity-static-validation`.
 
-Guards защищают отсутствие обязательного собственного backend, L3 fairness, Campaign/economy/Training/shared-save invariants, Android manifest/share contracts, production preflight и текущие RuStore targets.
+Guards защищают отсутствие обязательного собственного backend, L4 checksum/fairness и legacy L1–L3 compatibility, Campaign/economy/Training/shared-save invariants, Android manifest/share contracts, production preflight и текущие RuStore targets.
 
 Static/CI проверки не заменяют финальный Unity compile, signed AAB и физический Android/RuStore smoke-test.
