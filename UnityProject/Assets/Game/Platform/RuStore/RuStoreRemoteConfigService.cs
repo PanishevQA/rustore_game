@@ -1,7 +1,9 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using DontGetSidetracked.Platform.Android;
 using DontGetSidetracked.Services;
 using UnityEngine;
 
@@ -141,13 +143,14 @@ namespace DontGetSidetracked.Platform.RuStore
             object settings = Activator.CreateInstance(settingsType) ??
                               throw new InvalidOperationException("Could not create RuStore Remote Config settings.");
 
+            RuntimeBuildIdentity buildIdentity = AndroidBuildIdentity.Current;
             SetMember(settings, "appId", _appId);
             SetMember(settings, "account", _account);
             SetMember(settings, "language", Application.systemLanguage.ToString().ToLowerInvariant());
             SetMember(settings, "osVersion", SystemInfo.operatingSystem);
             SetMember(settings, "deviceModel", SystemInfo.deviceModel);
-            SetMember(settings, "appVersion", Application.version);
-            SetMember(settings, "appBuild", Application.version);
+            SetMember(settings, "appVersion", buildIdentity.Version);
+            SetMember(settings, "appBuild", buildIdentity.VersionCode.ToString(CultureInfo.InvariantCulture));
             SetEnumMember(settings, "environment", "Release");
 
             MethodInfo init = null;
