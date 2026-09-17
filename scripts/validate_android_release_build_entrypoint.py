@@ -35,7 +35,9 @@ required = {
     'versionCode = PlayerSettings.Android.bundleVersionCode': "Release metadata must record the Android versionCode.",
     'unityVersion = Application.unityVersion': "Release metadata must record the Unity version.",
     'buildGuid = summary.guid.ToString()': "Release metadata must record the Unity build GUID.",
-    'totalSizeBytes = summary.totalSize': "Release metadata must record the built artifact size.",
+    'artifactSizeBytes = artifact.Length': "Release metadata must record the actual AAB file size.",
+    'artifactSha256 = ComputeSha256(outputPath)': "Release metadata must record an AAB SHA-256 digest.",
+    'unityReportedSizeBytes = summary.totalSize': "Release metadata must retain Unity-reported output size for diagnostics.",
     'builtAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture)': "Release metadata must record an unambiguous UTC build timestamp.",
     'GITHUB_SHA': "Release metadata must support the GitHub commit SHA.",
     'RELEASE_GIT_SHA': "Local/batch builds must be able to provide an explicit Git SHA.",
@@ -56,6 +58,7 @@ for required_doc_text in (
     "ProductionAndroidBuild.BuildFromCommandLine",
     "NESBEISYA_RELEASE_OUTPUT",
     ".release.json",
+    "verify_release_artifact.py",
     "RUSTORE_RELEASE_CHECKLIST.md",
 ):
     if required_doc_text not in doc:
