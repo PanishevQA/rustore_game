@@ -3,6 +3,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -120,6 +121,7 @@ namespace DontGetSidetracked.EditorTools
             if (string.IsNullOrWhiteSpace(gitCommit))
                 gitCommit = Environment.GetEnvironmentVariable("GITHUB_SHA");
 
+            var artifact = new FileInfo(outputPath);
             var metadata = new ReleaseMetadata
             {
                 packageName = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android) ?? string.Empty,
@@ -129,12 +131,22 @@ namespace DontGetSidetracked.EditorTools
                 buildGuid = summary.guid.ToString(),
                 builtAtUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
                 gitCommit = gitCommit ?? string.Empty,
-                artifactFile = Path.GetFileName(outputPath),
-                outputPath = Path.GetFullPath(outputPath),
-                totalSizeBytes = summary.totalSize
+                artifactFile = artifact.Name,
+                outputPath = artifact.FullName,
+                artifactSizeBytes = artifact.Length,
+                artifactSha256 = ComputeSha256(outputPath),
+                unityReportedSizeBytes = summary.totalSize
             };
 
             File.WriteAllText(metadataPath, JsonUtility.ToJson(metadata, true));
+        }
+
+        private static string ComputeSha256(string path)
+        {
+            using var stream = File.OpenRead(path);
+            using SHA256 sha256 = SHA256.Create();
+            byte[] hash = sha256.ComputeHash(stream);
+            return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
         }
 
         private static string SanitizeFileName(string value)
@@ -158,7 +170,9 @@ namespace DontGetSidetracked.EditorTools
             public string gitCommit;
             public string artifactFile;
             public string outputPath;
-            public ulong totalSizeBytes;
+            public long artifactSizeBytes;
+            public string artifactSha256;
+            public ulong unityReportedSizeBytes;
         }
     }
 }
