@@ -9,17 +9,18 @@ namespace DontGetSidetracked.Presentation
     /// Mobile-only presentation glue: keeps runtime-created canvases inside the device safe area,
     /// provides predictable Android Back behaviour and prevents half-finished rounds from resuming
     /// after the app was backgrounded.
+    ///
+    /// Safe area is applied to a dedicated wrapper under each Canvas instead of rewriting the anchors
+    /// of gameplay/layout elements themselves. This prevents LateUpdate layout coordinators from
+    /// accidentally undoing notch/inset protection.
     /// </summary>
+    [DefaultExecutionOrder(20000)]
     public sealed class MobileUiCoordinator : MonoBehaviour
     {
-        private sealed class AnchorSnapshot
-        {
-            public Vector2 Min;
-            public Vector2 Max;
-        }
+        private const string SafeAreaRootName = "SafeAreaRoot";
 
-        private readonly Dictionary<RectTransform, AnchorSnapshot> _originalAnchors =
-            new Dictionary<RectTransform, AnchorSnapshot>();
+        private readonly Dictionary<Canvas, RectTransform> _safeRoots =
+            new Dictionary<Canvas, RectTransform>();
 
         private Rect _lastSafeArea;
         private Vector2Int _lastScreenSize;
@@ -44,12 +45,13 @@ namespace DontGetSidetracked.Presentation
         private void Update()
         {
             if (Input.GetKeyDown(KeyCode.Escape)) HandleBack();
+        }
 
-            if (Time.unscaledTime >= _nextCanvasScan)
-            {
-                _nextCanvasScan = Time.unscaledTime + 0.5f;
-                ApplySafeAreaIfNeeded();
-            }
+        private void LateUpdate()
+        {
+            if (Time.unscaledTime < _nextCanvasScan) return;
+            _nextCanvasScan = Time.unscaledTime + 0.25f;
+            ApplySafeArea();
         }
 
         private void OnApplicationPause(bool paused)
@@ -172,65 +174,79 @@ namespace DontGetSidetracked.Presentation
             return true;
         }
 
-        private void ApplySafeAreaIfNeeded()
+        private void ApplySafeArea()
         {
             int width = Math.Max(1, Screen.width);
             int height = Math.Max(1, Screen.height);
             Rect safe = Screen.safeArea;
             var size = new Vector2Int(width, height);
 
-            bool screenChanged = size != _lastScreenSize;
-            bool safeChanged = !Approximately(safe, _lastSafeArea);
-            bool canvasSetChanged = CaptureNewCanvases();
-            if (!screenChanged && !safeChanged && !canvasSetChanged) return;
-
-            _lastScreenSize = size;
-            _lastSafeArea = safe;
-
             Vector2 safeMin = new Vector2(safe.xMin / width, safe.yMin / height);
             Vector2 safeMax = new Vector2(safe.xMax / width, safe.yMax / height);
-            Vector2 safeSize = safeMax - safeMin;
 
-            var missing = new List<RectTransform>();
-            foreach (KeyValuePair<RectTransform, AnchorSnapshot> pair in _originalAnchors)
-            {
-                RectTransform rect = pair.Key;
-                if (rect == null)
-                {
-                    missing.Add(pair.Key);
-                    continue;
-                }
-
-                AnchorSnapshot original = pair.Value;
-                rect.anchorMin = new Vector2(
-                    safeMin.x + original.Min.x * safeSize.x,
-                    safeMin.y + original.Min.y * safeSize.y);
-                rect.anchorMax = new Vector2(
-                    safeMin.x + original.Max.x * safeSize.x,
-                    safeMin.y + original.Max.y * safeSize.y);
-            }
-
-            for (int i = 0; i < missing.Count; i++) _originalAnchors.Remove(missing[i]);
-        }
-
-        private bool CaptureNewCanvases()
-        {
-            bool changed = false;
             Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
-            for (int c = 0; c < canvases.Length; c++)
+            for (int i = 0; i < canvases.Length; i++)
             {
-                Canvas canvas = canvases[c];
+                Canvas canvas = canvases[i];
                 if (canvas == null || !ShouldFitCanvas(canvas.name)) continue;
 
-                Transform root = canvas.transform;
-                for (int i = 0; i < root.childCount; i++)
-                {
-                    if (!(root.GetChild(i) is RectTransform rect) || _originalAnchors.ContainsKey(rect)) continue;
-                    _originalAnchors.Add(rect, new AnchorSnapshot { Min = rect.anchorMin, Max = rect.anchorMax });
-                    changed = true;
-                }
+                RectTransform safeRoot = EnsureSafeAreaRoot(canvas);
+                ReparentDirectUiChildren(canvas, safeRoot);
+                safeRoot.anchorMin = safeMin;
+                safeRoot.anchorMax = safeMax;
+                safeRoot.offsetMin = Vector2.zero;
+                safeRoot.offsetMax = Vector2.zero;
             }
-            return changed;
+
+            CleanupDestroyedCanvases();
+            _lastScreenSize = size;
+            _lastSafeArea = safe;
+        }
+
+        private RectTransform EnsureSafeAreaRoot(Canvas canvas)
+        {
+            if (_safeRoots.TryGetValue(canvas, out RectTransform existing) && existing != null)
+                return existing;
+
+            Transform found = canvas.transform.Find(SafeAreaRootName);
+            RectTransform rect = found as RectTransform;
+            if (rect == null)
+            {
+                var root = new GameObject(SafeAreaRootName, typeof(RectTransform));
+                rect = root.GetComponent<RectTransform>();
+                rect.SetParent(canvas.transform, false);
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+            }
+
+            _safeRoots[canvas] = rect;
+            return rect;
+        }
+
+        private static void ReparentDirectUiChildren(Canvas canvas, RectTransform safeRoot)
+        {
+            Transform canvasTransform = canvas.transform;
+            var toMove = new List<RectTransform>();
+            for (int i = 0; i < canvasTransform.childCount; i++)
+            {
+                Transform child = canvasTransform.GetChild(i);
+                if (child == safeRoot) continue;
+                if (child is RectTransform rect) toMove.Add(rect);
+            }
+
+            for (int i = 0; i < toMove.Count; i++)
+                toMove[i].SetParent(safeRoot, false);
+        }
+
+        private void CleanupDestroyedCanvases()
+        {
+            if (_safeRoots.Count == 0) return;
+            var stale = new List<Canvas>();
+            foreach (KeyValuePair<Canvas, RectTransform> pair in _safeRoots)
+                if (pair.Key == null || pair.Value == null) stale.Add(pair.Key);
+            for (int i = 0; i < stale.Count; i++) _safeRoots.Remove(stale[i]);
         }
 
         private static bool ShouldFitCanvas(string canvasName) =>
@@ -243,11 +259,5 @@ namespace DontGetSidetracked.Presentation
             string.Equals(canvasName, "ResultEnhancementCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "NotificationValueCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "MandatoryUpdateCanvas", StringComparison.Ordinal);
-
-        private static bool Approximately(Rect a, Rect b) =>
-            Mathf.Abs(a.x - b.x) < 0.5f &&
-            Mathf.Abs(a.y - b.y) < 0.5f &&
-            Mathf.Abs(a.width - b.width) < 0.5f &&
-            Mathf.Abs(a.height - b.height) < 0.5f;
     }
 }
