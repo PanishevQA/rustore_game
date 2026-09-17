@@ -35,7 +35,9 @@ namespace DontGetSidetracked.Network
         {
             if (_offline != null) return await _offline.GetDailyAsync();
             string json = await SendAsync("GET", "/daily", null);
-            return JsonUtility.FromJson<DailyDto>(json);
+            DailyDto result = JsonUtility.FromJson<DailyDto>(json);
+            if (result == null) throw new InvalidOperationException("Daily response is empty.");
+            return result;
         }
 
         public async Task<LeaderboardDto> GetDailyLeaderboardAsync(string challengeId, int limit = 100)
@@ -53,7 +55,9 @@ namespace DontGetSidetracked.Network
             limit = Math.Max(1, Math.Min(100, limit));
             string path = "/leaderboard/daily?challengeId=" + UnityWebRequest.EscapeURL(challengeId) + "&limit=" + limit;
             string json = await SendAsync("GET", path, null);
-            return JsonUtility.FromJson<LeaderboardDto>(json);
+            LeaderboardDto result = JsonUtility.FromJson<LeaderboardDto>(json);
+            if (result == null) throw new InvalidOperationException("Leaderboard response is empty.");
+            return result;
         }
 
         public async Task<PurchaseVerificationResult> VerifyPurchaseAsync(
@@ -110,8 +114,13 @@ namespace DontGetSidetracked.Network
                 return await _offline.SubmitDailyAttemptAsync(playerId, challenge, replays, clientScores, assisted);
 
             if (challenge == null) throw new ArgumentNullException(nameof(challenge));
-            if (replays == null || replays.Count != 3) throw new ArgumentException("Daily requires three replays.", nameof(replays));
-            if (clientScores == null || clientScores.Count != 3) throw new ArgumentException("Daily requires three scores.", nameof(clientScores));
+            int expected = challenge.RouteCount;
+            if (expected < 1 || expected > 3)
+                throw new ArgumentException("Daily route count must be between 1 and 3.", nameof(challenge));
+            if (replays == null || replays.Count != expected)
+                throw new ArgumentException($"Daily requires {expected} replay(s).", nameof(replays));
+            if (clientScores == null || clientScores.Count != expected)
+                throw new ArgumentException($"Daily requires {expected} score(s).", nameof(clientScores));
 
             var request = new AttemptRequestDto
             {
@@ -119,12 +128,15 @@ namespace DontGetSidetracked.Network
                 challengeId = challenge.ChallengeId,
                 generatorVersion = challenge.GeneratorVersion,
                 assisted = assisted,
-                routes = new RouteAttemptRequestDto[3]
+                routes = new RouteAttemptRequestDto[expected]
             };
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < expected; i++)
             {
                 IReadOnlyList<RecordedPoint> source = replays[i];
+                if (source == null || source.Count == 0)
+                    throw new ArgumentException("Daily replay cannot be empty.", nameof(replays));
+
                 var points = new ReplayPointDto[source.Count];
                 for (int p = 0; p < source.Count; p++)
                 {
@@ -136,7 +148,7 @@ namespace DontGetSidetracked.Network
                     };
                 }
 
-                long duration = source.Count == 0 ? 1 : Math.Max(1, source[source.Count - 1].TimestampMs);
+                long duration = Math.Max(1, source[source.Count - 1].TimestampMs);
                 request.routes[i] = new RouteAttemptRequestDto
                 {
                     routeIndex = i,
@@ -147,7 +159,9 @@ namespace DontGetSidetracked.Network
             }
 
             string json = await SendAsync("POST", "/attempt", JsonUtility.ToJson(request));
-            return JsonUtility.FromJson<AttemptResponseDto>(json).score;
+            AttemptResponseDto response = JsonUtility.FromJson<AttemptResponseDto>(json);
+            if (response == null) throw new InvalidOperationException("Attempt response is empty.");
+            return response.score;
         }
 
         public async Task<string> CreateChallengeAsync(string playerId, string challengeId, double score)
@@ -161,7 +175,10 @@ namespace DontGetSidetracked.Network
                 score = score
             };
             string json = await SendAsync("POST", "/challenge", JsonUtility.ToJson(payload));
-            return JsonUtility.FromJson<ChallengeResponseDto>(json).shareUrl;
+            ChallengeResponseDto response = JsonUtility.FromJson<ChallengeResponseDto>(json);
+            if (response == null || string.IsNullOrWhiteSpace(response.shareUrl))
+                throw new InvalidOperationException("Challenge response has no share URL.");
+            return response.shareUrl;
         }
 
         public async Task<ReferralDto> GetReferralAsync(string referralId)
