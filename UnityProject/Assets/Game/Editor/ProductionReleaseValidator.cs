@@ -58,9 +58,11 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Android Application Entry must be Activity (UnityPlayerActivity), never GameActivity for RuStore Pay.");
             if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel25)
                 errors.Add("Minimum Android API must be at least 25 for Unity 6.3.");
-            if (PlayerSettings.Android.targetSdkVersion != AndroidSdkVersions.AndroidApiLevel34 &&
-                PlayerSettings.Android.targetSdkVersion != AndroidSdkVersions.AndroidApiLevelAuto)
-                errors.Add("Target Android API must match the currently verified RuStore SDK baseline (34) or use highest installed.");
+
+            AndroidSdkVersions targetSdk = PlayerSettings.Android.targetSdkVersion;
+            if (targetSdk != AndroidSdkVersions.AndroidApiLevelAuto &&
+                (int)targetSdk < (int)AndroidSdkVersions.AndroidApiLevel34)
+                errors.Add("Target Android API must be at least the currently verified RuStore SDK baseline (34), or use highest installed.");
 
             if (PlayerSettings.GetScriptingBackend(NamedBuildTarget.Android) != ScriptingImplementation.IL2CPP)
                 errors.Add("Android production build must use IL2CPP.");

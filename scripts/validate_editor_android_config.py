@@ -30,10 +30,16 @@ def main() -> int:
     require(config, "(int)currentMinimum < (int)AndroidSdkVersions.AndroidApiLevel25",
             "Editor bootstrap may only raise an older min SDK to the Unity 6.3 baseline.")
 
-    # Release preflight deliberately accepts API 34 or Auto. Together with the configurator contract,
-    # this means a future higher explicit target is never silently downgraded by editor startup.
-    require(release, "AndroidSdkVersions.AndroidApiLevel34", "Production preflight lost target API validation.")
-    require(release, "AndroidSdkVersions.AndroidApiLevelAuto", "Production preflight must allow highest-installed target SDK.")
+    # API 34 is a verified floor, not a ceiling. Auto and explicit newer targets must remain valid.
+    require(release, "AndroidSdkVersions targetSdk = PlayerSettings.Android.targetSdkVersion",
+            "Production preflight must evaluate the configured target SDK as a floor check.")
+    require(release, "targetSdk != AndroidSdkVersions.AndroidApiLevelAuto",
+            "Production preflight must allow highest-installed target SDK.")
+    require(release, "(int)targetSdk < (int)AndroidSdkVersions.AndroidApiLevel34",
+            "Production preflight must reject only targets below the verified API 34 floor.")
+    if "targetSdkVersion != AndroidSdkVersions.AndroidApiLevel34" in release:
+        errors.append("Production preflight must not reject explicit Android targets newer than API 34.")
+
     require(release, "AndroidApplicationEntry.Activity", "Production preflight must require UnityPlayerActivity entry mode.")
     require(release, "ScriptingImplementation.IL2CPP", "Production preflight must require IL2CPP.")
     require(release, "AndroidArchitecture.ARM64", "Production preflight must require ARM64.")
