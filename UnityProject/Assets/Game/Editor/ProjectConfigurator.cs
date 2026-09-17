@@ -41,8 +41,11 @@ namespace DontGetSidetracked.EditorTools
             if (PlayerSettings.Android.bundleVersionCode <= 0)
                 PlayerSettings.Android.bundleVersionCode = 1;
 
-            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
-            PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel34;
+            if (ShouldRaiseMinimumSdk(PlayerSettings.Android.minSdkVersion))
+                PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
+            if (ShouldAssignBaselineTargetSdk(PlayerSettings.Android.targetSdkVersion))
+                PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel34;
+
             PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.Activity;
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
@@ -59,6 +62,19 @@ namespace DontGetSidetracked.EditorTools
             // belongs to the developer and must survive Editor reloads and this menu command.
             return currentPackage.StartsWith("com.DefaultCompany.", StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(currentPackage, "com.DefaultCompany.ProductName", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ShouldRaiseMinimumSdk(AndroidSdkVersions currentMinimum)
+        {
+            return (int)currentMinimum < (int)AndroidSdkVersions.AndroidApiLevel25;
+        }
+
+        private static bool ShouldAssignBaselineTargetSdk(AndroidSdkVersions currentTarget)
+        {
+            // Auto means highest installed and is intentionally release-safe. Explicit targets newer than
+            // the verified baseline must also survive Editor reloads; only an actually older target is raised.
+            if (currentTarget == AndroidSdkVersions.AndroidApiLevelAuto) return false;
+            return (int)currentTarget < (int)AndroidSdkVersions.AndroidApiLevel34;
         }
 
         private static void EnsureScene()
