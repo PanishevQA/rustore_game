@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Economy;
@@ -24,9 +23,7 @@ namespace DontGetSidetracked.Presentation
         private YandexMobileAdsService _yandex;
         private InterstitialController _interstitial;
         private GameBootstrap _bootstrap;
-        private FieldInfo _modeField;
-        private FieldInfo _stateField;
-        private string _lastState = string.Empty;
+        private bool _wasResult;
         private bool _showInProgress;
         private float _nextPoll;
 
@@ -65,15 +62,12 @@ namespace DontGetSidetracked.Presentation
             if (Time.unscaledTime < _nextPoll) return;
             _nextPoll = Time.unscaledTime + 0.25f;
             if (_bootstrap == null) ResolveBootstrap();
-            if (_bootstrap == null || _modeField == null || _stateField == null) return;
+            if (_bootstrap == null) return;
 
-            string state = _stateField.GetValue(_bootstrap)?.ToString() ?? string.Empty;
-            if (!string.Equals(state, _lastState, StringComparison.Ordinal))
-            {
-                if (string.Equals(state, "Result", StringComparison.Ordinal))
-                    _interstitial.NotifyRoundCompleted();
-                _lastState = state;
-            }
+            bool isResult = GameBootstrapRuntimeBridge.IsResult(_bootstrap);
+            if (isResult && !_wasResult)
+                _interstitial.NotifyRoundCompleted();
+            _wasResult = isResult;
 
             if (_showInProgress || !IsSafeHome() || IsAnyHomeOverlayOpen()) return;
 
@@ -122,15 +116,8 @@ namespace DontGetSidetracked.Presentation
                     save.Entitlements.Contains(ProductIds.StarterPack));
         }
 
-        private bool IsSafeHome()
-        {
-            if (_bootstrap == null || _modeField == null || _stateField == null) return false;
-            object mode = _modeField.GetValue(_bootstrap);
-            object state = _stateField.GetValue(_bootstrap);
-            return mode != null && state != null &&
-                   string.Equals(mode.ToString(), "Home", StringComparison.Ordinal) &&
-                   string.Equals(state.ToString(), "Idle", StringComparison.Ordinal);
-        }
+        private bool IsSafeHome() =>
+            _bootstrap != null && GameBootstrapRuntimeBridge.IsIdleHome(_bootstrap);
 
         private static bool IsAnyHomeOverlayOpen()
         {
@@ -153,17 +140,7 @@ namespace DontGetSidetracked.Presentation
         private void ResolveBootstrap()
         {
             _bootstrap = FindFirstObjectByType<GameBootstrap>();
-            if (_bootstrap == null)
-            {
-                _modeField = null;
-                _stateField = null;
-                return;
-            }
-
-            Type type = typeof(GameBootstrap);
-            _modeField = type.GetField("_mode", BindingFlags.Instance | BindingFlags.NonPublic);
-            _stateField = type.GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic);
-            _lastState = _stateField?.GetValue(_bootstrap)?.ToString() ?? string.Empty;
+            _wasResult = _bootstrap != null && GameBootstrapRuntimeBridge.IsResult(_bootstrap);
         }
 
         private void OnDestroy()
