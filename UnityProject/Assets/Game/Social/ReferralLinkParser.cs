@@ -35,7 +35,8 @@ namespace DontGetSidetracked.Social
         public static bool IsValidReferralId(string value)
         {
             // Current checksummed L4 tokens are 40 chars for a 3-route Daily. Keep some headroom
-            // for generic/legacy referral IDs while reserving L1/L2/L3/L4 prefixes for our codec.
+            // for generic/legacy referral IDs. The whole L<digit> namespace is reserved for our
+            // versioned challenge codec so a future/unknown version cannot be mistaken for a generic ID.
             if (string.IsNullOrWhiteSpace(value) || value.Length < 4 || value.Length > 48) return false;
             for (int i = 0; i < value.Length; i++)
             {
@@ -44,16 +45,15 @@ namespace DontGetSidetracked.Social
             }
 
             string normalized = value.ToUpperInvariant();
-            if (HasReservedChallengePrefix(normalized))
+            if (LooksLikeVersionedChallengeToken(normalized))
                 return OfflineChallengeCodec.TryDecode(normalized, out _);
 
             return true;
         }
 
-        private static bool HasReservedChallengePrefix(string value) =>
-            value.StartsWith("L1", StringComparison.Ordinal) ||
-            value.StartsWith("L2", StringComparison.Ordinal) ||
-            value.StartsWith("L3", StringComparison.Ordinal) ||
-            value.StartsWith("L4", StringComparison.Ordinal);
+        private static bool LooksLikeVersionedChallengeToken(string value) =>
+            value.Length >= 2 &&
+            value[0] == 'L' &&
+            char.IsDigit(value[1]);
     }
 }
