@@ -7,6 +7,8 @@ VERSIONS = ROOT / "UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.
 PACKAGES = ROOT / "UnityProject/Packages/manifest.json"
 MATRIX = ROOT / "docs/RUSTORE_SDK_MATRIX.md"
 CHECKLIST = ROOT / "docs/RUSTORE_RELEASE_CHECKLIST.md"
+README = ROOT / "README.md"
+STATUS = ROOT / "docs/MVP_STATUS.md"
 
 verified_date = "2026-09-17"
 expected = {
@@ -28,6 +30,8 @@ installed_packages = {
 versions_text = VERSIONS.read_text(encoding="utf-8")
 matrix_text = MATRIX.read_text(encoding="utf-8")
 checklist_text = CHECKLIST.read_text(encoding="utf-8")
+readme_text = README.read_text(encoding="utf-8")
+status_text = STATUS.read_text(encoding="utf-8")
 manifest_text = PACKAGES.read_text(encoding="utf-8")
 manifest = json.loads(manifest_text)
 dependencies = manifest.get("dependencies") or {}
@@ -70,6 +74,31 @@ for name, marker in checklist_requirements.items():
         errors.append(
             f"RUSTORE_RELEASE_CHECKLIST.md is not synchronized with the verified {name} baseline {expected[name]}."
         )
+
+release_docs = {
+    "README.md": (
+        readme_text,
+        (
+            f"Последняя сверка RuStore targets — {verified_date}:",
+            f"Remote Config Unity `{expected['RemoteConfig']}`",
+            f"`ru.rustore.installreferrer` `{expected['InstallReferrer']}`",
+            f"`ru.rustore.remoteconfig` `{expected['RemoteConfig']}`",
+        ),
+    ),
+    "docs/MVP_STATUS.md": (
+        status_text,
+        (
+            f"Последняя сверка RuStore targets на {verified_date}:",
+            f"Remote Config Unity: **`{expected['RemoteConfig']}`**",
+            f"`ru.rustore.installreferrer` `{expected['InstallReferrer']}`",
+            f"`ru.rustore.remoteconfig` `{expected['RemoteConfig']}`",
+        ),
+    ),
+}
+for path, (text, markers) in release_docs.items():
+    for marker in markers:
+        if marker not in text:
+            errors.append(f"{path} is not synchronized with the verified RuStore baseline: missing {marker!r}.")
 
 npm_registry = constant("NpmRegistry")
 registries = manifest.get("scopedRegistries") or []
