@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
 using DontGetSidetracked.Daily;
@@ -27,8 +26,6 @@ namespace DontGetSidetracked.Presentation
         private LocalDailyNotificationScheduler _localNotificationScheduler;
         private ReviewPolicy _reviewPolicy;
         private GameBootstrap _bootstrap;
-        private FieldInfo _modeField;
-        private FieldInfo _stateField;
         private int _observedCompletedDaily;
         private bool _reviewInFlight;
         private bool _mandatoryUpdate;
@@ -317,31 +314,12 @@ namespace DontGetSidetracked.Presentation
         private void ResolveBootstrap()
         {
             _bootstrap = FindFirstObjectByType<GameBootstrap>();
-            if (_bootstrap == null)
-            {
-                _modeField = null;
-                _stateField = null;
-                return;
-            }
-
-            Type type = typeof(GameBootstrap);
-            _modeField = type.GetField("_mode", BindingFlags.Instance | BindingFlags.NonPublic);
-            _stateField = type.GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         private bool IsSafeHome()
         {
-            if (_bootstrap == null || _modeField == null || _stateField == null)
-            {
-                ResolveBootstrap();
-                if (_bootstrap == null || _modeField == null || _stateField == null) return false;
-            }
-
-            object mode = _modeField.GetValue(_bootstrap);
-            object state = _stateField.GetValue(_bootstrap);
-            return mode != null && state != null &&
-                   string.Equals(mode.ToString(), "Home", StringComparison.Ordinal) &&
-                   string.Equals(state.ToString(), "Idle", StringComparison.Ordinal);
+            if (_bootstrap == null) ResolveBootstrap();
+            return _bootstrap != null && GameBootstrapRuntimeBridge.IsIdleHome(_bootstrap);
         }
 
         private void ShowNotificationValuePrompt()
