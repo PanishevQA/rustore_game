@@ -22,8 +22,6 @@ namespace DontGetSidetracked.Presentation
         private readonly Dictionary<Canvas, RectTransform> _safeRoots =
             new Dictionary<Canvas, RectTransform>();
 
-        private Rect _lastSafeArea;
-        private Vector2Int _lastScreenSize;
         private float _nextCanvasScan;
         private bool _restartTutorialOnResume;
 
@@ -34,12 +32,6 @@ namespace DontGetSidetracked.Presentation
             var root = new GameObject("MobileUiCoordinator");
             DontDestroyOnLoad(root);
             root.AddComponent<MobileUiCoordinator>();
-        }
-
-        private void Awake()
-        {
-            _lastSafeArea = new Rect(-1, -1, -1, -1);
-            _lastScreenSize = new Vector2Int(-1, -1);
         }
 
         private void Update()
@@ -179,7 +171,6 @@ namespace DontGetSidetracked.Presentation
             int width = Math.Max(1, Screen.width);
             int height = Math.Max(1, Screen.height);
             Rect safe = Screen.safeArea;
-            var size = new Vector2Int(width, height);
 
             Vector2 safeMin = new Vector2(safe.xMin / width, safe.yMin / height);
             Vector2 safeMax = new Vector2(safe.xMax / width, safe.yMax / height);
@@ -199,8 +190,6 @@ namespace DontGetSidetracked.Presentation
             }
 
             CleanupDestroyedCanvases();
-            _lastScreenSize = size;
-            _lastSafeArea = safe;
         }
 
         private RectTransform EnsureSafeAreaRoot(Canvas canvas)
