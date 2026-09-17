@@ -12,9 +12,9 @@ namespace DontGetSidetracked.Platform.RuStore
         public long AvailableVersionCode { get; private set; }
 
         /// <summary>
-        /// Refreshes RuStore update state only. The presentation coordinator decides when it is safe
-        /// to launch an update flow after this await completes, so a slow SDK response cannot open
-        /// a flexible update on top of an active gameplay round.
+        /// Refreshes RuStore update state, then launches the update only at the final safe point.
+        /// Mandatory updates are allowed to take over immediately; optional flexible updates must
+        /// pass the presentation-owned PlatformUiLaunchGate after the asynchronous SDK check.
         /// </summary>
         public async Task CheckForUpdateAsync(bool mandatory)
         {
@@ -44,6 +44,16 @@ namespace DontGetSidetracked.Platform.RuStore
             }
 
             await completion.Task;
+            if (!IsUpdateAvailable) return;
+
+            if (mandatory)
+            {
+                await StartImmediateAsync();
+                return;
+            }
+
+            if (PlatformUiLaunchGate.CanLaunchNow())
+                await StartFlexibleAsync();
 #else
             IsUpdateAvailable = false;
             IsUpdateInProgress = false;
