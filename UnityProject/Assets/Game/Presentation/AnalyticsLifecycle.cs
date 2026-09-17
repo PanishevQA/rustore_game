@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using DontGetSidetracked.Analytics;
 using DontGetSidetracked.Core;
+using DontGetSidetracked.Platform.Android;
 using UnityEngine;
 
 namespace DontGetSidetracked.Presentation
@@ -26,10 +27,14 @@ namespace DontGetSidetracked.Presentation
             SaveData save = saveRepository.Load();
             int sessionNumber = save.SessionNumber + 1;
             Service = new LocalAnalyticsService(save.AnonymousPlayerId, sessionNumber);
+            RuntimeBuildIdentity build = AndroidBuildIdentity.Current;
 
             Service.Track(AnalyticsEventNames.AppOpen, new Dictionary<string, object>
             {
-                ["client_version"] = Application.version,
+                ["client_version"] = build.Version,
+                ["build_code"] = build.VersionCode,
+                ["package_name"] = build.PackageName,
+                ["build_guid"] = build.BuildGuid,
                 ["platform"] = Application.platform.ToString(),
                 ["storage"] = "local"
             });
