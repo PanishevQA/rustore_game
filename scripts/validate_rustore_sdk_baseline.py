@@ -14,17 +14,20 @@ expected = {
     "Update": "10.5.1",
     "Review": "10.5.1",
     "GameCenter": "10.5.2",
-    "RemoteConfig": "10.5.0",
+    "RemoteConfig": "10.5.1",
 }
 installed_packages = {
     "ru.rustore.pay": expected["Pay"],
+    "ru.rustore.installreferrer": expected["InstallReferrer"],
+    "ru.rustore.remoteconfig": expected["RemoteConfig"],
     "ru.rustore.update": expected["Update"],
     "ru.rustore.review": expected["Review"],
 }
 
 versions_text = VERSIONS.read_text(encoding="utf-8")
 matrix_text = MATRIX.read_text(encoding="utf-8")
-manifest = json.loads(PACKAGES.read_text(encoding="utf-8"))
+manifest_text = PACKAGES.read_text(encoding="utf-8")
+manifest = json.loads(manifest_text)
 dependencies = manifest.get("dependencies") or {}
 
 
@@ -63,7 +66,7 @@ if not any(
 ):
     errors.append("Packages/manifest.json RuStore registry must match RuStoreSdkVersions.NpmRegistry.")
 
-if "artifactory-external.vkpartner.ru" in versions_text or "artifactory-external.vkpartner.ru" in PACKAGES.read_text(encoding="utf-8"):
+if "artifactory-external.vkpartner.ru" in versions_text or "artifactory-external.vkpartner.ru" in manifest_text:
     errors.append("Deprecated RuStore repository address detected in active package configuration.")
 
 if errors:

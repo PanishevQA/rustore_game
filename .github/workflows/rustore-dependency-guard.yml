@@ -15,8 +15,8 @@ jobs:
           set -euo pipefail
           # ProductionReleaseValidator intentionally mentions forbidden tokens as runtime scan rules,
           # so exclude that one source file from this text-level CI check to avoid self-matching.
-          # nexus-external.vkteam.ru is not blanket-forbidden: current official Unity pages still use it
-          # for some SDKs, while newer Pay/Update GitFlic branches already document nexus-external.rustore.ru.
+          # nexus-external.vkteam.ru is not blanket-forbidden: some official pages may still show transitional
+          # examples, while the verified project registry is nexus-external.rustore.ru.
           if grep -RInE 'billingclient|artifactory-external\.vkpartner\.ru' UnityProject \
               --exclude-dir=Library \
               --exclude=ProductionReleaseValidator.cs; then
@@ -29,17 +29,17 @@ jobs:
           grep -q 'public const string InstallReferrer = "10.6.1"' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
           grep -q 'public const string Update = "10.5.1"' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
           grep -q 'public const string Review = "10.5.1"' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
-          grep -q 'public const string RemoteConfig = "10.5.0"' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
+          grep -q 'public const string RemoteConfig = "10.5.1"' UnityProject/Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs
 
           grep -q '"com.unity.modules.audio": "1.0.0"' UnityProject/Packages/manifest.json
           grep -q '"com.unity.modules.imageconversion": "1.0.0"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.core": "10.5.0"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.pay": "11.1.0"' UnityProject/Packages/manifest.json
+          grep -q '"ru.rustore.installreferrer": "10.6.1"' UnityProject/Packages/manifest.json
+          grep -q '"ru.rustore.remoteconfig": "10.5.1"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.update": "10.5.1"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.review": "10.5.1"' UnityProject/Packages/manifest.json
 
-          # The current Editor baseline uses the registry that resolves Pay/Update. Install Referrer / Remote Config
-          # may be restored from an official registry, tgz or unitypackage; production preflight checks loaded SDK types.
           grep -q 'nexus-external.rustore.ru/repository/npm-unity-rustore-exposed' UnityProject/Packages/manifest.json
           grep -q 'FindRuStoreType("InstallReferrerClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
           grep -q 'FindRuStoreType("RuStoreRemoteConfigClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs

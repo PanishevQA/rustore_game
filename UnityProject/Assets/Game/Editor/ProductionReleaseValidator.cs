@@ -89,13 +89,15 @@ namespace DontGetSidetracked.EditorTools
 
             ValidateFileContains(PackagesManifestPath, errors,
                 ("\"ru.rustore.pay\": \"11.1.0\"", "RuStore Pay must remain pinned to the verified version."),
+                ("\"ru.rustore.installreferrer\": \"10.6.1\"", "RuStore Install Referrer must remain pinned to the verified version."),
+                ("\"ru.rustore.remoteconfig\": \"10.5.1\"", "RuStore Remote Config must remain pinned to the verified version."),
                 ("\"ru.rustore.update\": \"10.5.1\"", "RuStore Update must remain pinned to the verified version."),
                 ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."));
 
             ValidateRuStoreIntegrationPresence(errors);
             ValidateFileContains(SdkVersionsPath, errors,
                 ("InstallReferrer = \"10.6.1\"", "Install Referrer release target must be re-verified before production."),
-                ("RemoteConfig = \"10.5.0\"", "Remote Config release target must be re-verified before production."));
+                ("RemoteConfig = \"10.5.1\"", "Remote Config release target must be re-verified before production."));
 
             ValidateFileContains(RuntimeSettingsPath, errors,
                 ("OptionalBackendBaseUrl = \"\"", "Offline-first MVP must ship without a developer-operated backend URL."));

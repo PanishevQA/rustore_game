@@ -51,6 +51,8 @@ def validate_package_manifest() -> None:
         "com.unity.modules.imageconversion": "1.0.0",
         "ru.rustore.core": "10.5.0",
         "ru.rustore.pay": "11.1.0",
+        "ru.rustore.installreferrer": "10.6.1",
+        "ru.rustore.remoteconfig": "10.5.1",
         "ru.rustore.update": "10.5.1",
         "ru.rustore.review": "10.5.1",
     }
@@ -238,10 +240,12 @@ def validate_release_preflight_contract() -> None:
     text = read(UNITY / "Assets/Game/Editor/ProductionReleaseValidator.cs")
     required = {
         r'\"ru.rustore.pay\": \"11.1.0\"': "Production preflight must enforce RuStore Pay 11.1.0.",
-        'HasLoadedRuStoreType("InstallReferrerClient")': "Production preflight must require an actually loaded Install Referrer Unity integration regardless of package source.",
-        'HasLoadedRuStoreType("RuStoreRemoteConfigClient")': "Production preflight must require an actually loaded Remote Config Unity integration regardless of package source.",
+        r'\"ru.rustore.installreferrer\": \"10.6.1\"': "Production preflight must enforce RuStore Install Referrer 10.6.1.",
+        r'\"ru.rustore.remoteconfig\": \"10.5.1\"': "Production preflight must enforce RuStore Remote Config 10.5.1.",
+        'HasLoadedRuStoreType("InstallReferrerClient")': "Production preflight must require an actually loaded Install Referrer Unity integration.",
+        'HasLoadedRuStoreType("RuStoreRemoteConfigClient")': "Production preflight must require an actually loaded Remote Config Unity integration.",
         'InstallReferrer = \\"10.6.1\\"': "Production preflight must protect the current Install Referrer target version.",
-        'RemoteConfig = \\"10.5.0\\"': "Production preflight must protect the current Remote Config target version.",
+        'RemoteConfig = \\"10.5.1\\"': "Production preflight must protect the current Remote Config target version.",
         'android.permission.POST_NOTIFICATIONS': "Production preflight must protect the Daily reminder permission.",
         'androidx.core.content.FileProvider': "Production preflight must protect result-card FileProvider wiring.",
         'ValidateForbiddenManifestPermissions': "Production preflight must reject unnecessary sensitive permissions.",
