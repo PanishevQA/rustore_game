@@ -33,6 +33,8 @@ required_runtime = [
     "referral.IsVisible",
     "platform.IsNotificationPromptOpen",
     'GameObject.Find("MandatoryUpdateCanvas")',
+    "EnforceMandatoryUpdateWhenSafeHome",
+    "while (!IsSafeHome())",
 ]
 for value in required_runtime:
     if value not in runtime:
