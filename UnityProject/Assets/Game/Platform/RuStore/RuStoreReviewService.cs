@@ -1,22 +1,47 @@
+using System;
 using System.Threading.Tasks;
 using DontGetSidetracked.Services;
-using UnityEngine;
+using RuStore.Review;
 
 namespace DontGetSidetracked.Platform.RuStore
 {
-    /// <summary>
-    /// Offline/editor-safe review adapter.
-    /// The official RuStore Review SDK is intentionally not part of the local Editor baseline.
-    /// Production release validation remains responsible for requiring the verified SDK set.
-    /// </summary>
     public sealed class RuStoreReviewService : IReviewService
     {
         public Task RequestReviewAsync()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
-            Debug.LogWarning("RuStore Review SDK is not present in the local baseline; review request skipped.");
-#endif
+            var completion = new TaskCompletionSource<bool>();
+            try
+            {
+                RuStoreReviewManager manager = RuStoreReviewManager.Instance;
+                if (!manager.IsInitialized) manager.Init();
+
+                manager.RequestReviewFlow(
+                    onFailure: error => completion.TrySetException(
+                        new InvalidOperationException($"RuStore review prepare failed: {error}")),
+                    onSuccess: () =>
+                    {
+                        if (!PlatformUiLaunchGate.CanLaunchNow())
+                        {
+                            completion.TrySetException(new InvalidOperationException(
+                                "RuStore review launch skipped because the current UI is no longer safe."));
+                            return;
+                        }
+
+                        manager.LaunchReviewFlow(
+                            onFailure: error => completion.TrySetException(
+                                new InvalidOperationException($"RuStore review launch failed: {error}")),
+                            onSuccess: () => completion.TrySetResult(true));
+                    });
+            }
+            catch (Exception error)
+            {
+                completion.TrySetException(error);
+            }
+            return completion.Task;
+#else
             return Task.CompletedTask;
+#endif
         }
     }
 }
