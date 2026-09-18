@@ -20,6 +20,9 @@ namespace DontGetSidetracked.Presentation
 
         private readonly RouteGenerator _generator = new RouteGenerator();
         private readonly ScoreCalculator _scorer = new ScoreCalculator();
+        private const int MaxRecordingPoints = 2048;
+        private const long MaxGestureDurationMs = 20_000;
+
         private readonly List<RecordedPoint> _recording = new List<RecordedPoint>(256);
         private readonly List<double> _dailyScores = new List<double>(3);
         private readonly List<IReadOnlyList<RecordedPoint>> _dailyReplays = new List<IReadOnlyList<RecordedPoint>>(3);
@@ -337,7 +340,23 @@ namespace DontGetSidetracked.Presentation
             }
 
             bool held = Input.touchCount > 0 || Input.GetMouseButton(0);
-            if (_pointerDown && held && TryScreenToFixed(screenPosition, out FixedPoint2 point)) AddPoint(point);
+            if (_pointerDown && NowMs() - _gestureStartMs >= MaxGestureDurationMs)
+            {
+                _pointerDown = false;
+                FinishRound();
+                return;
+            }
+
+            if (_pointerDown && held && TryScreenToFixed(screenPosition, out FixedPoint2 point))
+            {
+                AddPoint(point);
+                if (_recording.Count >= MaxRecordingPoints)
+                {
+                    _pointerDown = false;
+                    FinishRound();
+                    return;
+                }
+            }
 
             if (_pointerDown && released)
             {
