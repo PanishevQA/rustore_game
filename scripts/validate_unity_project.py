@@ -302,6 +302,11 @@ def validate_release_preflight_contract() -> None:
 def validate_release_readiness_reporter() -> None:
     text = read(UNITY / "Assets/Game/Editor/ReleaseReadinessReporter.cs")
     required = (
+        "ProjectConfigurator.Configure()",
+        "AndroidDependencyConfigurator.Configure()",
+        "BrandAssetConfigurator.Configure()",
+        "AndroidDependencyConfigurator.ForceResolveAndroidDependencies()",
+        "EditorUserBuildSettings.buildAppBundle = true",
         "ProductionReleaseVersionValidator.CollectErrors()",
         "ProductionPlaceholderValidator.CollectErrors()",
         "ProductionReleaseValidator.CollectErrors()",
