@@ -159,6 +159,17 @@ UI собран как единый release-style portrait layer: карточн
 
 Это позволяет проводить полный clean-state regression без ручного поиска `persistentDataPath`.
 
+## Production identifiers
+
+Зафиксированы production-идентификаторы:
+- Android package: `ru.release.nesbeisya`;
+- RuStore Console application ID / Pay: `2063758837`;
+- RuStore Remote Config AppId: `4e0feafb-1ce7-4b71-966b-0122938b282a`;
+- RuStore Pay deeplink scheme: `nesbeisyapay`;
+- Yandex rewarded: `R-M-20071218-1`;
+- Yandex interstitial: `R-M-20071218-2`;
+- signing alias: `nesbeysya` (keystore file/passwords remain local and are never committed).
+
 ## Release-candidate проверка одной командой
 
 На Windows с установленным через Unity Hub Editor закройте открытый Unity-проект и из корня репозитория запустите:
