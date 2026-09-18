@@ -32,6 +32,7 @@ namespace DontGetSidetracked.Presentation
         private JsonFileSaveRepository _repository;
 
         private CanvasGroup _dashboardGroup;
+        private ReleasePanelMotion _dashboardMotion;
         private CanvasGroup _titleGroup;
         private CanvasGroup _statusGroup;
         private CanvasGroup _playGroup;
@@ -182,6 +183,7 @@ namespace DontGetSidetracked.Presentation
             Stretch(root.GetComponent<RectTransform>());
             root.transform.SetAsLastSibling();
             _dashboardGroup = root.GetComponent<CanvasGroup>();
+            _dashboardMotion = root.AddComponent<ReleasePanelMotion>();
 
             Text logo = CreateText(root.transform, "Logo", "НЕ СБЕЙСЯ!", 68, TextAnchor.MiddleLeft,
                 new Vector2(0.075f, 0.900f), new Vector2(0.70f, 0.965f), TextPrimary);
@@ -372,6 +374,7 @@ namespace DontGetSidetracked.Presentation
                 _dashboardGroup.alpha = visible ? 1f : 0f;
                 _dashboardGroup.interactable = visible;
                 _dashboardGroup.blocksRaycasts = visible;
+                if (visible) _dashboardMotion?.Play();
             }
 
             SetLegacyGroup(_titleGroup, !visible, false);
