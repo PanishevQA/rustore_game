@@ -123,7 +123,7 @@ namespace DontGetSidetracked.Presentation
             Image hero = ReleaseUiComponents.GlassCard(_canvas.transform, "DailyHero",
                 new Vector2(0.07f, 0.470f), new Vector2(0.93f, 0.735f), ReleaseUiComponents.Cyan, true);
 
-            ReleaseUiKit.TextBlock(hero.transform, "Headline", "ОДИН МАРШРУТ.\nВСЕ ИГРОКИ.\nКТО ТОЧНЕЕ?", 35,
+            ReleaseUiKit.TextBlock(hero.transform, "Headline", "ОДИН ЧЕЛЛЕНДЖ.\nВСЕ ИГРОКИ.\nКТО ТОЧНЕЕ?", 35,
                 TextAnchor.MiddleLeft, new Vector2(0.055f, 0.49f), new Vector2(0.68f, 0.91f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
 
@@ -131,7 +131,7 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.055f, 0.08f), new Vector2(0.345f, 0.39f), ReleaseUiComponents.Gold);
             _best = ReleaseUiComponents.StatTile(hero.transform, "Best", "◆", "—", "Лучший результат",
                 new Vector2(0.355f, 0.08f), new Vector2(0.645f, 0.39f), ReleaseUiComponents.Cyan);
-            ReleaseUiComponents.StatTile(hero.transform, "Global", "|||", "1", "Маршрут сегодня",
+            ReleaseUiComponents.StatTile(hero.transform, "Global", "|||", "=", "Одинаковое задание",
                 new Vector2(0.655f, 0.08f), new Vector2(0.945f, 0.39f), ReleaseUiComponents.Violet);
 
             ReleaseUiComponents.SectionHeader(_canvas.transform, "ВАША ЦЕЛЬ",
