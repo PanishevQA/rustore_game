@@ -19,8 +19,12 @@ def main() -> int:
     release = RELEASE.read_text(encoding="utf-8")
     version_guard = VERSION_GUARD.read_text(encoding="utf-8")
 
-    require(config, "ShouldAssignDevelopmentPackageName(currentPackage)",
-            "Editor bootstrap must preserve explicitly configured production package names.")
+    require(config, "ShouldAssignProductionPackageName(currentPackage)",
+            "Editor bootstrap must preserve explicit package names while migrating the legacy development identifier.")
+    require(config, "ProductionPackageName = \"ru.release.nesbeisya\"",
+            "Editor bootstrap must pin the final RuStore production package name.")
+    require(config, "LegacyDevelopmentPackageName = \"ru.panishedqa.nesbeisya.dev\"",
+            "Editor bootstrap must explicitly identify the legacy development package for one-way migration.")
     require(config, "ShouldRaiseMinimumSdk(PlayerSettings.Android.minSdkVersion)",
             "Editor bootstrap must not lower an explicitly configured minimum Android SDK.")
     require(config, "ShouldAssignBaselineTargetSdk(PlayerSettings.Android.targetSdkVersion)",
