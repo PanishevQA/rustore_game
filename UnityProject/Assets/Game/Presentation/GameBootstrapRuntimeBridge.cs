@@ -427,7 +427,8 @@ namespace DontGetSidetracked.Presentation
         private static bool ResultContractAvailable()
         {
             return ModeField != null && StateField != null && DailyCompletedField != null &&
-                   LastResultScoreField != null && LastDailyScoreField != null && DailyField != null &&
+                   LastResultScoreField != null && LastScoreBreakdownField != null &&
+                   LastDailyScoreField != null && DailyField != null &&
                    RouteField != null && RecordingField != null && DuelSessionField != null &&
                    ApiField != null && SaveField != null && PrimaryField != null && NavigationRevisionField != null;
         }
