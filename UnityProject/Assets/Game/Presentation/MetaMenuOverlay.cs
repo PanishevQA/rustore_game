@@ -267,18 +267,80 @@ namespace DontGetSidetracked.Presentation
             {
                 StoreProduct product = products[i];
                 if (product == null || string.IsNullOrWhiteSpace(product.Id)) continue;
-                bool owned = IsOwned(product.Id);
-                string title = string.IsNullOrWhiteSpace(product.Title) ? ProductLabel(product.Id) : product.Title;
-                string price = string.IsNullOrWhiteSpace(product.PriceLabel) ? "—" : product.PriceLabel;
-                string label = owned && !product.IsConsumable
-                    ? $"{title}  •  КУПЛЕНО"
-                    : $"{title}  •  {price}";
-                string productId = product.Id;
-                AddAction(label, () => Purchase(productId), !owned || product.IsConsumable);
+                AddStoreProductAction(product, IsOwned(product.Id));
             }
 
             AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases);
             AddAction("КОСМЕТИКА", OpenCosmetics);
+        }
+
+        private void AddStoreProductAction(StoreProduct product, bool owned)
+        {
+            string productId = product.Id;
+            string title = string.IsNullOrWhiteSpace(product.Title) ? ProductLabel(productId) : product.Title;
+            string description = string.IsNullOrWhiteSpace(product.Description)
+                ? ProductSubtitle(productId)
+                : product.Description;
+            string price = string.IsNullOrWhiteSpace(product.PriceLabel) ? "—" : product.PriceLabel;
+            bool interactable = !owned || product.IsConsumable;
+
+            var go = new GameObject("StoreProduct", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
+            go.transform.SetParent(_actionsRoot, false);
+
+            Image image = go.GetComponent<Image>();
+            image.sprite = ReleaseUiKit.Rounded;
+            image.type = Image.Type.Sliced;
+            image.color = new Color(0.045f, 0.065f, 0.115f, 0.985f);
+
+            Outline outline = go.AddComponent<Outline>();
+            Color accent = owned && !product.IsConsumable ? ReleaseUiKit.Green : ReleaseUiKit.Cyan;
+            outline.effectColor = new Color(accent.r, accent.g, accent.b, 0.16f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            LayoutElement element = go.GetComponent<LayoutElement>();
+            element.preferredHeight = 92;
+            element.minHeight = 84;
+
+            Button button = go.GetComponent<Button>();
+            button.targetGraphic = image;
+            button.interactable = interactable;
+            if (interactable) button.onClick.AddListener(() => Purchase(productId));
+            ColorBlock colors = button.colors;
+            colors.normalColor = image.color;
+            colors.highlightedColor = ReleaseUiKit.Lighten(image.color, 0.045f);
+            colors.pressedColor = ReleaseUiKit.Darken(image.color, 0.07f);
+            colors.disabledColor = new Color(image.color.r, image.color.g, image.color.b, 0.76f);
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+
+            Text titleText = ReleaseUiKit.TextBlock(go.transform, "ProductTitle", title, 23,
+                TextAnchor.MiddleLeft, new Vector2(0.055f, 0.46f), new Vector2(0.69f, 0.90f),
+                ReleaseUiKit.Text, FontStyle.Bold);
+            titleText.raycastTarget = false;
+
+            Text subtitle = ReleaseUiKit.TextBlock(go.transform, "ProductSubtitle", description, 15,
+                TextAnchor.MiddleLeft, new Vector2(0.055f, 0.10f), new Vector2(0.69f, 0.48f),
+                ReleaseUiKit.Muted);
+            subtitle.raycastTarget = false;
+
+            Text priceText = ReleaseUiKit.TextBlock(go.transform, "ProductPrice",
+                owned && !product.IsConsumable ? "КУПЛЕНО" : price, 20,
+                TextAnchor.MiddleRight, new Vector2(0.70f, 0.18f), new Vector2(0.945f, 0.82f),
+                accent, FontStyle.Bold);
+            priceText.raycastTarget = false;
+        }
+
+        private static string ProductSubtitle(string id)
+        {
+            switch (id)
+            {
+                case ProductIds.RemoveAds: return "Убирает межраундовую рекламу";
+                case ProductIds.StarterPack: return "Набор для быстрого старта";
+                case ProductIds.SkinNeon: return "Косметический неоновый след";
+                case ProductIds.SkinRetro: return "Косметический ретро-след";
+                case ProductIds.Hints10: return "10 дополнительных подсказок";
+                default: return "Покупка через RuStore";
+            }
         }
 
         private async void Purchase(string productId)
