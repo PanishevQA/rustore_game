@@ -11,18 +11,17 @@ Release target rechecked against the official Yandex Mobile Ads Unity changelog 
 - `RewardedHomeOverlay` — opt-in rewarded placement: one completed rewarded ad grants one local hint.
 - `InterstitialController` — Remote Config/default frequency cap and `remove_ads` entitlement checks.
 
-If the Yandex plugin or production block IDs are missing, ads simply remain unavailable. Gameplay still works.
+The official plugin is now repository-managed through `Packages/manifest.json` and pinned to the upstream Git tag `#8.4.0` at `mobileads-sdk`. `Game.Monetization.asmdef` references `YandexMobileAds` and enables `YANDEX_MOBILE_ADS` automatically only for the verified `[8.4.0,8.5.0)` package line. Gameplay still stays isolated behind `IAdService`.
 
-## Import before production
+## Production setup
 
-1. Download the official `yandex-mobileads-lite-8.4.0.unitypackage` from Yandex Mobile Ads documentation/repository.
-2. Import it into the Unity project.
-3. Let External Dependency Manager resolve Android dependencies.
-4. Keep **Custom Main Gradle Template** and **Custom Gradle Properties Template** enabled. The production preflight verifies both serialized Player Settings flags and requires `Assets/Plugins/Android/mainTemplate.gradle` plus `gradleTemplate.properties` to exist.
-5. Add Android scripting define symbol `YANDEX_MOBILE_ADS`.
-6. Replace empty values in `YandexMobileAdsSettings.RewardedUnitId` and `InterstitialUnitId` with real `R-M-...` IDs from Yandex Advertising Network.
-7. Never ship `demo-rewarded-yandex`, `demo-interstitial-yandex`, or any other demo block ID in release.
-8. Run `Tools → НЕ СБЕЙСЯ! → Validate Production Release`.
+1. Open the project and let Unity Package Manager resolve the pinned Yandex Mobile Ads Unity **8.4.0** package from `Packages/manifest.json`.
+2. External Dependency Manager is also pinned (Google upstream tag `v1.2.188`); run **Assets → External Dependency Manager → Android Resolver → Force Resolve** after a clean package import or when Android templates are regenerated.
+3. `AndroidDependencyConfigurator` creates **Custom Main Gradle Template**, **Custom Gradle Properties Template**, and **Custom Gradle Settings Template** from the exact installed Unity editor template set and enables the corresponding Player Settings flags. This avoids committing stale Gradle templates from another Unity patch.
+4. Replace empty values in `YandexMobileAdsSettings.RewardedUnitId` and `InterstitialUnitId` with real `R-M-...` IDs from Yandex Advertising Network.
+5. Never ship `demo-rewarded-yandex`, `demo-interstitial-yandex`, or any other demo block ID in release.
+6. Run `Tools → НЕ СБЕЙСЯ! → Prepare Android Dependency Templates`, then Force Resolve, then `Tools → НЕ СБЕЙСЯ! → Validate Production Release`.
+7. Build a signed Android release and verify initialization/device callbacks with `adb logcat`.
 
 ## Behaviour rules
 
