@@ -13,7 +13,12 @@ namespace DontGetSidetracked.EditorTools
 
         static RuStorePayProductionConfigurator()
         {
-            EditorApplication.delayCall += ConfigureExistingAsset;
+            EditorApplication.delayCall += ConfigureExistingAssetDelayed;
+        }
+
+        private static void ConfigureExistingAssetDelayed()
+        {
+            ConfigureExistingAsset();
         }
 
         [MenuItem("Tools/НЕ СБЕЙСЯ!/Configure RuStore Pay Production Settings")]
@@ -92,7 +97,7 @@ namespace DontGetSidetracked.EditorTools
             {
                 string path = importedAssets[i] ?? string.Empty;
                 if (path.IndexOf("PayClientSettings", StringComparison.OrdinalIgnoreCase) < 0) continue;
-                EditorApplication.delayCall += RuStorePayProductionConfigurator.ConfigureExistingAsset;
+                EditorApplication.delayCall += () => RuStorePayProductionConfigurator.ConfigureExistingAsset();
                 return;
             }
         }
