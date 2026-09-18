@@ -24,6 +24,9 @@ namespace DontGetSidetracked.Presentation
             if (bootstrap == null || !GameBootstrapRuntimeBridge.IsPlainHome(bootstrap))
                 return false;
 
+            DailyIntroCoordinator dailyIntro = Object.FindFirstObjectByType<DailyIntroCoordinator>();
+            if (dailyIntro != null && dailyIntro.IsOpen) return false;
+
             MetaMenuOverlay meta = Object.FindFirstObjectByType<MetaMenuOverlay>();
             if (meta != null && meta.IsPanelOpen) return false;
 
