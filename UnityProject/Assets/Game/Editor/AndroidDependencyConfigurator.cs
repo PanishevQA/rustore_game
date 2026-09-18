@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace DontGetSidetracked.EditorTools
@@ -88,10 +89,13 @@ namespace DontGetSidetracked.EditorTools
 
         private static bool EnsurePublishingFlags()
         {
-            UnityEngine.Object[] assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset");
-            if (assets == null || assets.Length == 0) return false;
+            const string projectSettingsPath = "ProjectSettings/ProjectSettings.asset";
+            if (!File.Exists(projectSettingsPath)) return false;
 
-            var serialized = new SerializedObject(assets[0]);
+            UnityEngine.Object[] objects = InternalEditorUtility.LoadSerializedFileAndForget(projectSettingsPath);
+            if (objects == null || objects.Length == 0 || objects[0] == null) return false;
+
+            var serialized = new SerializedObject(objects[0]);
             bool changed = false;
             changed |= SetBool(serialized, "useCustomMainManifest", true);
             changed |= SetBool(serialized, "useCustomMainGradleTemplate", true);
@@ -99,8 +103,9 @@ namespace DontGetSidetracked.EditorTools
             changed |= SetBool(serialized, "useCustomGradleSettingsTemplate", true);
 
             if (!changed) return false;
+
             serialized.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(assets[0]);
+            InternalEditorUtility.SaveToSerializedFileAndForget(objects, projectSettingsPath, true);
             return true;
         }
 
