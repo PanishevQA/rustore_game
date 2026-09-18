@@ -114,7 +114,7 @@ namespace DontGetSidetracked.Presentation
                 $"Открыт уровень: {progress.HighestUnlockedLevel}\n" +
                 $"Монеты: {_save.Coins}    Подсказки: {_save.Hints}\n\n" +
                 "DAILY\n" +
-                $"🔥 Серия: {_save.Streak} дней\n" +
+                $"Серия: {_save.Streak} дней\n" +
                 $"Лучший: {best}\n" +
                 $"Завершено: {_save.CompletedDailyCount}\n" +
                 $"Последний: {lastDaily}\n\n" +
@@ -194,7 +194,7 @@ namespace DontGetSidetracked.Presentation
                 string skinId = available[i];
                 bool active = string.Equals(selected, skinId, StringComparison.Ordinal);
                 string label = active
-                    ? $"✓ {CosmeticLabel(skinId)}"
+                    ? $"ВЫБРАНО • {CosmeticLabel(skinId)}"
                     : CosmeticLabel(skinId);
                 string captured = skinId;
                 AddAction(label, () => SelectCosmetic(captured), !active);
