@@ -33,8 +33,6 @@ jobs:
           grep -q '"com.unity.modules.audio": "1.0.0"' UnityProject/Packages/manifest.json
           grep -q '"com.unity.modules.imageconversion": "1.0.0"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.pay": "11.1.0"' UnityProject/Packages/manifest.json
-          grep -q '"ru.rustore.installreferrer": "10.6.1"' UnityProject/Packages/manifest.json
-          grep -q '"ru.rustore.remoteconfig": "10.5.1"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.update": "10.5.1"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.review": "10.5.1"' UnityProject/Packages/manifest.json
 
@@ -42,6 +40,10 @@ jobs:
           grep -q '"com.google.external-dependency-manager": "https://github.com/googlesamples/unity-jar-resolver.git?path=/upm#v1.2.188"' UnityProject/Packages/manifest.json
           if grep -q '"ru.rustore.core"' UnityProject/Packages/manifest.json; then
             echo 'ru.rustore.core must resolve transitively; direct core pin is forbidden.'
+            exit 1
+          fi
+          if grep -qE '"ru\.rustore\.(installreferrer|remoteconfig)"' UnityProject/Packages/manifest.json; then
+            echo 'Install Referrer / Remote Config must stay quarantined from the Unity 6000.3.24f1 Editor baseline until the current package compile regression is resolved.'
             exit 1
           fi
           grep -q 'FindRuStoreType("InstallReferrerClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
