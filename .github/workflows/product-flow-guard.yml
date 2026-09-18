@@ -127,6 +127,7 @@ jobs:
           grep -q 'DailyIntroCoordinator' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
           grep -q 'intro.Open(_bootstrap)' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
           grep -q 'GameBootstrapRuntimeBridge.StartDaily(owner)' UnityProject/Assets/Game/Presentation/DailyIntroCoordinator.cs
+          grep -q 'backdrop.raycastTarget = true' UnityProject/Assets/Game/Presentation/DailyIntroCoordinator.cs
           grep -q 'OpenCampaignFromHome' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
           grep -q 'CampaignLevelMenuOverlay.OpenFor(_bootstrap)' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
           grep -q 'OpenTrainingFromHome' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
