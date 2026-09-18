@@ -93,35 +93,24 @@ namespace DontGetSidetracked.Presentation
         {
             BeginPanelNavigation();
             RebuildLocalServices();
-            ShowPanel("СТАТИСТИКА", BuildStatisticsText());
-            AddAction("НАСТРОЙКИ", OpenSettings);
-            AddAction("КОСМЕТИКА", OpenCosmetics);
+            ShowPanel("МОЯ СТАТИСТИКА", "Твой путь, твой прогресс. Все данные хранятся локально.");
+            RenderStatisticsRows();
         }
 
-        private string BuildStatisticsText()
+        private void RenderStatisticsRows()
         {
             var progress = new CampaignProgressService(_saveRepository, _save);
             string best = _save.PersonalBest > 0 ? _save.PersonalBest.ToString("0.0") + "%" : "—";
-            int cosmetics = _save.Inventory?.Count ?? 0;
-            int purchases = _save.ProcessedPurchaseIds?.Count ?? 0;
-            string lastDaily = _save.LastCompletedDailyDateUtc;
-            if (string.IsNullOrWhiteSpace(lastDaily)) lastDaily = "—";
 
-            return
-                "КАМПАНИЯ\n" +
-                $"Пройдено: {progress.CompletedLevels()}/{CampaignLevelCatalog.TotalLevels}\n" +
-                $"Звёзды: {progress.TotalStars()}/{CampaignLevelCatalog.TotalLevels * 3}\n" +
-                $"Открыт уровень: {progress.HighestUnlockedLevel}\n" +
-                $"Монеты: {_save.Coins}    Подсказки: {_save.Hints}\n\n" +
-                "DAILY\n" +
-                $"Серия: {_save.Streak} дней\n" +
-                $"Лучший: {best}\n" +
-                $"Завершено: {_save.CompletedDailyCount}\n" +
-                $"Последний: {lastDaily}\n\n" +
-                $"Косметика: {cosmetics}\n" +
-                $"Выбран след: {CosmeticLabel(_cosmetics.SelectedSkinId)}\n" +
-                $"Покупок применено: {purchases}\n\n" +
-                "Прогресс хранится локально на этом устройстве.";
+            AddInfoRow("★", "ЛУЧШИЙ РЕЗУЛЬТАТ", best, ReleaseUiComponents.Gold);
+            AddInfoRow("◆", "ТЕКУЩАЯ СЕРИЯ", _save.Streak + " ДН.", ReleaseUiComponents.Danger);
+            AddInfoRow("|||", "КАМПАНИЯ",
+                progress.CompletedLevels() + "/" + CampaignLevelCatalog.TotalLevels + "  •  ★ " + progress.TotalStars(),
+                ReleaseUiComponents.Violet);
+            AddInfoRow("◎", "DAILY ЗАВЕРШЕНО", _save.CompletedDailyCount.ToString(), ReleaseUiComponents.Cyan);
+            AddInfoRow("●", "МОНЕТЫ / ПОДСКАЗКИ", _save.Coins + " / " + _save.Hints, ReleaseUiComponents.Gold);
+            AddAction("НАСТРОЙКИ", OpenSettings);
+            AddAction("КОСМЕТИКА", OpenCosmetics);
         }
 
         private void OpenSettings()
@@ -136,7 +125,7 @@ namespace DontGetSidetracked.Presentation
         {
             ShowPanel(
                 "НАСТРОЙКИ",
-                "Настройки сохраняются локально. Тактильная отдача также учитывает системную настройку Android.");
+                "Настрой игру под себя. Изменения применяются сразу и сохраняются локально.");
 
             AddAction($"ЗВУК: {OnOff(_settings.SoundEnabled)}", ToggleSound);
             AddAction($"ВИБРООТКЛИК: {OnOff(_settings.HapticsEnabled)}", ToggleHaptics);
@@ -253,7 +242,7 @@ namespace DontGetSidetracked.Presentation
         {
             ClearActions();
             string prefix = string.IsNullOrWhiteSpace(message) ? string.Empty : message + "\n\n";
-            _panelBody.text = prefix + $"Подсказки: {_store.Save.Hints}\nЦена всегда приходит из RuStore.";
+            _panelBody.text = prefix + $"ПОДСКАЗКИ: {_store.Save.Hints}\nЦены и статус покупки приходят напрямую из RuStore Pay.";
 
             if (products == null || products.Count == 0)
             {
@@ -444,11 +433,12 @@ namespace DontGetSidetracked.Presentation
 
             _panel = new GameObject("MetaPanel", typeof(RectTransform), typeof(Image));
             _panel.transform.SetParent(canvasGo.transform, false);
-            ReleaseUiKit.SetAnchors(_panel.GetComponent<RectTransform>(), new Vector2(0.035f, 0.055f), new Vector2(0.965f, 0.955f));
+            ReleaseUiKit.SetAnchors(_panel.GetComponent<RectTransform>(), new Vector2(0.025f, 0.025f), new Vector2(0.975f, 0.975f));
             Image panelImage = _panel.GetComponent<Image>();
             panelImage.sprite = ReleaseUiKit.Rounded;
             panelImage.type = Image.Type.Sliced;
-            panelImage.color = new Color(0.014f, 0.022f, 0.052f, 0.995f);
+            panelImage.color = new Color(0.006f, 0.018f, 0.045f, 0.997f);
+            ReleaseUiComponents.Backdrop(_panel.transform, "MetaReleaseBackdrop");
 
             Outline outline = _panel.AddComponent<Outline>();
             outline.effectColor = new Color(ReleaseUiKit.Cyan.r, ReleaseUiKit.Cyan.g, ReleaseUiKit.Cyan.b, 0.13f);
@@ -463,22 +453,21 @@ namespace DontGetSidetracked.Presentation
             releaseVisual.transform.SetParent(_panel.transform, false);
             ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
 
-            ReleaseUiKit.TextBlock(_panel.transform, "Kicker", "ПРОФИЛЬ И НАСТРОЙКИ", 18,
-                TextAnchor.MiddleLeft, new Vector2(0.07f, 0.925f), new Vector2(0.65f, 0.962f),
-                ReleaseUiKit.Cyan, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(_panel.transform, "Kicker", "НЕ СБЕЙСЯ!", 16,
+                TextAnchor.MiddleCenter, new Vector2(0.34f, 0.925f), new Vector2(0.66f, 0.962f),
+                ReleaseUiComponents.Cyan, FontStyle.Bold);
 
-            _panelTitle = ReleaseUiKit.TextBlock(_panel.transform, "Title", string.Empty, 52,
-                TextAnchor.MiddleLeft, new Vector2(0.07f, 0.845f), new Vector2(0.72f, 0.925f),
-                ReleaseUiKit.Text, FontStyle.Bold);
+            _panelTitle = ReleaseUiKit.TextBlock(_panel.transform, "Title", string.Empty, 46,
+                TextAnchor.MiddleCenter, new Vector2(0.15f, 0.845f), new Vector2(0.85f, 0.925f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
             ReleaseUiKit.AddTextShadow(_panelTitle, 0.42f, -3f);
 
-            Button close = ReleaseUiKit.Button(_panel.transform, "Close", "ЗАКРЫТЬ",
-                new Vector2(0.74f, 0.866f), new Vector2(0.93f, 0.925f),
-                new Color(0.09f, 0.12f, 0.19f, 0.96f), ReleaseUiKit.Muted, 20, ClosePanel);
+            Button close = ReleaseUiComponents.SecondaryButton(_panel.transform, "Close", "‹",
+                new Vector2(0.055f, 0.865f), new Vector2(0.16f, 0.925f), ClosePanel, 40);
             close.gameObject.name = "ЗАКРЫТЬ";
 
             Image bodyCard = ReleaseUiKit.Panel(_panel.transform, "BodyCard",
-                new Vector2(0.07f, 0.455f), new Vector2(0.93f, 0.825f),
+                new Vector2(0.07f, 0.570f), new Vector2(0.93f, 0.825f),
                 ReleaseUiKit.Surface, ReleaseUiKit.Cyan, true);
 
             _panelBody = ReleaseUiKit.TextBlock(bodyCard.transform, "Body", string.Empty, 27,
@@ -489,7 +478,7 @@ namespace DontGetSidetracked.Presentation
             _panelBody.lineSpacing = 1.14f;
 
             var actionsCard = ReleaseUiKit.Panel(_panel.transform, "ActionsCard",
-                new Vector2(0.07f, 0.075f), new Vector2(0.93f, 0.425f),
+                new Vector2(0.07f, 0.075f), new Vector2(0.93f, 0.545f),
                 new Color(0.025f, 0.038f, 0.074f, 0.94f), ReleaseUiKit.Violet, false);
 
             var actions = new GameObject("Actions", typeof(RectTransform), typeof(VerticalLayoutGroup));
@@ -528,6 +517,32 @@ namespace DontGetSidetracked.Presentation
                 Destroy(_actionsRoot.GetChild(i).gameObject);
         }
 
+        private void AddInfoRow(string glyph, string label, string value, Color accent)
+        {
+            var go = new GameObject("InfoRow", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+            go.transform.SetParent(_actionsRoot, false);
+
+            Image image = go.GetComponent<Image>();
+            image.sprite = ReleaseUiKit.Rounded;
+            image.type = Image.Type.Sliced;
+            image.color = new Color(0.020f, 0.055f, 0.100f, 0.96f);
+
+            Outline outline = go.AddComponent<Outline>();
+            outline.effectColor = new Color(accent.r, accent.g, accent.b, 0.18f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            LayoutElement element = go.GetComponent<LayoutElement>();
+            element.preferredHeight = 72;
+            element.minHeight = 66;
+
+            ReleaseUiKit.TextBlock(go.transform, "Glyph", glyph, 24, TextAnchor.MiddleCenter,
+                new Vector2(0.04f, 0.10f), new Vector2(0.16f, 0.90f), accent, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(go.transform, "Label", label, 16, TextAnchor.MiddleLeft,
+                new Vector2(0.18f, 0.50f), new Vector2(0.72f, 0.88f), ReleaseUiComponents.Muted, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(go.transform, "Value", value, 22, TextAnchor.MiddleRight,
+                new Vector2(0.58f, 0.12f), new Vector2(0.94f, 0.78f), ReleaseUiComponents.Text, FontStyle.Bold);
+        }
+
         private void AddAction(string label, UnityEngine.Events.UnityAction action, bool interactable = true)
         {
             Button button = CreateLayoutButton(_actionsRoot, label, action);
@@ -558,7 +573,7 @@ namespace DontGetSidetracked.Presentation
             Image image = go.GetComponent<Image>();
             image.sprite = ReleaseUiKit.Rounded;
             image.type = Image.Type.Sliced;
-            image.color = ReleaseUiKit.SurfaceRaised;
+            image.color = new Color(0.025f, 0.070f, 0.120f, 0.98f);
 
             LayoutElement element = go.GetComponent<LayoutElement>();
             element.preferredHeight = 72;
@@ -568,9 +583,9 @@ namespace DontGetSidetracked.Presentation
             button.targetGraphic = image;
             button.onClick.AddListener(action);
             ColorBlock colors = button.colors;
-            colors.normalColor = ReleaseUiKit.SurfaceRaised;
-            colors.highlightedColor = ReleaseUiKit.Lighten(ReleaseUiKit.SurfaceRaised, 0.06f);
-            colors.pressedColor = ReleaseUiKit.Darken(ReleaseUiKit.SurfaceRaised, 0.08f);
+            colors.normalColor = image.color;
+            colors.highlightedColor = ReleaseUiKit.Lighten(image.color, 0.05f);
+            colors.pressedColor = ReleaseUiKit.Darken(image.color, 0.06f);
             colors.disabledColor = new Color(0.07f, 0.08f, 0.12f, 0.68f);
             colors.fadeDuration = 0.08f;
             button.colors = colors;
