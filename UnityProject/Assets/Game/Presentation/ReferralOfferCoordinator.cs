@@ -38,6 +38,13 @@ namespace DontGetSidetracked.Presentation
 
         public bool IsVisible => _visible;
 
+        public bool Dismiss()
+        {
+            if (!_visible) return false;
+            Later();
+            return true;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoStart()
         {
