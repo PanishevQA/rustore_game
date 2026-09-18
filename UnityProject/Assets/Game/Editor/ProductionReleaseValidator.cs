@@ -80,6 +80,7 @@ namespace DontGetSidetracked.EditorTools
 
             ValidateFileContains(ManifestPath, errors,
                 ("android.permission.POST_NOTIFICATIONS", "Daily reminder permission is missing from AndroidManifest."),
+                ("android:name=\"ru.rustore.unitysdk.RuStoreRemoteConfigApplication\"", "RuStore Remote Config Application class is missing from AndroidManifest."),
                 ("com.unity3d.player.UnityPlayerActivity", "Custom AndroidManifest must use UnityPlayerActivity."),
                 ("android:scheme=\"nesbeisya\"", "Challenge deeplink scheme is missing from AndroidManifest."),
                 ("android:host=\"challenge\"", "Challenge deeplink host is missing from AndroidManifest."),
