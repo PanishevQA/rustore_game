@@ -124,6 +124,9 @@ namespace DontGetSidetracked.Presentation
 
         private static void StyleMetaCanvas(Transform root)
         {
+            Transform releaseVisual = FindTransform(root, "ReleaseVisual");
+            if (releaseVisual != null) return;
+
             Transform home = FindTransform(root, "HomeMetaButtons");
             if (home != null)
             {
