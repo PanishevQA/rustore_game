@@ -150,8 +150,8 @@ namespace DontGetSidetracked.Presentation
 
             if (!update.IsNewRecord) return;
             _recordLabel.text = update.PreviousBest > 0.0
-                ? $"🏆 НОВЫЙ РЕКОРД  {update.PreviousBest:0.0}% → {update.BestScore:0.0}%"
-                : $"🏆 РЕКОРД ДНЯ  {update.BestScore:0.0}%";
+                ? $"НОВЫЙ РЕКОРД  {update.PreviousBest:0.0}% → {update.BestScore:0.0}%"
+                : $"РЕКОРД ДНЯ  {update.BestScore:0.0}%";
             _recordLabel.gameObject.SetActive(true);
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.DailyRecord, Params(
                 "challenge_id", daily.ChallengeId,
