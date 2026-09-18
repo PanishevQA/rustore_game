@@ -80,7 +80,6 @@ namespace DontGetSidetracked.EditorTools
 
             ValidateFileContains(ManifestPath, errors,
                 ("android.permission.POST_NOTIFICATIONS", "Daily reminder permission is missing from AndroidManifest."),
-                ("android:name=\"ru.rustore.unitysdk.RuStoreRemoteConfigApplication\"", "RuStore Remote Config Application class is missing from AndroidManifest."),
                 ("com.unity3d.player.UnityPlayerActivity", "Custom AndroidManifest must use UnityPlayerActivity."),
                 ("android:scheme=\"nesbeisya\"", "Challenge deeplink scheme is missing from AndroidManifest."),
                 ("android:host=\"challenge\"", "Challenge deeplink host is missing from AndroidManifest."),
@@ -95,8 +94,6 @@ namespace DontGetSidetracked.EditorTools
 
             ValidateFileContains(PackagesManifestPath, errors,
                 ("\"ru.rustore.pay\": \"11.1.0\"", "RuStore Pay must remain pinned to the verified version."),
-                ("\"ru.rustore.installreferrer\": \"10.6.1\"", "RuStore Install Referrer must remain pinned to the verified version."),
-                ("\"ru.rustore.remoteconfig\": \"10.5.1\"", "RuStore Remote Config must remain pinned to the verified version."),
                 ("\"ru.rustore.update\": \"10.5.1\"", "RuStore Update must remain pinned to the verified version."),
                 ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."),
                 ("nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed", "RuStore npm registry must use the current verified vkteam endpoint."),
@@ -104,6 +101,7 @@ namespace DontGetSidetracked.EditorTools
                 ("v1.2.188", "EDM4U must stay pinned to the verified 1.2.188 release."));
 
             ValidateNoDirectRuStoreCorePin(errors);
+            ValidateQuarantinedRuStorePackages(errors);
             ValidateRuStoreIntegrationPresence(errors);
             ValidateFileContains(SdkVersionsPath, errors,
                 ("InstallReferrer = \"10.6.1\"", "Install Referrer release target must be re-verified before production."),
@@ -146,6 +144,17 @@ namespace DontGetSidetracked.EditorTools
             if (manifest.Contains("nexus-external.rustore.ru", StringComparison.Ordinal) ||
                 manifest.Contains("artifactory-external.vkpartner.ru", StringComparison.Ordinal))
                 errors.Add("Obsolete RuStore repository address detected in Packages/manifest.json.");
+        }
+
+        private static void ValidateQuarantinedRuStorePackages(List<string> errors)
+        {
+            if (!File.Exists(PackagesManifestPath)) return;
+            string manifest = File.ReadAllText(PackagesManifestPath);
+
+            if (manifest.Contains("\"ru.rustore.installreferrer\"", StringComparison.Ordinal))
+                errors.Add("Remove ru.rustore.installreferrer from the Editor baseline: official 10.6.1 currently fails Unity 6000.3.24f1 script compilation in PackageCache. Production requires a re-verified fixed package/source integration.");
+            if (manifest.Contains("\"ru.rustore.remoteconfig\"", StringComparison.Ordinal))
+                errors.Add("Remove ru.rustore.remoteconfig from the Editor baseline: official 10.5.1 currently fails Unity 6000.3.24f1 script compilation and conflicts on package GUIDs with Install Referrer. Production requires a re-verified fixed package/source integration.");
         }
 
         private static void ValidateRuStoreIntegrationPresence(List<string> errors)
