@@ -98,30 +98,46 @@ namespace DontGetSidetracked.Presentation
             root.transform.SetAsLastSibling();
             _hudGroup = root.GetComponent<CanvasGroup>();
 
-            Image header = ReleaseUiKit.Panel(root.transform, "GameplayHeader",
-                new Vector2(0.075f, 0.785f), new Vector2(0.925f, 0.955f),
-                new Color(0.024f, 0.042f, 0.082f, 0.985f), ReleaseUiKit.Cyan, true);
+            Image header = ReleaseUiComponents.GlassCard(root.transform, "GameplayHeader",
+                new Vector2(0.07f, 0.855f), new Vector2(0.93f, 0.955f),
+                ReleaseUiComponents.Cyan, true);
 
-            Image modeChip = ReleaseUiKit.Panel(header.transform, "ModeChip",
-                new Vector2(0.30f, 0.70f), new Vector2(0.70f, 0.93f),
-                new Color(0.045f, 0.075f, 0.120f, 0.96f), ReleaseUiKit.Cyan, false);
-            _mode = ReleaseUiKit.TextBlock(modeChip.transform, "Mode", "РЕЖИМ", 17,
-                TextAnchor.MiddleCenter, new Vector2(0.04f, 0.05f), new Vector2(0.96f, 0.95f),
-                ReleaseUiKit.Cyan, FontStyle.Bold);
+            _mode = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЖИМ", 18,
+                TextAnchor.MiddleCenter, new Vector2(0.16f, 0.62f), new Vector2(0.84f, 0.93f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
 
-            _instruction = ReleaseUiKit.TextBlock(header.transform, "Instruction", "ЗАПОМНИ МАРШРУТ", 38,
-                TextAnchor.MiddleCenter, new Vector2(0.055f, 0.30f), new Vector2(0.945f, 0.70f),
-                ReleaseUiKit.Text, FontStyle.Bold);
-            ReleaseUiKit.AddTextShadow(_instruction, 0.40f, -2f);
+            _instruction = ReleaseUiKit.TextBlock(header.transform, "Instruction", "ЗАПОМНИ МАРШРУТ", 33,
+                TextAnchor.MiddleCenter, new Vector2(0.05f, 0.12f), new Vector2(0.95f, 0.65f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+            ReleaseUiKit.AddTextShadow(_instruction, 0.42f, -2f);
 
-            _hint = ReleaseUiKit.TextBlock(header.transform, "Hint", "Через несколько секунд линия исчезнет", 18,
-                TextAnchor.MiddleCenter, new Vector2(0.055f, 0.08f), new Vector2(0.945f, 0.31f),
-                ReleaseUiKit.Muted);
+            Image metrics = ReleaseUiComponents.GlassCard(root.transform, "GameplayMetrics",
+                new Vector2(0.07f, 0.785f), new Vector2(0.93f, 0.842f),
+                ReleaseUiComponents.Violet, false);
+            ReleaseUiKit.TextBlock(metrics.transform, "Memory", "◉  ПАМЯТЬ", 15,
+                TextAnchor.MiddleCenter, new Vector2(0.02f, 0.08f), new Vector2(0.34f, 0.92f),
+                ReleaseUiComponents.Cyan, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(metrics.transform, "Gesture", "1  ДВИЖЕНИЕ", 15,
+                TextAnchor.MiddleCenter, new Vector2(0.34f, 0.08f), new Vector2(0.66f, 0.92f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(metrics.transform, "Rule", "БЕЗ ПОДСКАЗКИ", 15,
+                TextAnchor.MiddleCenter, new Vector2(0.66f, 0.08f), new Vector2(0.98f, 0.92f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
 
-            _countdown = ReleaseUiKit.TextBlock(root.transform, "Countdown", string.Empty, 104,
-                TextAnchor.MiddleCenter, new Vector2(0.36f, 0.575f), new Vector2(0.64f, 0.705f),
-                ReleaseUiKit.Cyan, FontStyle.Bold);
-            ReleaseUiKit.AddTextShadow(_countdown, 0.55f, -4f);
+            Image hintCard = ReleaseUiComponents.GlassCard(root.transform, "GameplayInstruction",
+                new Vector2(0.07f, 0.155f), new Vector2(0.93f, 0.235f),
+                ReleaseUiComponents.Blue, false);
+            ReleaseUiKit.TextBlock(hintCard.transform, "Eye", "◉", 32, TextAnchor.MiddleCenter,
+                new Vector2(0.04f, 0.12f), new Vector2(0.20f, 0.88f),
+                ReleaseUiComponents.Blue, FontStyle.Bold);
+            _hint = ReleaseUiKit.TextBlock(hintCard.transform, "Hint", "Запомни форму и повороты маршрута", 19,
+                TextAnchor.MiddleLeft, new Vector2(0.22f, 0.08f), new Vector2(0.94f, 0.92f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+
+            _countdown = ReleaseUiKit.TextBlock(root.transform, "Countdown", string.Empty, 112,
+                TextAnchor.MiddleCenter, new Vector2(0.35f, 0.545f), new Vector2(0.65f, 0.690f),
+                ReleaseUiComponents.Cyan, FontStyle.Bold);
+            ReleaseUiKit.AddTextShadow(_countdown, 0.64f, -5f);
 
             SetHudVisible(false);
         }
@@ -138,7 +154,7 @@ namespace DontGetSidetracked.Presentation
                 _countdown.text = compact;
                 _countdown.gameObject.SetActive(true);
                 _instruction.text = "МАРШРУТ ИСЧЕЗАЕТ";
-                _hint.text = "Приготовься повторить одним движением";
+                _hint.text = "Маршрут исчезнет. Приготовься рисовать по памяти.";
                 return;
             }
 
@@ -148,14 +164,14 @@ namespace DontGetSidetracked.Presentation
             if (compact.IndexOf("ЗАПОМНИ", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 _instruction.text = "ЗАПОМНИ МАРШРУТ";
-                _hint.text = "Следи за формой от зелёной точки к красной";
+                _hint.text = "Смотри внимательно. Запомни форму, повороты и конечную точку.";
                 return;
             }
 
             if (compact.IndexOf("ПОВТОРИ", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 _instruction.text = "ТВОЯ ОЧЕРЕДЬ";
-                _hint.text = "Начни с зелёной точки и проведи линию одним движением";
+                _hint.text = "Проведи маршрут одним непрерывным движением от старта до звезды.";
                 return;
             }
 
