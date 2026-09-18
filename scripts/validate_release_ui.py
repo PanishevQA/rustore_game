@@ -17,6 +17,7 @@ FILES = {
     "rewarded": PRESENTATION / "RewardedHomeOverlay.cs",
     "hint": PRESENTATION / "HintRuntimeCoordinator.cs",
     "platform": PRESENTATION / "RuntimePlatformCoordinator.cs",
+    "referral_offer": PRESENTATION / "ReferralOfferCoordinator.cs",
 }
 
 errors: list[str] = []
@@ -93,6 +94,13 @@ required = {
         "ReleaseUiKit.Panel",
         "ReleaseUiKit.Button",
     ),
+    "referral_offer": (
+        "ЧЕЛЛЕНДЖ ОТ ДРУГА",
+        "ПРИНЯТЬ ВЫЗОВ",
+        "public bool Dismiss()",
+        "ReleaseUiKit.Panel",
+        "ReleaseUiKit.Button",
+    ),
 }
 
 for key, markers in required.items():
@@ -101,7 +109,7 @@ for key, markers in required.items():
             errors.append(f"{FILES[key].name} release UI contract is missing: {marker!r}")
 
 # Avoid emoji glyphs in runtime text rendered through Unity's built-in fallback font.
-for key in ("meta", "result", "share_card", "rewarded", "hint", "gameplay_hud"):
+for key in ("meta", "result", "share_card", "rewarded", "hint", "gameplay_hud", "referral_offer"):
     text = texts[key]
     for char in text:
         if ord(char) > 0xFFFF:
@@ -123,3 +131,12 @@ if errors:
     sys.exit(1)
 
 print("Release UI contract passed.")
+
+# Superseded Home composition layers must stay removed so one surface has one visual owner.
+for obsolete in (
+    PRESENTATION / "HomeHeroCoordinator.cs",
+    PRESENTATION / "HomePolishCoordinator.cs",
+    PRESENTATION / "CampaignHomeLayoutCoordinator.cs",
+):
+    if obsolete.exists():
+        errors.append(f"Superseded Home presentation layer returned: {obsolete.name}")
