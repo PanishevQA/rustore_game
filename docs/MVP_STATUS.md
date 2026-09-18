@@ -1,4 +1,4 @@
-# Состояние проекта — 2026-09-17
+# Состояние проекта — 2026-09-18
 
 > Проект не оценивается одним процентом «готовности»: repo-side функционал, визуальная приёмка и внешняя Android/RuStore интеграция проверяются разными способами.
 
@@ -88,7 +88,7 @@ Remote Config runtime также не зависит от нашего backend: 
 
 Meta/Training/Campaign overlays имеют публичные open/close state contracts для mobile Back вместо чтения их private state через reflection.
 
-Это **активный visual-polish candidate**: основной navigation/gameplay уже стабилен, а presentation layer последовательно доводится до high-fidelity уровня без изменения gameplay architecture.
+Presentation layer доведён до **release visual candidate**: Home dashboard, gameplay HUD, memory grid/glow, high-fidelity Training, Campaign browser, Meta/Store/Settings и Result surfaces используют единую карточную dark/cyan/violet систему без изменения gameplay architecture.
 
 ## Автоматические проверки
 
@@ -105,7 +105,7 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 
 ## RuStore / Android release target
 
-Последняя сверка RuStore targets на 2026-09-17:
+Последняя сверка RuStore targets на 2026-09-18:
 
 - Pay Unity: `11.1.0`;
 - Install Referrer Unity: `10.6.1`;
@@ -117,7 +117,7 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 - targetSdk baseline: `34` / highest installed;
 - minSdk проекта: `25` из-за Unity 6000.3 baseline.
 
-Локальный Unity Editor baseline временно не устанавливает RuStore UPM packages, потому что текущий resolve дал compiler errors внутри `Library/PackageCache` на Unity `6000.3.24f1`. Exact release targets сохранены; adapters остаются изолированы от gameplay и имеют safe fallback, а production preflight обязан блокировать non-development AAB до восстановления и реальной загрузки проверенных official Unity client types.
+Официальные RuStore feature packages снова закреплены в `Packages/manifest.json` через актуальный `nexus-external.vkteam.ru` npm registry. `ru.rustore.core` намеренно не pin-ится напрямую и разрешается транзитивно, чтобы не повторять конфликт несовместимой core-версии. Production preflight по-прежнему требует реальные client types, production settings и device tests.
 
 ## Что нельзя честно завершить только изменениями в GitHub
 
