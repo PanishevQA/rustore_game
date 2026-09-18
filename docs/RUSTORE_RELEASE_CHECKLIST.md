@@ -53,8 +53,9 @@
 
 ## Advertising
 
-- [ ] Импортирован официальный Yandex Mobile Ads Unity plugin версии, повторно проверенной перед release.
+- [ ] Импортирован официальный Yandex Mobile Ads Unity plugin **8.4.0** (повторно сверено 2026-09-18; перед production всё равно перепроверить актуальную официальную версию).
 - [ ] В Android Scripting Define Symbols есть `YANDEX_MOBILE_ADS`.
+- [ ] Включены `Custom Main Gradle Template` и `Custom Gradle Properties Template`; существуют `Assets/Plugins/Android/mainTemplate.gradle` и `gradleTemplate.properties`.
 - [ ] В `YandexMobileAdsSettings` указаны реальные rewarded/interstitial `R-M-...` IDs.
 - [ ] Demo IDs отсутствуют в production build.
 - [ ] Rewarded выдаёт +1 hint только после подтверждённого reward callback.
