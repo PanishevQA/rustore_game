@@ -127,8 +127,14 @@ namespace DontGetSidetracked.Presentation
                 "НАСТРОЙКИ",
                 "Настрой игру под себя. Изменения применяются сразу и сохраняются локально.");
 
-            AddAction($"ЗВУК: {OnOff(_settings.SoundEnabled)}", ToggleSound);
-            AddAction($"ВИБРООТКЛИК: {OnOff(_settings.HapticsEnabled)}", ToggleHaptics);
+            AddSettingToggleRow("♪", "ЗВУК", "Музыка и игровые эффекты", _settings.SoundEnabled, ToggleSound);
+            AddSettingToggleRow("◆", "ВИБРООТКЛИК", "Тактильная обратная связь", _settings.HapticsEnabled, ToggleHaptics);
+            AddInfoRow("◷", "DAILY НАПОМИНАНИЯ",
+                _save.NotificationPermissionGranted ? "ВКЛ" : "ПОКА ВЫКЛ",
+                _save.NotificationPermissionGranted ? ReleaseUiComponents.Success : ReleaseUiComponents.Muted);
+            AddInfoRow("✓", "ПРОГРЕСС", "ЛОКАЛЬНО", ReleaseUiComponents.Success);
+            AddInfoRow("i", "ВЕРСИЯ", Application.version, ReleaseUiComponents.Blue);
+            AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases);
             AddAction("НАЗАД К СТАТИСТИКЕ", OpenStatistics);
         }
 
@@ -515,6 +521,58 @@ namespace DontGetSidetracked.Presentation
             if (_actionsRoot == null) return;
             for (int i = _actionsRoot.childCount - 1; i >= 0; i--)
                 Destroy(_actionsRoot.GetChild(i).gameObject);
+        }
+
+        private void AddSettingToggleRow(
+            string glyph,
+            string label,
+            string description,
+            bool enabled,
+            UnityEngine.Events.UnityAction action)
+        {
+            var go = new GameObject("SettingToggle", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
+            go.transform.SetParent(_actionsRoot, false);
+
+            Image image = go.GetComponent<Image>();
+            image.sprite = ReleaseUiKit.Rounded;
+            image.type = Image.Type.Sliced;
+            image.color = new Color(0.020f, 0.055f, 0.100f, 0.97f);
+
+            Outline outline = go.AddComponent<Outline>();
+            Color accent = enabled ? ReleaseUiComponents.Cyan : ReleaseUiComponents.Muted;
+            outline.effectColor = new Color(accent.r, accent.g, accent.b, enabled ? 0.26f : 0.12f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            LayoutElement element = go.GetComponent<LayoutElement>();
+            element.preferredHeight = 78;
+            element.minHeight = 72;
+
+            Button button = go.GetComponent<Button>();
+            button.targetGraphic = image;
+            if (action != null) button.onClick.AddListener(action);
+            ColorBlock colors = button.colors;
+            colors.normalColor = image.color;
+            colors.highlightedColor = ReleaseUiKit.Lighten(image.color, 0.05f);
+            colors.pressedColor = ReleaseUiKit.Darken(image.color, 0.06f);
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+
+            ReleaseUiKit.TextBlock(go.transform, "Glyph", glyph, 24, TextAnchor.MiddleCenter,
+                new Vector2(0.04f, 0.10f), new Vector2(0.16f, 0.90f), accent, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(go.transform, "Label", label, 18, TextAnchor.MiddleLeft,
+                new Vector2(0.18f, 0.50f), new Vector2(0.67f, 0.88f), ReleaseUiComponents.Text, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(go.transform, "Description", description, 14, TextAnchor.MiddleLeft,
+                new Vector2(0.18f, 0.12f), new Vector2(0.70f, 0.50f), ReleaseUiComponents.Muted);
+
+            Image track = ReleaseUiComponents.GlassCard(go.transform, "Switch",
+                new Vector2(0.76f, 0.25f), new Vector2(0.94f, 0.75f),
+                enabled ? ReleaseUiComponents.Cyan : ReleaseUiComponents.Muted, false);
+            track.color = enabled
+                ? new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.28f)
+                : new Color(0.08f, 0.11f, 0.16f, 0.96f);
+            ReleaseUiKit.TextBlock(track.transform, "State", enabled ? "ВКЛ" : "ВЫКЛ", 13,
+                TextAnchor.MiddleCenter, Vector2.zero, Vector2.one,
+                enabled ? ReleaseUiComponents.Cyan : ReleaseUiComponents.Muted, FontStyle.Bold);
         }
 
         private void AddInfoRow(string glyph, string label, string value, Color accent)
