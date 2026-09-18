@@ -304,6 +304,12 @@ def validate_release_preflight_contract() -> None:
             fail(message)
 
 
+def validate_portrait_game_view_batchmode_guard() -> None:
+    text = read(UNITY / "Assets/Game/Editor/PortraitGameViewConfigurator.cs")
+    if text.count("Application.isBatchMode") < 2:
+        fail("Portrait Game View configurator must not open Editor windows during Unity batchmode checks.")
+
+
 def validate_local_release_candidate_runner() -> None:
     path = ROOT / "scripts/run_release_candidate_checks.ps1"
     text = read(path)
@@ -401,6 +407,7 @@ def main() -> int:
     validate_remote_config_runtime_contract()
     validate_live_stroke_contract()
     validate_release_preflight_contract()
+    validate_portrait_game_view_batchmode_guard()
     validate_local_release_candidate_runner()
     validate_release_readiness_reporter()
     validate_android_dependency_configurator()
