@@ -103,7 +103,7 @@ namespace DontGetSidetracked.Presentation
             _title.text = "НЕ СБЕЙСЯ!";
 
             string best = _save.PersonalBest > 0 ? $"Лучший: {_save.PersonalBest:0.0}%" : "Лучший: --";
-            _status.text = $"🔥 Серия: {_save.Streak} дней\n{best}";
+            _status.text = $"Серия: {_save.Streak} дней\n{best}";
 
             ConfigureButton(_primary, "ИГРАТЬ DAILY", StartDaily);
             ConfigureButton(_secondary, "ТРЕНИРОВКА", StartTraining);
@@ -460,7 +460,7 @@ namespace DontGetSidetracked.Presentation
 
                 if (!IsCurrentNavigation(revision, Mode.Daily)) return;
                 _lastDailyScore = acceptedScore;
-                _status.text = $"DAILY {_lastDailyScore:0.0}%\n🔥 Серия: {_save.Streak}";
+                _status.text = $"DAILY {_lastDailyScore:0.0}%\nСерия: {_save.Streak}";
             }
             catch (Exception error)
             {
