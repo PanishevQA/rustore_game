@@ -134,7 +134,9 @@ jobs:
           grep -q 'CoinSpend = "coin_spend"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
 
           # Rewarded hint is opt-in and both ad formats must stay behind every Home overlay/update blocker.
-          grep -q 'new Vector2(0.20f, 0.276f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'new Vector2(0.23f, 0.118f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'ReleaseUiKit.Button' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'БЕСПЛАТНАЯ ПОДСКАЗКА' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'ShowRewardedAsync' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'save.Hints++' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'training.IsOpen' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
