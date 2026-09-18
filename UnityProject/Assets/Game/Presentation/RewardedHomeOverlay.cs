@@ -105,7 +105,7 @@ namespace DontGetSidetracked.Presentation
         {
             if (_label == null) return;
             SaveData save = _saveRepository.Load();
-            _label.text = $"БЕСПЛАТНАЯ ПОДСКАЗКА  •  +1  •  У ВАС {save.Hints}";
+            _label.text = $"ПОДСКАЗКА ЗА РЕКЛАМУ  •  +1  •  У ВАС {save.Hints}";
         }
 
         private bool IsSafeHome() =>
@@ -156,11 +156,11 @@ namespace DontGetSidetracked.Presentation
                 _canvas.transform,
                 "RewardedHint",
                 "БЕСПЛАТНАЯ ПОДСКАЗКА",
-                new Vector2(0.23f, 0.118f),
-                new Vector2(0.77f, 0.157f),
-                new Color(0.055f, 0.085f, 0.145f, 0.98f),
+                new Vector2(0.075f, 0.092f),
+                new Vector2(0.925f, 0.142f),
+                new Color(0.035f, 0.070f, 0.095f, 0.98f),
                 ReleaseUiKit.Green,
-                20,
+                18,
                 ClaimRewardedHint);
 
             _label = _button.GetComponentInChildren<Text>(true);
