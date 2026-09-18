@@ -67,6 +67,7 @@ namespace DontGetSidetracked.Presentation
                 if (_wasResult)
                 {
                     _wasResult = false;
+                    RestoreLegacyResultHeader();
                     SetResultUiVisible(false);
                     if (_perfectRoutine != null)
                     {
@@ -383,6 +384,23 @@ namespace DontGetSidetracked.Presentation
             {
                 if (_legacyStatusGroup == null) _legacyStatusGroup = EnsureCanvasGroup(status.gameObject);
                 _legacyStatusGroup.alpha = 0f;
+                _legacyStatusGroup.interactable = false;
+                _legacyStatusGroup.blocksRaycasts = false;
+            }
+        }
+
+        private void RestoreLegacyResultHeader()
+        {
+            if (_legacyTitleGroup != null)
+            {
+                _legacyTitleGroup.alpha = 1f;
+                _legacyTitleGroup.interactable = false;
+                _legacyTitleGroup.blocksRaycasts = false;
+            }
+
+            if (_legacyStatusGroup != null)
+            {
+                _legacyStatusGroup.alpha = 1f;
                 _legacyStatusGroup.interactable = false;
                 _legacyStatusGroup.blocksRaycasts = false;
             }
