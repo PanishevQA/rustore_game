@@ -117,9 +117,9 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 - RuStore Push не используется: Daily reminder реализован локально;
 - targetSdk baseline: `34` / highest installed;
 - minSdk проекта: `25` из-за Unity 6000.3 baseline;
-- Android manifest использует `ru.rustore.unitysdk.RuStoreRemoteConfigApplication` согласно текущей Remote Config Unity 10.5.1 integration.
+- Remote Config production integration после восстановления рабочего SDK должна использовать `ru.rustore.unitysdk.RuStoreRemoteConfigApplication`; compile-safe baseline без SDK не ссылается на отсутствующий Java Application class.
 
-Официальные RuStore feature packages снова закреплены в `Packages/manifest.json` через актуальный `nexus-external.vkteam.ru` npm registry. `ru.rustore.core` намеренно не pin-ится напрямую и разрешается транзитивно, чтобы не повторять конфликт несовместимой core-версии. Production preflight по-прежнему требует реальные client types, production settings и device tests.
+Pay/Update/Review остаются закреплены в `Packages/manifest.json` через актуальный `nexus-external.vkteam.ru` npm registry. Install Referrer 10.6.1 и Remote Config 10.5.1 временно quarantined из Editor manifest: присланный реальный batchmode log на Unity 6000.3.24f1 подтвердил C# compile errors внутри обоих PackageCache и duplicate GUID между пакетами. `ru.rustore.core` напрямую не pin-ится. Production preflight требует рабочие client types, поэтому релиз нельзя случайно собрать без восстановленной SDK integration.
 
 ## Release readiness tooling
 
@@ -134,7 +134,7 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 - production package name из RuStore Console;
 - production keystore/key alias;
 - реальные PayClient/RuStore Console параметры;
-- UPM resolve/Unity compile официальных RuStore packages на release-машине;
+- повторно проверенная рабочая integration Install Referrer/Remote Config вместо текущих npm-пакетов, которые воспроизводимо ломают Unity 6000.3.24f1 compile;
 - Install Referrer 10.6.1 physical-device smoke test;
 - Remote Config 10.5.1 AppId и physical-device fallback test;
 - реальные Yandex `R-M-...` block IDs + signed-device ad smoke test (plugin 8.4.0 и EDM4U закреплены; production entrypoint сам выполняет fail-closed Force Resolve);
