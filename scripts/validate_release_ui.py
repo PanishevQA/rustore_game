@@ -96,6 +96,7 @@ required = {
     "platform": (
         "НЕ ПРОПУСКАТЬ DAILY?",
         "БЕЗ НАПОМИНАНИЙ",
+        "_notificationBackdrop.SetActive(false)",
         "НУЖНО ОБНОВЛЕНИЕ",
         "ReleaseUiKit.Panel",
         "ReleaseUiKit.Button",
