@@ -14,6 +14,7 @@ namespace DontGetSidetracked.Presentation
         private GameBootstrap _bootstrap;
         private Button _trainingButton;
         private GameObject _canvas;
+        private GameObject _backdrop;
         private GameObject _panel;
         private float _nextResolve;
         private bool _wired;
@@ -107,6 +108,7 @@ namespace DontGetSidetracked.Presentation
 
         private void SetVisible(bool visible)
         {
+            if (_backdrop != null) _backdrop.SetActive(visible);
             if (_panel != null) _panel.SetActive(visible);
         }
 
@@ -124,6 +126,7 @@ namespace DontGetSidetracked.Presentation
 
             var dim = new GameObject("TrainingBackdrop", typeof(RectTransform), typeof(Image));
             dim.transform.SetParent(_canvas.transform, false);
+            _backdrop = dim;
             ReleaseUiKit.Stretch(dim.GetComponent<RectTransform>());
             Image dimImage = dim.GetComponent<Image>();
             dimImage.color = new Color(0.005f, 0.010f, 0.028f, 0.86f);
