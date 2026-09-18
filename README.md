@@ -96,7 +96,7 @@ Yandex ads находятся за `IAdService`:
 - `remove_ads`/`starter_pack` подавляют interstitial;
 - frequency/cooldown policy отделена от gameplay.
 
-Production требует официальный Yandex Unity plugin, define `YANDEX_MOBILE_ADS` и реальные block IDs.
+Yandex Mobile Ads Unity `8.4.0` закреплён в `Packages/manifest.json`; `Game.Monetization.asmdef` автоматически включает adapter define для проверенной 8.4.x линии. Production всё ещё требует реальные `R-M-...` block IDs, EDM Force Resolve и signed-device ad smoke test.
 
 ## Android / RuStore baseline
 
