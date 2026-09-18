@@ -70,6 +70,8 @@ required = {
     ),
     "result": (
         "ResultHeader",
+        "ResultDetail",
+        "SuppressLegacyResultHeader",
         "_scoreText",
         "ПОДЕЛИТЬСЯ КАРТОЧКОЙ",
     ),
@@ -78,6 +80,8 @@ required = {
         "ЭТАЛОН  /  ТВОЯ ЛИНИЯ",
         "НЕ СБЕЙСЯ!  •  RuStore",
         "ReleaseUiKit.Rounded",
+        'CreateMarker(routePanel.transform, "Start"',
+        'CreateMarker(routePanel.transform, "End"',
     ),
     "rewarded": (
         "new Vector2(0.23f, 0.118f)",
