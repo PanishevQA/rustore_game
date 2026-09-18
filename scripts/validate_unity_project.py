@@ -230,6 +230,8 @@ def validate_required_runtime_files() -> None:
         "Assets/Game/Presentation/HomeDashboardCoordinator.cs",
         "Assets/Game/Presentation/GameplayGridCoordinator.cs",
         "Assets/Game/Presentation/ReleaseUiKit.cs",
+        "Assets/Game/Presentation/ReleaseUiComponents.cs",
+        "Assets/Game/Presentation/DailyIntroCoordinator.cs",
         "Assets/Game/Presentation/ReleasePanelMotion.cs",
         "Assets/Game/Presentation/GameplayHudCoordinator.cs",
         "Assets/Game/Presentation/ReferralOfferCoordinator.cs",
