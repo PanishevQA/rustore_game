@@ -36,7 +36,11 @@ namespace DontGetSidetracked.Presentation
 
             var repository = new JsonFileSaveRepository();
             SaveData save = repository.Load();
-            if (string.Equals(save.PendingReferralId, normalized, StringComparison.Ordinal)) return;
+            if (string.Equals(save.PendingReferralId, normalized, StringComparison.Ordinal))
+            {
+                FindFirstObjectByType<GameBootstrap>()?.NotifyPendingReferralAvailable(normalized);
+                return;
+            }
 
             save.PendingReferralId = normalized;
             repository.Save(save);
