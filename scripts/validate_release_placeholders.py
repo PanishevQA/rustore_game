@@ -29,6 +29,7 @@ def main() -> int:
     require(text, "PlayerSettings.Android.keyaliasName", "Production key alias must be placeholder-checked.")
     require(text, "Regex.Escape(constantName)", "Settings constants must be resolved by exact constant name rather than broad substring matching.")
     require(text, 'value.StartsWith("demo-"', "Demo ad unit IDs must be rejected explicitly.")
+    require(text, 'value.StartsWith("R-M-"', "Production Yandex ad unit IDs must require the R-M- prefix.")
 
     for marker in (
         "placeholder",
