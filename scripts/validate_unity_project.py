@@ -332,6 +332,20 @@ def validate_local_release_candidate_runner() -> None:
             fail(f"Local release-candidate runner is incomplete: missing {marker!r}.")
 
 
+def validate_rustore_pay_editor_callbacks() -> None:
+    text = read(UNITY / "Assets/Game/Editor/RuStorePayProductionConfigurator.cs")
+    if "EditorApplication.delayCall += ConfigureExistingAsset;" in text:
+        fail("RuStore Pay production configurator must not attach bool ConfigureExistingAsset directly to EditorApplication.delayCall.")
+    required = (
+        "private static void ConfigureExistingAssetDelayed()",
+        "EditorApplication.delayCall += ConfigureExistingAssetDelayed;",
+        "EditorApplication.delayCall += () => RuStorePayProductionConfigurator.ConfigureExistingAsset();",
+    )
+    for marker in required:
+        if marker not in text:
+            fail(f"RuStore Pay editor callback contract is incomplete: missing {marker!r}.")
+
+
 def validate_production_identifiers() -> None:
     project = read(UNITY / "Assets/Game/Editor/ProjectConfigurator.cs")
     remote = read(UNITY / "Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs")
@@ -429,6 +443,7 @@ def main() -> int:
     validate_remote_config_runtime_contract()
     validate_live_stroke_contract()
     validate_release_preflight_contract()
+    validate_rustore_pay_editor_callbacks()
     validate_production_identifiers()
     validate_portrait_game_view_batchmode_guard()
     validate_local_release_candidate_runner()
