@@ -601,12 +601,32 @@ namespace DontGetSidetracked.Presentation
             string text = completed
                 ? $"Я прошёл сегодняшний НЕ СБЕЙСЯ! на {score:0.0}%. Сможешь точнее?"
                 : $"Я прошёл НЕ СБЕЙСЯ! на {score:0.0}%. Сможешь точнее?";
-            if (!string.IsNullOrWhiteSpace(challengeUrl)) text += "\n" + challengeUrl;
+            if (!string.IsNullOrWhiteSpace(challengeUrl))
+                text += "\n\n" + FormatChallengeLinks(challengeUrl);
             ShareText(text);
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.ShareComplete, Params(
                 "challenge_id", challengeId,
                 "score", score,
                 "has_challenge_url", !string.IsNullOrWhiteSpace(challengeUrl)));
+        }
+
+        private static string FormatChallengeLinks(string challengeUrl)
+        {
+            if (string.IsNullOrWhiteSpace(challengeUrl)) return string.Empty;
+
+            string[] links = challengeUrl
+                .Replace("\r", string.Empty)
+                .Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (links.Length >= 2 &&
+                links[0].StartsWith("nesbeisya://", StringComparison.OrdinalIgnoreCase) &&
+                links[1].StartsWith("https://www.rustore.ru/", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Игра уже установлена:\n" + links[0].Trim() +
+                       "\n\nНет игры — установить через RuStore:\n" + links[1].Trim();
+            }
+
+            return challengeUrl.Trim();
         }
 
         private static void ShareText(string text)
