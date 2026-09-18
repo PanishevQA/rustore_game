@@ -4,7 +4,7 @@ namespace DontGetSidetracked.Platform.RuStore
     {
         // Re-verified against the official RuStore Unity documentation on this date.
         // A production SDK upgrade must update both the exact pins and this verification date.
-        public const string LastVerifiedUtc = "2026-09-17";
+        public const string LastVerifiedUtc = "2026-09-18";
 
         public const string Pay = "11.1.0";
         public const string InstallReferrer = "10.6.1";
@@ -16,10 +16,10 @@ namespace DontGetSidetracked.Platform.RuStore
         // RuStore Push is intentionally not part of the MVP: Daily reminders are local notifications.
         // Do not add a Push version/package without a fresh Unity-specific compatibility check.
 
-        // Current project registry. Required RuStore runtime packages are pinned in Packages/manifest.json.
-        // RuStore documentation may contain transitional registry examples, so never change this URL without
-        // resolving the exact pinned packages in the project and running regression tests.
-        public const string NpmRegistry = "https://nexus-external.rustore.ru/repository/npm-unity-rustore-exposed/";
-        public const string MavenRepository = "https://nexus-external.rustore.ru/repository/maven-rustore-exposed";
+        // Current official RuStore Unity registry re-verified against the Pay / Install Referrer /
+        // Remote Config / Update / Review documentation on 2026-09-18.
+        // Direct SDK packages are pinned in Packages/manifest.json; ru.rustore.core resolves transitively.
+        public const string NpmRegistry = "https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/";
+        public const string MavenRepository = "https://nexus-external.vkteam.ru/repository/maven-rustore-exposed";
     }
 }
