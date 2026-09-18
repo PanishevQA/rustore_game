@@ -55,39 +55,71 @@ namespace DontGetSidetracked.Presentation
             scaler.matchWidthOrHeight = 0.5f;
 
             Image background = CreateImage(root.transform, "Background", Vector2.zero, Vector2.one,
-                new Color(0.025f, 0.035f, 0.065f, 1f));
+                new Color(0.010f, 0.016f, 0.040f, 1f));
             background.raycastTarget = false;
 
-            CreateText(root.transform, "Brand", "НЕ СБЕЙСЯ!", 64, TextAnchor.MiddleCenter,
-                new Vector2(0.08f, 0.88f), new Vector2(0.92f, 0.97f), Color.white);
-            CreateText(root.transform, "Mode", model.ModeLabel, 30, TextAnchor.MiddleCenter,
-                new Vector2(0.08f, 0.83f), new Vector2(0.92f, 0.88f), new Color(0.55f, 0.86f, 1f, 1f));
+            CreateText(root.transform, "BrandKicker", "MEMORY TRACE", 22, TextAnchor.MiddleLeft,
+                new Vector2(0.075f, 0.915f), new Vector2(0.45f, 0.955f), new Color(0.20f, 0.86f, 1f, 1f));
+            Text brand = CreateText(root.transform, "Brand", "НЕ СБЕЙСЯ!", 68, TextAnchor.MiddleLeft,
+                new Vector2(0.075f, 0.845f), new Vector2(0.68f, 0.925f), Color.white);
+            brand.fontStyle = FontStyle.Bold;
+            AddTextShadow(brand, 0.45f, -3f);
 
-            string icon = model.Celebration?.Icon ?? string.Empty;
+            CreateImage(root.transform, "AccentDash",
+                new Vector2(0.075f, 0.833f), new Vector2(0.29f, 0.840f),
+                new Color(0.20f, 0.86f, 1f, 1f), true);
+
+            CreateText(root.transform, "Mode", model.ModeLabel, 27, TextAnchor.MiddleRight,
+                new Vector2(0.54f, 0.865f), new Vector2(0.925f, 0.925f),
+                new Color(0.64f, 0.71f, 0.83f, 1f));
+
+            Text score = CreateText(root.transform, "Score", $"{model.Score:0.0}%", 118, TextAnchor.MiddleLeft,
+                new Vector2(0.075f, 0.690f), new Vector2(0.60f, 0.825f), ScoreColor(model.Score));
+            score.fontStyle = FontStyle.Bold;
+            AddTextShadow(score, 0.50f, -4f);
+
             string medal = model.Celebration?.Label ?? string.Empty;
-            CreateText(root.transform, "Score", $"{model.Score:0.0}%", 108, TextAnchor.MiddleCenter,
-                new Vector2(0.08f, 0.69f), new Vector2(0.92f, 0.82f), ScoreColor(model.Score));
-            CreateText(root.transform, "Medal", string.IsNullOrWhiteSpace(icon) ? medal : icon + "  " + medal, 40,
-                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.64f), new Vector2(0.92f, 0.70f), Color.white);
+            Text medalText = CreateText(root.transform, "Medal", medal, 37, TextAnchor.MiddleRight,
+                new Vector2(0.58f, 0.710f), new Vector2(0.925f, 0.790f), Color.white);
+            medalText.fontStyle = FontStyle.Bold;
 
-            Image routePanel = CreateImage(root.transform, "RoutePanel", new Vector2(0.08f, 0.24f), new Vector2(0.92f, 0.62f),
-                new Color(0.06f, 0.085f, 0.13f, 1f));
+            Image routePanel = CreateImage(root.transform, "RoutePanel",
+                new Vector2(0.075f, 0.285f), new Vector2(0.925f, 0.670f),
+                new Color(0.030f, 0.047f, 0.088f, 1f), true);
             routePanel.raycastTarget = false;
+            Outline routeOutline = routePanel.gameObject.AddComponent<Outline>();
+            routeOutline.effectColor = new Color(0.20f, 0.86f, 1f, 0.15f);
+            routeOutline.effectDistance = new Vector2(2f, -2f);
 
-            RouteGraphic reference = CreateRouteGraphic(routePanel.transform, "Reference", new Color(0.18f, 0.82f, 1f, 0.62f), 14f);
+            CreateText(routePanel.transform, "ReferenceLabel", "ЭТАЛОН  /  ТВОЯ ЛИНИЯ", 20, TextAnchor.MiddleLeft,
+                new Vector2(0.055f, 0.88f), new Vector2(0.68f, 0.97f),
+                new Color(0.58f, 0.68f, 0.82f, 1f));
+
+            RouteGraphic reference = CreateRouteGraphic(routePanel.transform, "Reference",
+                new Color(0.18f, 0.82f, 1f, 0.48f), 14f);
             reference.SetPoints(model.ReferencePoints);
             RouteGraphic player = CreateRouteGraphic(routePanel.transform, "Player", ScoreColor(model.Score), 11f);
             player.SetPoints(ToPositions(model.PlayerPoints));
 
             string comparison = model.HasRivalScore
-                ? $"Друг: {model.RivalScore:0.0}%   •   Ты: {model.Score:0.0}%"
+                ? $"ДРУГ  {model.RivalScore:0.0}%     •     ТЫ  {model.Score:0.0}%"
                 : model.ChallengeLabel;
-            CreateText(root.transform, "Challenge", comparison, 31, TextAnchor.MiddleCenter,
-                new Vector2(0.08f, 0.16f), new Vector2(0.92f, 0.23f), new Color(0.83f, 0.88f, 0.96f, 1f));
-            CreateText(root.transform, "Cta", "СМОЖЕШЬ ТОЧНЕЕ?", 42, TextAnchor.MiddleCenter,
-                new Vector2(0.08f, 0.07f), new Vector2(0.92f, 0.15f), new Color(0.72f, 0.48f, 1f, 1f));
-            CreateText(root.transform, "Footer", "Daily memory challenge • RuStore", 23, TextAnchor.MiddleCenter,
-                new Vector2(0.08f, 0.02f), new Vector2(0.92f, 0.07f), new Color(0.55f, 0.62f, 0.74f, 1f));
+
+            Image infoCard = CreateImage(root.transform, "InfoCard",
+                new Vector2(0.075f, 0.180f), new Vector2(0.925f, 0.265f),
+                new Color(0.045f, 0.060f, 0.105f, 0.98f), true);
+            CreateText(infoCard.transform, "Challenge", comparison, 27, TextAnchor.MiddleCenter,
+                new Vector2(0.05f, 0.12f), new Vector2(0.95f, 0.88f),
+                new Color(0.83f, 0.88f, 0.96f, 1f));
+
+            Text cta = CreateText(root.transform, "Cta", "СМОЖЕШЬ ТОЧНЕЕ?", 45, TextAnchor.MiddleCenter,
+                new Vector2(0.08f, 0.085f), new Vector2(0.92f, 0.155f),
+                new Color(0.72f, 0.54f, 1f, 1f));
+            cta.fontStyle = FontStyle.Bold;
+
+            CreateText(root.transform, "Footer", "НЕ СБЕЙСЯ!  •  RuStore", 21, TextAnchor.MiddleCenter,
+                new Vector2(0.08f, 0.025f), new Vector2(0.92f, 0.075f),
+                new Color(0.48f, 0.56f, 0.69f, 1f));
 
             Canvas.ForceUpdateCanvases();
             camera.Render();
@@ -123,7 +155,13 @@ namespace DontGetSidetracked.Presentation
             return graphic;
         }
 
-        private static Image CreateImage(Transform parent, string name, Vector2 min, Vector2 max, Color color)
+        private static Image CreateImage(
+            Transform parent,
+            string name,
+            Vector2 min,
+            Vector2 max,
+            Color color,
+            bool rounded = false)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             go.layer = UiLayer;
@@ -131,6 +169,11 @@ namespace DontGetSidetracked.Presentation
             SetAnchors(go.GetComponent<RectTransform>(), min, max);
             Image image = go.GetComponent<Image>();
             image.color = color;
+            if (rounded)
+            {
+                image.sprite = ReleaseUiKit.Rounded;
+                image.type = Image.Type.Sliced;
+            }
             return image;
         }
 
@@ -161,6 +204,15 @@ namespace DontGetSidetracked.Presentation
             text.verticalOverflow = VerticalWrapMode.Truncate;
             text.raycastTarget = false;
             return text;
+        }
+
+        private static void AddTextShadow(Text text, float alpha, float y)
+        {
+            if (text == null) return;
+            Shadow shadow = text.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, alpha);
+            shadow.effectDistance = new Vector2(0f, y);
+            shadow.useGraphicAlpha = true;
         }
 
         private static void SetAnchors(RectTransform rect, Vector2 min, Vector2 max)
