@@ -88,7 +88,7 @@ Remote Config runtime также не зависит от нашего backend: 
 
 Meta/Training/Campaign overlays имеют публичные open/close state contracts для mobile Back вместо чтения их private state через reflection.
 
-Presentation layer доведён до **release visual candidate**: Home dashboard, gameplay HUD, memory grid/glow, high-fidelity Training, Campaign browser, Meta/Store/Settings и Result surfaces используют единую карточную dark/cyan/violet систему без изменения gameplay architecture.
+Presentation layer доведён до **release visual candidate**: Home dashboard, gameplay HUD, memory grid/glow, high-fidelity Training, Campaign browser, Meta/Store/Settings, unified Result, branded share-card, notification/update surfaces и incoming Friend Challenge используют одну dark/cyan/violet систему. Старые конфликтующие Home/theme coordinators удалены; Android Back, safe area и platform/ad launch gates учитывают referral overlay.
 
 ## Автоматические проверки
 
@@ -129,7 +129,7 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 - UPM resolve/Unity compile официальных RuStore packages на release-машине;
 - Install Referrer 10.6.1 physical-device smoke test;
 - Remote Config 10.5.1 AppId и physical-device fallback test;
-- реальные Yandex `R-M-...` block IDs + EDM Force Resolve + signed-device ad smoke test (plugin 8.4.0 уже закреплён в manifest);
+- реальные Yandex `R-M-...` block IDs + signed-device ad smoke test (plugin 8.4.0 и EDM4U закреплены; production entrypoint сам выполняет fail-closed Force Resolve);
 - Pay success/cancel/error/restore через реальный RuStore;
 - deeplink + Install Referrer после реальной установки;
 - Review / Update на устройстве с RuStore;
