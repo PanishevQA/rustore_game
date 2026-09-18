@@ -331,6 +331,7 @@ namespace DontGetSidetracked.Presentation
                 _pointerDown = true;
                 _gestureStartMs = NowMs();
                 _recording.Clear();
+                _playerGraphic.Clear();
                 AddPoint(start);
                 _status.text = "ВЕДИ ПО ПАМЯТИ";
             }
@@ -351,9 +352,7 @@ namespace DontGetSidetracked.Presentation
             long ts = NowMs() - _gestureStartMs;
             if (_recording.Count > 0 && _recording[_recording.Count - 1].Position.DistanceSquared(point) < 7_000L * 7_000L) return;
             _recording.Add(new RecordedPoint(point, ts));
-            var positions = new List<FixedPoint2>(_recording.Count);
-            for (int i = 0; i < _recording.Count; i++) positions.Add(_recording[i].Position);
-            _playerGraphic.SetPoints(positions);
+            _playerGraphic.AppendPoint(point);
         }
 
         private void FinishRound()
