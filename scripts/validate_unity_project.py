@@ -306,6 +306,21 @@ def validate_release_preflight_contract() -> None:
             fail(message)
 
 
+def validate_local_release_candidate_runner() -> None:
+    path = ROOT / "scripts/run_release_candidate_checks.ps1"
+    text = read(path)
+    required = (
+        "ProjectSettings\\ProjectVersion.txt",
+        "-runTests",
+        "-testPlatform EditMode",
+        "DontGetSidetracked.EditorTools.ReleaseReadinessReporter.Report",
+        "release-readiness.txt",
+    )
+    for marker in required:
+        if marker not in text:
+            fail(f"Local release-candidate runner is incomplete: missing {marker!r}.")
+
+
 def validate_release_readiness_reporter() -> None:
     text = read(UNITY / "Assets/Game/Editor/ReleaseReadinessReporter.cs")
     required = (
@@ -382,6 +397,7 @@ def main() -> int:
     validate_remote_config_runtime_contract()
     validate_live_stroke_contract()
     validate_release_preflight_contract()
+    validate_local_release_candidate_runner()
     validate_release_readiness_reporter()
     validate_android_dependency_configurator()
     validate_editor_configuration_safety()
