@@ -15,6 +15,8 @@ namespace DontGetSidetracked.Presentation
         private CanvasGroup _group;
         private float _elapsed;
         private bool _animating;
+        private bool _restoreInteractable;
+        private bool _restoreBlocksRaycasts;
 
         private void Awake()
         {
@@ -35,9 +37,17 @@ namespace DontGetSidetracked.Presentation
                 if (_group == null) _group = gameObject.AddComponent<CanvasGroup>();
             }
 
+            if (!_animating)
+            {
+                _restoreInteractable = _group.interactable;
+                _restoreBlocksRaycasts = _group.blocksRaycasts;
+            }
+
             _elapsed = 0f;
             _animating = true;
             _group.alpha = 0f;
+            _group.interactable = false;
+            _group.blocksRaycasts = false;
             transform.localScale = Vector3.one * Mathf.Clamp(_startScale, 0.90f, 1f);
         }
 
@@ -54,15 +64,31 @@ namespace DontGetSidetracked.Presentation
             float scale = Mathf.Lerp(Mathf.Clamp(_startScale, 0.90f, 1f), 1f, eased);
             transform.localScale = Vector3.one * scale;
 
+            if (t >= 0.60f)
+            {
+                _group.interactable = _restoreInteractable;
+                _group.blocksRaycasts = _restoreBlocksRaycasts;
+            }
+
             if (t < 1f) return;
             _group.alpha = 1f;
+            _group.interactable = _restoreInteractable;
+            _group.blocksRaycasts = _restoreBlocksRaycasts;
             transform.localScale = Vector3.one;
             _animating = false;
         }
 
         private void OnDisable()
         {
-            if (_group != null) _group.alpha = 1f;
+            if (_group != null)
+            {
+                _group.alpha = 1f;
+                if (_animating)
+                {
+                    _group.interactable = _restoreInteractable;
+                    _group.blocksRaycasts = _restoreBlocksRaycasts;
+                }
+            }
             transform.localScale = Vector3.one;
             _animating = false;
         }
