@@ -244,7 +244,7 @@ namespace DontGetSidetracked.Presentation
             Button play = CreateActionButton(card, "DailyPlay", "ИГРАТЬ DAILY", CyanBright,
                 new Color(0.02f, 0.05f, 0.08f, 1f),
                 new Vector2(0.055f, 0.065f), new Vector2(0.945f, 0.235f));
-            play.onClick.AddListener(() => InvokeLegacy(_legacyShare));
+            play.onClick.AddListener(StartDailyFromHome);
         }
 
         private void BuildCampaignCard(Transform parent)
@@ -281,14 +281,14 @@ namespace DontGetSidetracked.Presentation
 
             Button levels = CreateActionButton(card, "LevelsButton", "УРОВНИ", Violet, TextPrimary,
                 new Vector2(0.70f, 0.14f), new Vector2(0.945f, 0.50f));
-            levels.onClick.AddListener(() => InvokeLegacy(_legacyPrimary));
+            levels.onClick.AddListener(OpenCampaignFromHome);
         }
 
         private void BuildQuickActions(Transform parent)
         {
             CreateQuickAction(parent, "TrainingQuick", "ТРЕНИРОВКА", "Без ограничений", CyanBright,
                 new Vector2(0.075f, 0.170f), new Vector2(0.345f, 0.320f),
-                () => InvokeLegacy(_legacySecondary));
+                OpenTrainingFromHome);
 
             CreateQuickAction(parent, "StatsQuick", "СТАТИСТИКА", "Рекорды и серия", Gold,
                 new Vector2(0.365f, 0.170f), new Vector2(0.635f, 0.320f),
@@ -402,6 +402,25 @@ namespace DontGetSidetracked.Presentation
             group.alpha = visible ? 1f : 0f;
             group.interactable = visible && interactive;
             group.blocksRaycasts = visible && interactive;
+        }
+
+        private void StartDailyFromHome()
+        {
+            if (_bootstrap == null || !GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap)) return;
+            GameBootstrapRuntimeBridge.StartDaily(_bootstrap);
+        }
+
+        private void OpenCampaignFromHome()
+        {
+            if (_bootstrap == null || !GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap)) return;
+            CampaignLevelMenuOverlay.OpenFor(_bootstrap);
+        }
+
+        private void OpenTrainingFromHome()
+        {
+            if (_bootstrap == null || !GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap)) return;
+            TrainingMenuCoordinator training = FindFirstObjectByType<TrainingMenuCoordinator>();
+            if (training != null) training.OpenFromHome();
         }
 
         private static void InvokeLegacy(Button button)
