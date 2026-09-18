@@ -47,7 +47,7 @@ namespace DontGetSidetracked.EditorTools
                 throw new BuildFailedException("Android production build blocked:\n- " + string.Join("\n- ", errors));
         }
 
-        private static List<string> CollectErrors()
+        internal static List<string> CollectErrors()
         {
             var errors = new List<string>();
             string packageName = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android);
