@@ -222,7 +222,7 @@ namespace DontGetSidetracked.Presentation
             _dailyMeta = ReleaseUiKit.TextBlock(card, "DailyMeta", "СЕГОДНЯ", 15, TextAnchor.MiddleRight,
                 new Vector2(0.58f, 0.81f), new Vector2(0.94f, 0.94f), ReleaseUiComponents.Muted, FontStyle.Bold);
 
-            Text headline = ReleaseUiKit.TextBlock(card, "DailyHeadline", "ОДИН МАРШРУТ.\nВСЕ ИГРОКИ. КТО ТОЧНЕЕ?", 28, TextAnchor.MiddleLeft,
+            Text headline = ReleaseUiKit.TextBlock(card, "DailyHeadline", "ОДИН ЧЕЛЛЕНДЖ.\nВСЕ ИГРОКИ. КТО ТОЧНЕЕ?", 28, TextAnchor.MiddleLeft,
                 new Vector2(0.055f, 0.42f), new Vector2(0.64f, 0.77f), ReleaseUiComponents.Text, FontStyle.Bold);
             headline.fontStyle = FontStyle.Bold;
             headline.lineSpacing = 0.90f;
