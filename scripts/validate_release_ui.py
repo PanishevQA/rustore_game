@@ -71,12 +71,16 @@ required = {
     "meta": (
         "BodyCard",
         "ActionsCard",
+        "AddStoreProductAction",
+        "ProductPrice",
         "ReleaseUiKit.Button",
     ),
     "result": (
         "ResultHeader",
         "ResultDetail",
+        "ResultActions",
         "SuppressLegacyResultHeader",
+        "SuppressLegacyResultControls",
         "RestoreLegacyResultHeader",
         "_legacyTitleGroup.alpha = 1f",
         "_legacyStatusGroup.alpha = 1f",
