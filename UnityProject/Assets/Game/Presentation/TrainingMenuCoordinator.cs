@@ -190,13 +190,13 @@ namespace DontGetSidetracked.Presentation
             ReleaseUiComponents.SectionHeader(_panel.transform, "ВЫБЕРИ СЛОЖНОСТЬ",
                 new Vector2(0.07f, 0.615f), new Vector2(0.62f, 0.650f));
 
-            CreateDifficultyCard(0, "EasyCard", "ЛЁГКАЯ", "10–15 СЕК", "Короткие и простые маршруты",
+            CreateDifficultyCard(0, "EasyCard", "ЛЁГКАЯ", "ПОКАЗ 3.5 С", "Короткие и простые маршруты",
                 ReleaseUiComponents.Success, new Vector2(0.07f, 0.505f), new Vector2(0.93f, 0.605f));
 
-            CreateDifficultyCard(1, "MediumCard", "СРЕДНЯЯ", "15–25 СЕК", "Больше поворотов и меньше времени",
+            CreateDifficultyCard(1, "MediumCard", "СРЕДНЯЯ", "ПОКАЗ 3.0 С", "Больше поворотов и меньше времени",
                 ReleaseUiComponents.Cyan, new Vector2(0.07f, 0.390f), new Vector2(0.93f, 0.490f));
 
-            CreateDifficultyCard(2, "HardCard", "СЛОЖНАЯ", "25–40 СЕК", "Для настоящих мастеров памяти",
+            CreateDifficultyCard(2, "HardCard", "СЛОЖНАЯ", "ПОКАЗ 2.5 С", "Для настоящих мастеров памяти",
                 ReleaseUiComponents.Violet, new Vector2(0.07f, 0.275f), new Vector2(0.93f, 0.375f));
 
             Image progress = ReleaseUiComponents.GlassCard(_panel.transform, "TrainingProgress",
