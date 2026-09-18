@@ -18,6 +18,7 @@ namespace DontGetSidetracked.Presentation
         private static CampaignLevelMenuOverlay _instance;
 
         private GameObject _canvas;
+        private GameObject _backdrop;
         private GameObject _panel;
         private Text _title;
         private Text _summary;
@@ -209,6 +210,7 @@ namespace DontGetSidetracked.Presentation
 
         private void SetVisible(bool visible)
         {
+            if (_backdrop != null) _backdrop.SetActive(visible);
             if (_panel != null) _panel.SetActive(visible);
         }
 
@@ -226,6 +228,7 @@ namespace DontGetSidetracked.Presentation
 
             var dim = new GameObject("CampaignBackdrop", typeof(RectTransform), typeof(Image));
             dim.transform.SetParent(_canvas.transform, false);
+            _backdrop = dim;
             ReleaseUiKit.Stretch(dim.GetComponent<RectTransform>());
             Image dimImage = dim.GetComponent<Image>();
             dimImage.color = new Color(0.004f, 0.009f, 0.025f, 0.90f);
