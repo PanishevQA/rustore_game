@@ -381,9 +381,24 @@ namespace DontGetSidetracked.Presentation
                 _save.TutorialCompleted = true;
                 _saveRepository.Save(_save);
                 AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.TutorialComplete, Params("score", result.Score));
-                _status.text = $"{result.Score:0.0}% — отлично!\nТеперь настоящее испытание.";
+
+                if (result.Score >= 70.0)
+                {
+                    _status.text = $"{result.Score:0.0}% — ОТЛИЧНО!\nТеперь настоящее испытание.";
+                    ConfigureButton(_secondary, "ТРЕНИРОВКА", StartTraining);
+                }
+                else if (result.Score >= 40.0)
+                {
+                    _status.text = $"{result.Score:0.0}% — ГОТОВО.\nГлавное — повторить маршрут одним движением.";
+                    ConfigureButton(_secondary, "ПОВТОРИТЬ ОБУЧЕНИЕ", StartTutorial);
+                }
+                else
+                {
+                    _status.text = $"{result.Score:0.0}% — ПЕРВЫЙ МАРШРУТ ГОТОВ.\nМожно повторить обучение или продолжить.";
+                    ConfigureButton(_secondary, "ПОВТОРИТЬ ОБУЧЕНИЕ", StartTutorial);
+                }
+
                 ConfigureButton(_primary, "ПРОДОЛЖИТЬ", ShowHome);
-                ConfigureButton(_secondary, "ТРЕНИРОВКА", StartTraining);
                 _share.gameObject.SetActive(false);
                 return;
             }
