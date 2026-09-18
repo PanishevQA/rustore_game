@@ -178,7 +178,7 @@ namespace DontGetSidetracked.Presentation
 
         private void SetHudVisible(bool visible)
         {
-            if (_hudGroup == null || _hudVisible == visible) return;
+            if (_hudGroup == null) return;
             _hudVisible = visible;
             _hudGroup.alpha = visible ? 1f : 0f;
             _hudGroup.interactable = false;
