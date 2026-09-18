@@ -20,11 +20,8 @@ expected = {
     "RemoteConfig": "10.5.1",
 }
 installed_packages = {
-    "ru.rustore.pay": expected["Pay"],
-    "ru.rustore.installreferrer": expected["InstallReferrer"],
-    "ru.rustore.remoteconfig": expected["RemoteConfig"],
-    "ru.rustore.update": expected["Update"],
-    "ru.rustore.review": expected["Review"],
+    # Local Unity Editor baseline intentionally contains no RuStore packages.
+    # Exact production targets remain documented and are enforced before release.
 }
 
 versions_text = VERSIONS.read_text(encoding="utf-8")
