@@ -8,7 +8,7 @@
   "versionDefines": [
     {
       "name": "com.yandex.mobileads",
-      "expression": "8.4.0",
+      "expression": "[8.4.0,8.5.0)",
       "define": "YANDEX_MOBILE_ADS"
     }
   ],
