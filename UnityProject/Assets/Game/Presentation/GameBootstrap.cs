@@ -165,7 +165,8 @@ namespace DontGetSidetracked.Presentation
             BeginNavigation();
             _mode = Mode.Tutorial;
             _dailyCompleted = false;
-            AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.TutorialStart);
+            if (!_save.TutorialCompleted)
+                AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.TutorialStart);
             RouteDefinition tutorialRoute = _generator.Generate(24051990, RouteGenerator.CurrentGeneratorVersion, RouteDifficulty.Easy);
             StartCoroutine(BeginRoute(tutorialRoute));
         }
@@ -378,9 +379,11 @@ namespace DontGetSidetracked.Presentation
 
             if (_mode == Mode.Tutorial)
             {
+                bool firstCompletion = !_save.TutorialCompleted;
                 _save.TutorialCompleted = true;
                 _saveRepository.Save(_save);
-                AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.TutorialComplete, Params("score", result.Score));
+                if (firstCompletion)
+                    AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.TutorialComplete, Params("score", result.Score));
 
                 if (result.Score >= 70.0)
                 {
