@@ -45,9 +45,9 @@ namespace DontGetSidetracked.Presentation
 
             if (_bootstrap == null || _legacyTitle == null || _legacyStatus == null || _hudGroup == null) return;
 
-            bool home = GameBootstrapRuntimeBridge.IsHome(_bootstrap);
+            bool active = GameBootstrapRuntimeBridge.IsActiveRound(_bootstrap);
             bool result = GameBootstrapRuntimeBridge.IsResult(_bootstrap);
-            bool active = !home && !result;
+            bool plainHome = GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap);
 
             if (active)
             {
@@ -58,7 +58,7 @@ namespace DontGetSidetracked.Presentation
             else
             {
                 SetHudVisible(false);
-                if (!home) SetLegacyVisible(true);
+                if (!plainHome && !result) SetLegacyVisible(true);
             }
         }
 
