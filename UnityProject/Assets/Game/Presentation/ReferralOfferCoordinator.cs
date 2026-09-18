@@ -32,6 +32,7 @@ namespace DontGetSidetracked.Presentation
         private Text _detail;
         private Button _accept;
         private Button _later;
+        private ReleasePanelMotion _offerMotion;
 
         private bool _visible;
         private float _nextResolve;
@@ -143,6 +144,7 @@ namespace DontGetSidetracked.Presentation
             Image card = ReleaseUiKit.Panel(root.transform, "ChallengeCard",
                 new Vector2(0.075f, 0.375f), new Vector2(0.925f, 0.710f),
                 ReleaseUiKit.Surface, ReleaseUiKit.Violet, true);
+            _offerMotion = card.gameObject.AddComponent<ReleasePanelMotion>();
 
             ReleaseUiKit.TextBlock(card.transform, "TargetLabel", "ЦЕЛЬ", 19,
                 TextAnchor.MiddleCenter, new Vector2(0.10f, 0.76f), new Vector2(0.90f, 0.90f),
@@ -219,6 +221,7 @@ namespace DontGetSidetracked.Presentation
         private void SetVisible(bool visible)
         {
             _visible = visible;
+            if (visible) _offerMotion?.Play();
             if (_overlayGroup != null)
             {
                 _overlayGroup.alpha = visible ? 1f : 0f;
