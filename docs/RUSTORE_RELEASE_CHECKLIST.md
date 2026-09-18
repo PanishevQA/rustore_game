@@ -6,7 +6,7 @@
 - [ ] Unity Editor — `6000.3.24f1` или более новый проверенный патч той же LTS-линии после smoke/regression теста.
 - [ ] `PlayerSettings.Android.applicationEntry == AndroidApplicationEntry.Activity`.
 - [ ] Pay работает через `com.unity3d.player.UnityPlayerActivity`, не GameActivity.
-- [ ] `<application>` использует `android:name="ru.rustore.unitysdk.RuStoreRemoteConfigApplication"` для Remote Config Unity 10.5.1.
+- [ ] После восстановления рабочей Remote Config integration `<application>` использует `android:name="ru.rustore.unitysdk.RuStoreRemoteConfigApplication"`; compile-safe Editor baseline без SDK не должен ссылаться на отсутствующий Application class.
 - [ ] minSdk = **25** (Unity 6.3 уже не поддерживает API 24); targetSdk = 34 либо highest installed после повторной сверки RuStore requirements.
 - [ ] Реальный Package Name полностью совпадает с приложением в RuStore Console.
 - [ ] PayClient Settings содержит корректные `consoleApplicationId` и уникальный deeplink scheme.
@@ -22,6 +22,7 @@
 
 ## Install Referrer / Remote Config
 
+- [ ] До production устранён подтверждённый на Unity 6000.3.24f1 package regression: текущие npm Install Referrer 10.6.1 / Remote Config 10.5.1 не должны возвращаться в manifest, пока не пройдут реальный Unity compile без PackageCache errors/duplicate GUID.
 - [ ] В production Android integration установлен и реально компилируется официальный **Install Referrer Unity 10.6.1** (или более новая версия, повторно проверенная перед сборкой); `ru.rustore.core` разрешается транзитивно, без отдельного direct pin.
 - [ ] После установки Install Referrer проверены Android package resolve, IL2CPP stripping и physical-device `GetInstallReferrer`.
 - [ ] `referrerId` сохраняется сразу после первого успешного чтения: RuStore выдаёт его одноразово и хранит ограниченное время.
