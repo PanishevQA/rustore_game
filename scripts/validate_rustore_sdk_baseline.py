@@ -77,18 +77,18 @@ release_docs = {
         readme_text,
         (
             f"Последняя сверка RuStore targets — {verified_date}:",
+            f"Pay Unity `{expected['Pay']}`",
+            f"Install Referrer Unity `{expected['InstallReferrer']}`",
             f"Remote Config Unity `{expected['RemoteConfig']}`",
-            f"`ru.rustore.installreferrer` `{expected['InstallReferrer']}`",
-            f"`ru.rustore.remoteconfig` `{expected['RemoteConfig']}`",
         ),
     ),
     "docs/MVP_STATUS.md": (
         status_text,
         (
             f"Последняя сверка RuStore targets на {verified_date}:",
+            f"Pay Unity: `{expected['Pay']}`",
+            f"Install Referrer Unity: `{expected['InstallReferrer']}`",
             f"Remote Config Unity: **`{expected['RemoteConfig']}`**",
-            f"`ru.rustore.installreferrer` `{expected['InstallReferrer']}`",
-            f"`ru.rustore.remoteconfig` `{expected['RemoteConfig']}`",
         ),
     ),
 }
