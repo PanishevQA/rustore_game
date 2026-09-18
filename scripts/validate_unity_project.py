@@ -309,6 +309,9 @@ def validate_local_release_candidate_runner() -> None:
     text = read(path)
     required = (
         "ProjectSettings\\ProjectVersion.txt",
+        '"ru.rustore.installreferrer"',
+        '"ru.rustore.remoteconfig"',
+        'Remove-Item $libraryPath -Recurse -Force',
         "-runTests",
         "-testPlatform EditMode",
         "DontGetSidetracked.EditorTools.ReleaseReadinessReporter.Report",
