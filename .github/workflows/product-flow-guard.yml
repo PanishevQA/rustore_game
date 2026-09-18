@@ -50,6 +50,9 @@ jobs:
           grep -q 'IsCurrentPanel(revision)' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           grep -q '_lastStoreProducts' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           grep -q '_panelRevision++' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'AddStoreProductAction' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'ProductPrice' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'PriceLabel' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
 
           # Mobile Back uses stable overlay contracts instead of private-state reflection for product overlays.
           grep -q 'public bool IsOpen' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
@@ -141,9 +144,10 @@ jobs:
           grep -q 'CoinSpend = "coin_spend"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
 
           # Rewarded hint is opt-in and both ad formats must stay behind every Home overlay/update blocker.
-          grep -q 'new Vector2(0.23f, 0.118f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'new Vector2(0.075f, 0.092f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'new Vector2(0.925f, 0.142f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'ReleaseUiKit.Button' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
-          grep -q 'БЕСПЛАТНАЯ ПОДСКАЗКА' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'ПОДСКАЗКА ЗА РЕКЛАМУ' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'ShowRewardedAsync' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'save.Hints++' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'training.IsOpen' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
