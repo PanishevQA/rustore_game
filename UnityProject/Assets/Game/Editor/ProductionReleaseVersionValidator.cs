@@ -28,17 +28,22 @@ namespace DontGetSidetracked.EditorTools
             ValidateOrThrow("Android production build blocked");
         }
 
-        private static void ValidateOrThrow(string prefix)
+        internal static System.Collections.Generic.List<string> CollectErrors()
         {
+            var errors = new System.Collections.Generic.List<string>();
             string publicVersion = (PlayerSettings.bundleVersion ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(publicVersion))
-                throw new BuildFailedException(prefix + ": set a public application version before release.");
+                errors.Add("Set a public application version before release.");
+            else if (string.Equals(publicVersion, ProjectConfigurator.DevelopmentVersion, StringComparison.OrdinalIgnoreCase))
+                errors.Add($"Replace Editor development fallback version '{ProjectConfigurator.DevelopmentVersion}' with the intended RuStore release version.");
+            return errors;
+        }
 
-            if (string.Equals(publicVersion, ProjectConfigurator.DevelopmentVersion, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new BuildFailedException(
-                    prefix + $": replace Editor development fallback version '{ProjectConfigurator.DevelopmentVersion}' with the intended RuStore release version.");
-            }
+        private static void ValidateOrThrow(string prefix)
+        {
+            System.Collections.Generic.List<string> errors = CollectErrors();
+            if (errors.Count > 0)
+                throw new BuildFailedException(prefix + ": " + string.Join(" ", errors));
         }
     }
 }
