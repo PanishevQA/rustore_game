@@ -10,7 +10,7 @@ CHECKLIST = ROOT / "docs/RUSTORE_RELEASE_CHECKLIST.md"
 README = ROOT / "README.md"
 STATUS = ROOT / "docs/MVP_STATUS.md"
 
-verified_date = "2026-09-17"
+verified_date = "2026-09-18"
 expected = {
     "Pay": "11.1.0",
     "InstallReferrer": "10.6.1",
@@ -20,8 +20,11 @@ expected = {
     "RemoteConfig": "10.5.1",
 }
 installed_packages = {
-    # Local Unity Editor baseline intentionally contains no RuStore packages.
-    # Exact production targets remain documented and are enforced before release.
+    "ru.rustore.pay": expected["Pay"],
+    "ru.rustore.installreferrer": expected["InstallReferrer"],
+    "ru.rustore.remoteconfig": expected["RemoteConfig"],
+    "ru.rustore.update": expected["Update"],
+    "ru.rustore.review": expected["Review"],
 }
 
 versions_text = VERSIONS.read_text(encoding="utf-8")
@@ -107,6 +110,10 @@ if not any(
 
 if "artifactory-external.vkpartner.ru" in versions_text or "artifactory-external.vkpartner.ru" in manifest_text:
     errors.append("Deprecated RuStore repository address detected in active package configuration.")
+if "nexus-external.rustore.ru" in versions_text or "nexus-external.rustore.ru" in manifest_text:
+    errors.append("Obsolete pre-vkteam RuStore repository address detected in active package configuration.")
+if "ru.rustore.core" in dependencies:
+    errors.append("ru.rustore.core must resolve transitively; do not pin it directly beside feature packages.")
 
 if errors:
     raise SystemExit("RuStore SDK baseline validation failed:\n- " + "\n- ".join(errors))
