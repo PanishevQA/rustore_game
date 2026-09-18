@@ -22,6 +22,8 @@ required = {
     'ProjectConfigurator.Configure();': "Production build must prepare Android settings and the generated bootstrap scene first.",
     'AndroidDependencyConfigurator.Configure();': "Production build must generate current-Unity Android dependency templates before validation.",
     'BrandAssetConfigurator.Configure();': "Production build must generate launcher branding before validation.",
+    'AndroidDependencyConfigurator.ForceResolveAndroidDependencies()': "Production build must force-resolve EDM4U Android dependencies before BuildPipeline.",
+    'Android dependency resolution failed. Production AAB build is blocked.': "Production build must fail closed when EDM4U resolution fails.",
     'AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);': "Production build must synchronously import generated release assets.",
     'EditorUserBuildSettings.SwitchActiveBuildTarget': "Production build must explicitly switch to Android when needed.",
     'EditorUserBuildSettings.buildAppBundle = true;': "Production build must force Android App Bundle output.",
