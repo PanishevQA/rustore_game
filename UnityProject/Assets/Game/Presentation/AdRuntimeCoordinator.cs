@@ -121,6 +121,9 @@ namespace DontGetSidetracked.Presentation
 
         private static bool IsAnyHomeOverlayOpen()
         {
+            DailyIntroCoordinator dailyIntro = FindFirstObjectByType<DailyIntroCoordinator>();
+            if (dailyIntro != null && dailyIntro.IsOpen) return true;
+
             MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
             if (meta != null && meta.IsPanelOpen) return true;
 
