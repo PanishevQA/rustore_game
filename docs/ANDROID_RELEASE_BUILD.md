@@ -22,7 +22,7 @@
 
 ## Readiness report
 
-Перед production AAB запустите **Tools → НЕ СБЕЙСЯ! → Release Readiness Report**. Команда использует те же fail-closed проверки версии, placeholder-конфигурации, Android/SDK-контракта и RuStore Pay, что и production build, и сохраняет копию отчёта в `Library/NesbeisyaReleaseReadiness.txt`.
+Перед production AAB запустите **Tools → НЕ СБЕЙСЯ! → Release Readiness Report**. Команда сначала выполняет ту же детерминированную подготовку, что и production build (Android target, branding, Gradle templates, EDM4U Force Resolve, AAB profile), затем использует те же fail-closed проверки версии, placeholder-конфигурации, Android/SDK-контракта и RuStore Pay и сохраняет копию отчёта в `Library/NesbeisyaReleaseReadiness.txt`.
 
 Статус `READY FOR SIGNED ANDROID DEVICE SMOKE TEST` означает, что репозиторий и локальная production-конфигурация готовы к финальной проверке на реальном Android-устройстве. Это не заменяет device-тесты Pay, Install Referrer, рекламы, Review, Update, notifications и share.
 
