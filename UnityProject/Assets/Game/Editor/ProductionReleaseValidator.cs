@@ -51,8 +51,8 @@ namespace DontGetSidetracked.EditorTools
         {
             var errors = new List<string>();
             string packageName = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android);
-            if (string.IsNullOrWhiteSpace(packageName) || packageName.EndsWith(".dev", StringComparison.OrdinalIgnoreCase))
-                errors.Add("Replace the development Android package name with the exact RuStore Console package name.");
+            if (!string.Equals(packageName, ProjectConfigurator.ProductionPackageName, StringComparison.Ordinal))
+                errors.Add($"Android package name must be exactly '{ProjectConfigurator.ProductionPackageName}' for the RuStore production app.");
 
             if (string.IsNullOrWhiteSpace(PlayerSettings.bundleVersion))
                 errors.Add("Set a non-empty public application version before release.");
