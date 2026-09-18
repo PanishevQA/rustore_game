@@ -22,9 +22,9 @@ expected = {
 # regression. ProductionReleaseValidator still blocks a release until they are
 # restored and their runtime types are actually loaded.
 installed_packages = {
-    "ru.rustore.pay": expected["Pay"],
-    "ru.rustore.update": expected["Update"],
-    "ru.rustore.review": expected["Review"],
+    # Local/Editor baseline intentionally contains no RuStore packages.
+    # Exact production targets remain documented in RuStoreSdkVersions and are
+    # enforced by ProductionReleaseValidator before a release build.
 }
 
 versions_text = VERSIONS.read_text(encoding="utf-8")
