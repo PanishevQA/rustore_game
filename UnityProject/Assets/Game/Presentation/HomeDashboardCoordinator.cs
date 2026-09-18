@@ -344,7 +344,7 @@ namespace DontGetSidetracked.Presentation
 
             if (_dailyMeta != null)
             {
-                string date = DateTime.Now.ToString("dd.MM");
+                string date = DateTime.UtcNow.ToString("dd.MM");
                 _dailyMeta.text = date + "  •  СЕРИЯ " + save.Streak + "Д";
             }
 
