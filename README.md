@@ -159,6 +159,18 @@ UI собран как единый release-style portrait layer: карточн
 
 Это позволяет проводить полный clean-state regression без ручного поиска `persistentDataPath`.
 
+## Release-candidate проверка одной командой
+
+На Windows с установленным через Unity Hub Editor закройте открытый Unity-проект и из корня репозитория запустите:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_release_candidate_checks.ps1
+```
+
+Скрипт сам читает версию Editor из `UnityProject/ProjectSettings/ProjectVersion.txt`, находит её в Unity Hub, запускает Unity compile + EditMode tests, затем выполняет Android release preparation и `Release Readiness Report`. Логи и результаты сохраняются в `artifacts/release-candidate`.
+
+Если Unity установлен нестандартно, передайте `-UnityExe "C:\path\to\Unity.exe"` или задайте переменную `UNITY_EXE`.
+
 ## Быстрый запуск
 
 1. Установить Unity `6000.3.24f1` с Android Build Support.
