@@ -96,7 +96,7 @@ Yandex ads находятся за `IAdService`:
 - `remove_ads`/`starter_pack` подавляют interstitial;
 - frequency/cooldown policy отделена от gameplay.
 
-Yandex Mobile Ads Unity `8.4.0` закреплён в `Packages/manifest.json`; `Game.Monetization.asmdef` автоматически включает adapter define для проверенной 8.4.x линии. Production всё ещё требует реальные `R-M-...` block IDs, EDM Force Resolve и signed-device ad smoke test.
+Yandex Mobile Ads Unity `8.4.0` закреплён в `Packages/manifest.json`; `Game.Monetization.asmdef` автоматически включает adapter define для проверенной 8.4.x линии. Production build сам запускает fail-closed EDM4U Force Resolve; снаружи остаются реальные `R-M-...` block IDs и signed-device ad smoke test.
 
 ## Android / RuStore baseline
 
@@ -148,7 +148,7 @@ Daily reminder планируется через `com.unity.mobile.notifications
 - Campaign/Daily статистика находится прямо в Meta UI;
 - Sound/Haptics имеют реальный feedback, а не декоративные toggles.
 
-UI собран как единый release-style portrait layer: карточный Home dashboard, отдельный Daily CTA, campaign progress, high-fidelity Training selector, chapter/level browser, профиль/статистика/настройки/магазин, gameplay HUD, grid/glow игрового поля и отдельный result header со score/medal/share. Presentation остаётся отделён от gameplay architecture.
+UI собран как единый release-style portrait layer: карточный Home dashboard, отдельный Daily CTA, campaign progress, high-fidelity Training selector, chapter/level browser, профиль/статистика/настройки/магазин, gameplay HUD, grid/glow игрового поля, единый result header/detail, брендированная PNG share-card и отдельный incoming friend-challenge экран. Устаревшие конкурирующие theme/Home pollers удалены, поэтому у каждого release surface один визуальный владелец.
 
 ## QA в Unity Editor
 
