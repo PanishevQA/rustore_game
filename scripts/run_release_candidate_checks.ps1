@@ -10,6 +10,31 @@ $projectVersionPath = Join-Path $projectPath "ProjectSettings\ProjectVersion.txt
 $artifacts = Join-Path $repoRoot "artifacts\release-candidate"
 New-Item -ItemType Directory -Force -Path $artifacts | Out-Null
 
+# Clean stale local artifacts left by removed presentation scripts and previously resolved
+# RuStore packages. They are generated/untracked state, not source files.
+$orphanMeta = @(
+    "Assets\Game\Presentation\CampaignHomeLayoutCoordinator.cs.meta",
+    "Assets\Game\Presentation\CampaignVisualThemeCoordinator.cs.meta",
+    "Assets\Game\Presentation\ExtendedUiThemeCoordinator.cs.meta",
+    "Assets\Game\Presentation\HomeHeroCoordinator.cs.meta",
+    "Assets\Game\Presentation\HomePolishCoordinator.cs.meta"
+)
+foreach ($relative in $orphanMeta) {
+    $metaPath = Join-Path $projectPath $relative
+    $assetPath = $metaPath.Substring(0, $metaPath.Length - 5)
+    if ((Test-Path $metaPath) -and -not (Test-Path $assetPath)) {
+        Remove-Item $metaPath -Force
+    }
+}
+
+Remove-Item (Join-Path $projectPath "Packages\packages-lock.json") -Force -ErrorAction SilentlyContinue
+$packageCache = Join-Path $projectPath "Library\PackageCache"
+if (Test-Path $packageCache) {
+    Get-ChildItem $packageCache -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like "ru.rustore.installreferrer@*" -or $_.Name -like "ru.rustore.remoteconfig@*" } |
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+}
+
 if (-not (Test-Path $projectVersionPath)) {
     throw "Unity ProjectVersion.txt not found: $projectVersionPath"
 }
