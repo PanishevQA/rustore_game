@@ -19,6 +19,7 @@ namespace DontGetSidetracked.EditorTools
 
         static PortraitGameViewConfigurator()
         {
+            if (Application.isBatchMode) return;
             EditorApplication.delayCall += ApplyPortraitPreset;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
@@ -26,6 +27,8 @@ namespace DontGetSidetracked.EditorTools
         [MenuItem("Tools/НЕ СБЕЙСЯ!/Set Portrait Game View")]
         public static void ApplyPortraitPreset()
         {
+            if (Application.isBatchMode) return;
+
             try
             {
                 Assembly editorAssembly = typeof(Editor).Assembly;
@@ -133,6 +136,7 @@ namespace DontGetSidetracked.EditorTools
 
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
+            if (Application.isBatchMode) return;
             if (state == PlayModeStateChange.ExitingEditMode || state == PlayModeStateChange.EnteredPlayMode)
                 EditorApplication.delayCall += ApplyPortraitPreset;
         }
