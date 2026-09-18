@@ -380,7 +380,7 @@ namespace DontGetSidetracked.Presentation
                 ReleaseUiKit.Gold, FontStyle.Bold);
 
             Image detail = ReleaseUiKit.Panel(_canvas.transform, "ResultDetail",
-                new Vector2(0.075f, 0.675f), new Vector2(0.925f, 0.755f),
+                new Vector2(0.075f, 0.655f), new Vector2(0.925f, 0.735f),
                 new Color(0.030f, 0.045f, 0.085f, 0.97f), ReleaseUiKit.Violet, false);
             _detailCard = detail.gameObject;
             _detailText = ReleaseUiKit.TextBlock(detail.transform, "Detail", string.Empty, 21,
