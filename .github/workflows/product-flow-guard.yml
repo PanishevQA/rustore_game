@@ -78,6 +78,10 @@ jobs:
           grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs
           grep -q 'DailyIntroCoordinator dailyIntro = FindFirstObjectByType<DailyIntroCoordinator>()' UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs
           grep -q 'dailyIntro.IsOpen' UnityProject/Assets/Game/Presentation/PlatformUiLaunchGateRuntime.cs
+          grep -q 'DailyIntroCoordinator dailyIntro' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
+          grep -q 'MetaMenuOverlay meta' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
+          grep -q 'TrainingMenuCoordinator training' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
+          grep -q 'CampaignLevelMenuOverlay campaign' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
           grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
 
           # Safe-area geometry belongs to a wrapper, never to individual layout anchors. Full-bleed background stays outside.
