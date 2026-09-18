@@ -128,6 +128,9 @@ for key, markers in required.items():
         if marker not in texts[key]:
             errors.append(f"{FILES[key].name} release UI contract is missing: {marker!r}")
 
+if "_hudVisible == visible" in texts["gameplay_hud"]:
+    errors.append("Gameplay HUD visibility must always write CanvasGroup state; equality short-circuit can leak HUD on initial Home.")
+
 # Avoid emoji glyphs in runtime text rendered through Unity's built-in fallback font.
 for key in ("meta", "result", "share_card", "rewarded", "hint", "gameplay_hud", "referral_offer"):
     text = texts[key]
