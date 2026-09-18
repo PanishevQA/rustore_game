@@ -38,6 +38,7 @@ namespace DontGetSidetracked.Presentation
         private float _nextPolicyPoll;
         private GameObject _updateBlocker;
         private Text _updateStatus;
+        private GameObject _notificationBackdrop;
         private GameObject _notificationPrompt;
 
         public bool IsNotificationPromptOpen => _notificationPromptOpen;
@@ -334,6 +335,7 @@ namespace DontGetSidetracked.Presentation
         {
             if (_notificationPrompt == null) BuildNotificationValuePrompt();
             _notificationPromptOpen = true;
+            if (_notificationBackdrop != null) _notificationBackdrop.SetActive(true);
             _notificationPrompt.SetActive(true);
         }
 
@@ -341,6 +343,7 @@ namespace DontGetSidetracked.Presentation
         {
             _notificationPromptOpen = false;
             if (_notificationPrompt != null) _notificationPrompt.SetActive(false);
+            if (_notificationBackdrop != null) _notificationBackdrop.SetActive(false);
         }
 
         private void BuildNotificationValuePrompt()
@@ -361,6 +364,7 @@ namespace DontGetSidetracked.Presentation
 
             var backdrop = new GameObject("Backdrop", typeof(RectTransform), typeof(Image));
             backdrop.transform.SetParent(canvasGo.transform, false);
+            _notificationBackdrop = backdrop;
             ReleaseUiKit.Stretch(backdrop.GetComponent<RectTransform>());
             Image backdropImage = backdrop.GetComponent<Image>();
             backdropImage.color = new Color(0.003f, 0.008f, 0.023f, 0.86f);
@@ -400,6 +404,7 @@ namespace DontGetSidetracked.Presentation
                 new Color(0.075f, 0.095f, 0.145f, 0.98f), ReleaseUiKit.Muted, 20, DeclineNotificationValuePrompt);
 
             _notificationPrompt.SetActive(false);
+            _notificationBackdrop.SetActive(false);
         }
 
         private void ShowMandatoryUpdateBlocker(string message)
