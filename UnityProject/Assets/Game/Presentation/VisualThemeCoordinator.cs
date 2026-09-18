@@ -98,8 +98,8 @@ namespace DontGetSidetracked.Presentation
             {
                 StylePanel(playArea, Surface, true);
                 RectTransform rt = playArea.rectTransform;
-                rt.anchorMin = new Vector2(0.065f, 0.26f);
-                rt.anchorMax = new Vector2(0.935f, 0.745f);
+                rt.anchorMin = new Vector2(0.07f, 0.245f);
+                rt.anchorMax = new Vector2(0.93f, 0.760f);
                 rt.offsetMin = Vector2.zero;
                 rt.offsetMax = Vector2.zero;
             }
@@ -113,8 +113,8 @@ namespace DontGetSidetracked.Presentation
 
             Image start = Find<Image>(root, "Start");
             Image end = Find<Image>(root, "End");
-            StyleMarker(start, Green);
-            StyleMarker(end, new Color(1f, 0.40f, 0.48f, 1f));
+            StyleMarker(start, ReleaseUiComponents.Cyan);
+            StyleMarker(end, ReleaseUiComponents.Gold);
 
             RouteGraphic reference = Find<RouteGraphic>(root, "Reference");
             RouteGraphic player = Find<RouteGraphic>(root, "Player");
