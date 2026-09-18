@@ -48,6 +48,7 @@ def validate_package_manifest() -> None:
         "com.unity.test-framework": "1.6.0",
         "com.unity.mobile.notifications": "2.4.3",
         "com.google.external-dependency-manager": "https://github.com/googlesamples/unity-jar-resolver.git?path=/upm#v1.2.188",
+        "com.yandex.mobileads": "https://github.com/yandexmobile/yandex-ads-unity-plugin.git?path=/mobileads-sdk#8.4.0",
         "com.unity.modules.audio": "1.0.0",
         "com.unity.modules.imageconversion": "1.0.0",
         "ru.rustore.pay": "11.1.0",
@@ -73,6 +74,12 @@ def validate_package_manifest() -> None:
         for entry in registries
     ):
         fail("Current official RuStore scoped npm registry is missing from Packages/manifest.json.")
+
+    if not any(
+        entry.get("url") == "https://package.openupm.com" and "com.yandex" in (entry.get("scopes") or [])
+        for entry in registries
+    ):
+        fail("OpenUPM registry for Yandex package dependencies is missing from Packages/manifest.json.")
 
     serialized = json.dumps(manifest, ensure_ascii=False)
     if "nexus-external.rustore.ru" in serialized or "artifactory-external.vkpartner.ru" in serialized:
