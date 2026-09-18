@@ -261,6 +261,17 @@ def validate_remote_config_runtime_contract() -> None:
         fail("Gameplay Remote Config tuning must not depend on the optional Network module.")
 
 
+def validate_live_stroke_contract() -> None:
+    bootstrap = read(UNITY / "Assets/Game/Presentation/GameBootstrap.cs")
+    graphic = read(UNITY / "Assets/Game/Presentation/RouteGraphic.cs")
+    if "_playerGraphic.AppendPoint(point);" not in bootstrap:
+        fail("Live drawing must append directly to RouteGraphic without rebuilding a temporary position list.")
+    if "new List<FixedPoint2>(_recording.Count)" in bootstrap:
+        fail("Per-touch-sample full position list allocation returned to GameBootstrap.")
+    if "public void AppendPoint(FixedPoint2 point)" not in graphic:
+        fail("RouteGraphic must expose the allocation-free live AppendPoint contract.")
+
+
 def validate_release_preflight_contract() -> None:
     text = read(UNITY / "Assets/Game/Editor/ProductionReleaseValidator.cs")
     required = {
@@ -341,6 +352,7 @@ def main() -> int:
     validate_local_notification_contract()
     validate_required_runtime_files()
     validate_remote_config_runtime_contract()
+    validate_live_stroke_contract()
     validate_release_preflight_contract()
     validate_android_dependency_configurator()
     validate_editor_configuration_safety()
