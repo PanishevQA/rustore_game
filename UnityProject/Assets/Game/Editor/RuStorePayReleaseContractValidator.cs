@@ -93,6 +93,8 @@ namespace DontGetSidetracked.EditorTools
                 string value = consoleApplicationId.stringValue?.Trim() ?? string.Empty;
                 if (!ConsoleAppIdPattern.IsMatch(value))
                     errors.Add("PayClientSettings consoleApplicationId must be the numeric application ID from RuStore Console.");
+                else if (!string.Equals(value, RuStorePayProductionConfigurator.ConsoleApplicationId, StringComparison.Ordinal))
+                    errors.Add($"PayClientSettings consoleApplicationId must be {RuStorePayProductionConfigurator.ConsoleApplicationId} for this production app.");
             }
 
             if (deeplinkScheme == null)
@@ -104,8 +106,8 @@ namespace DontGetSidetracked.EditorTools
                 string value = deeplinkScheme.stringValue?.Trim() ?? string.Empty;
                 if (!DeeplinkSchemePattern.IsMatch(value))
                     errors.Add("PayClientSettings deeplinkScheme must be non-empty and use an RFC-3986-compatible URI scheme (letters first; then letters, digits, +, -, .). ");
-                if (string.Equals(value, "nesbeisya", StringComparison.OrdinalIgnoreCase))
-                    errors.Add("Use a dedicated RuStore Pay deeplink scheme instead of the gameplay challenge scheme 'nesbeisya'.");
+                else if (!string.Equals(value, RuStorePayProductionConfigurator.DeeplinkScheme, StringComparison.Ordinal))
+                    errors.Add($"PayClientSettings deeplinkScheme must be '{RuStorePayProductionConfigurator.DeeplinkScheme}' for this production app.");
             }
 
             if (schemeVersion == null)
