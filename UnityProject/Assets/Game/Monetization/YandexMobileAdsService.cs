@@ -10,9 +10,10 @@ using YandexMobileAds.Base;
 namespace DontGetSidetracked.Monetization
 {
     /// <summary>
-    /// Optional Yandex Mobile Ads Unity 8 adapter.
-    /// Import the official Yandex Mobile Ads plugin and define YANDEX_MOBILE_ADS to enable it.
-    /// Without the plugin the same type safely behaves as an unavailable ad provider.
+    /// Yandex Mobile Ads Unity 8 adapter.
+    /// The official package is pinned in Packages/manifest.json and the assembly define is enabled
+    /// automatically by Game.Monetization.asmdef for the verified 8.4.x package line.
+    /// If the package cannot resolve in a development checkout, gameplay remains isolated behind IAdService.
     /// </summary>
     public sealed class YandexMobileAdsService : IAdService, IDisposable
     {
