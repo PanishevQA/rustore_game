@@ -19,6 +19,8 @@ jobs:
           test -f UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
           test -f UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/DailyIntroCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/ReleaseUiComponents.cs
           test -f UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           test -f UnityProject/Assets/Game/Presentation/ReferralRuntimePolicy.cs
           test -f UnityProject/Assets/Game/Presentation/ReferralOfferCoordinator.cs
@@ -74,6 +76,8 @@ jobs:
           grep -q 'public bool Dismiss()' UnityProject/Assets/Game/Presentation/ReferralOfferCoordinator.cs
           grep -q 'ПРИНЯТЬ ВЫЗОВ' UnityProject/Assets/Game/Presentation/ReferralOfferCoordinator.cs
           grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs
+          grep -q 'DailyIntroCoordinator dailyIntro = FindFirstObjectByType<DailyIntroCoordinator>()' UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs
+          grep -q 'dailyIntro.IsOpen' UnityProject/Assets/Game/Presentation/PlatformUiLaunchGateRuntime.cs
           grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
 
           # Safe-area geometry belongs to a wrapper, never to individual layout anchors. Full-bleed background stays outside.
@@ -113,7 +117,9 @@ jobs:
           # Release Home cards must route to explicit product contracts instead of whichever hidden legacy button
           # happens to occupy the same visual role.
           grep -q 'StartDailyFromHome' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
-          grep -q 'GameBootstrapRuntimeBridge.StartDaily(_bootstrap)' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
+          grep -q 'DailyIntroCoordinator' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
+          grep -q 'intro.Open(_bootstrap)' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
+          grep -q 'GameBootstrapRuntimeBridge.StartDaily(owner)' UnityProject/Assets/Game/Presentation/DailyIntroCoordinator.cs
           grep -q 'OpenCampaignFromHome' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
           grep -q 'CampaignLevelMenuOverlay.OpenFor(_bootstrap)' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
           grep -q 'OpenTrainingFromHome' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
@@ -125,8 +131,11 @@ jobs:
           grep -q 'ЛЁГКАЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'СРЕДНЯЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'СЛОЖНАЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
-          grep -q 'СЛУЧАЙНАЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'SelectDifficulty' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'StartSelected' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'НАЧАТЬ ТРЕНИРОВКУ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'TrainingSelectCanvas' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+          grep -q 'DailyIntroCanvas' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
 
           # Campaign/Training progression remains fully local.
           if grep -nE 'UnityGameApi|UnityWebRequest|https?://' \
@@ -154,10 +163,11 @@ jobs:
           grep -q 'CoinSpend = "coin_spend"' UnityProject/Assets/Game/Analytics/AnalyticsEventNames.cs
 
           # Rewarded hint is opt-in and both ad formats must stay behind every Home overlay/update blocker.
-          grep -q 'new Vector2(0.075f, 0.092f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
-          grep -q 'new Vector2(0.925f, 0.142f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
-          grep -q 'ReleaseUiKit.Button' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
-          grep -q 'ПОДСКАЗКА ЗА РЕКЛАМУ' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'new Vector2(0.07f, 0.078f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'new Vector2(0.93f, 0.145f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'ReleaseUiComponents.SecondaryButton' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'СМОТРЕТЬ РЕКЛАМУ' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'dailyIntro.IsOpen' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'ShowRewardedAsync' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'save.Hints++' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'training.IsOpen' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
