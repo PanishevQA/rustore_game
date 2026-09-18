@@ -109,7 +109,7 @@ namespace DontGetSidetracked.Presentation
         }
 
         private bool IsSafeHome() =>
-            _bootstrap != null && GameBootstrapRuntimeBridge.IsIdleHome(_bootstrap);
+            _bootstrap != null && GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap);
 
         private static bool IsAnyHomeOverlayOpen()
         {
@@ -121,6 +121,9 @@ namespace DontGetSidetracked.Presentation
 
             CampaignLevelMenuOverlay campaign = FindFirstObjectByType<CampaignLevelMenuOverlay>();
             if (campaign != null && campaign.IsOpen) return true;
+
+            ReferralOfferCoordinator referral = FindFirstObjectByType<ReferralOfferCoordinator>();
+            if (referral != null && referral.IsVisible) return true;
 
             RuntimePlatformCoordinator platform = FindFirstObjectByType<RuntimePlatformCoordinator>();
             if (platform != null && platform.IsNotificationPromptOpen) return true;
