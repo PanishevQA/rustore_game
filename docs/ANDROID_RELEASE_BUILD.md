@@ -8,6 +8,16 @@
 
 Обычные production validators (`IProcessSceneWithReport` / `IPreprocessBuildWithReport`) запускаются самим `BuildPipeline.BuildPlayer`. Если обязательная конфигурация отсутствует или выглядит как placeholder, AAB должен завершиться ошибкой до выпуска артефакта.
 
+Перед `BuildPipeline` единый entrypoint сам:
+- применяет Android project settings;
+- генерирует launcher branding;
+- создаёт Gradle templates из **текущего установленного Unity Editor**;
+- переключает active target на Android;
+- запускает EDM4U `PlayServicesResolver.ResolveSync(true)` через fail-closed adapter;
+- повторно импортирует сгенерированные assets/templates.
+
+Если EDM4U не загружен или dependency resolution завершается ошибкой, production AAB блокируется. Ручной Force Resolve больше не является обязательным отдельным шагом перед каждой сборкой, но остаётся доступен через `Tools → НЕ СБЕЙСЯ! → Force Resolve Android Dependencies` для диагностики.
+
 Перед началом сборки entrypoint удаляет старый AAB, старый `.release.json` и незавершённый `.tmp` по целевому пути. Если новая сборка или запись metadata завершается ошибкой, частичный AAB и metadata удаляются. Поэтому после failed build по целевому пути не остаётся старый AAB, который можно случайно принять за свежий релиз.
 
 ## Сборка из Unity Editor
