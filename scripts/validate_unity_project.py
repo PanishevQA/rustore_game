@@ -246,6 +246,7 @@ def validate_required_runtime_files() -> None:
         "Assets/Game/Editor/AndroidDependencyConfigurator.cs",
         "Assets/Game/Editor/BrandAssetConfigurator.cs",
         "Assets/Game/Editor/ReleaseReadinessReporter.cs",
+        "Assets/Game/Editor/RuStorePayProductionConfigurator.cs",
         "Assets/Game/Editor/ProductionReleaseValidator.cs",
         "Assets/ResultShare.androidlib/src/main/res/xml/nesbeisya_file_paths.xml",
     )
@@ -331,6 +332,26 @@ def validate_local_release_candidate_runner() -> None:
             fail(f"Local release-candidate runner is incomplete: missing {marker!r}.")
 
 
+def validate_production_identifiers() -> None:
+    project = read(UNITY / "Assets/Game/Editor/ProjectConfigurator.cs")
+    remote = read(UNITY / "Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs")
+    ads = read(UNITY / "Assets/Game/Monetization/YandexMobileAdsService.cs")
+    pay = read(UNITY / "Assets/Game/Editor/RuStorePayProductionConfigurator.cs")
+
+    required = (
+        (project, 'ProductionPackageName = "ru.release.nesbeisya"', "Final Android package name"),
+        (project, 'ProductionKeyAlias = "nesbeysya"', "Production signing alias"),
+        (remote, 'AppId = "4e0feafb-1ce7-4b71-966b-0122938b282a"', "RuStore Remote Config AppId"),
+        (ads, 'RewardedUnitId = "R-M-20071218-1"', "Yandex rewarded production ID"),
+        (ads, 'InterstitialUnitId = "R-M-20071218-2"', "Yandex interstitial production ID"),
+        (pay, 'ConsoleApplicationId = "2063758837"', "RuStore Pay console application ID"),
+        (pay, 'DeeplinkScheme = "nesbeisyapay"', "RuStore Pay deeplink scheme"),
+    )
+    for text, marker, label in required:
+        if marker not in text:
+            fail(f"{label} production contract is missing: {marker!r}.")
+
+
 def validate_release_readiness_reporter() -> None:
     text = read(UNITY / "Assets/Game/Editor/ReleaseReadinessReporter.cs")
     required = (
@@ -407,6 +428,7 @@ def main() -> int:
     validate_remote_config_runtime_contract()
     validate_live_stroke_contract()
     validate_release_preflight_contract()
+    validate_production_identifiers()
     validate_portrait_game_view_batchmode_guard()
     validate_local_release_candidate_runner()
     validate_release_readiness_reporter()
