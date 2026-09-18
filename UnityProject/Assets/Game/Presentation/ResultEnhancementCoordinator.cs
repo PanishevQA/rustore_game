@@ -15,6 +15,7 @@ namespace DontGetSidetracked.Presentation
     /// score medals, perfect pulse, per-Daily personal records, PNG share cards and Duel rematch UX.
     /// Campaign shares are owned here too so the internal Training bootstrap mode never leaks to users.
     /// </summary>
+    [DefaultExecutionOrder(17000)]
     public sealed class ResultEnhancementCoordinator : MonoBehaviour
     {
         private GameBootstrap _bootstrap;
@@ -27,6 +28,10 @@ namespace DontGetSidetracked.Presentation
         private Text _scoreText;
         private Text _badge;
         private Text _recordLabel;
+        private GameObject _detailCard;
+        private Text _detailText;
+        private CanvasGroup _legacyTitleGroup;
+        private CanvasGroup _legacyStatusGroup;
         private Button _cardButton;
         private Text _cardButtonText;
         private Image _flash;
@@ -73,9 +78,13 @@ namespace DontGetSidetracked.Presentation
                 return;
             }
 
+            SuppressLegacyResultHeader();
+            RefreshResultDetail();
+
             if (_wasResult) return;
             _wasResult = true;
             HandleEnteredResult();
+            RefreshResultDetail();
         }
 
         private void HandleEnteredResult()
@@ -341,10 +350,75 @@ namespace DontGetSidetracked.Presentation
                 TextAnchor.MiddleRight, new Vector2(0.48f, 0.10f), new Vector2(0.945f, 0.38f),
                 ReleaseUiKit.Gold, FontStyle.Bold);
 
+            Image detail = ReleaseUiKit.Panel(_canvas.transform, "ResultDetail",
+                new Vector2(0.075f, 0.675f), new Vector2(0.925f, 0.755f),
+                new Color(0.030f, 0.045f, 0.085f, 0.97f), ReleaseUiKit.Violet, false);
+            _detailCard = detail.gameObject;
+            _detailText = ReleaseUiKit.TextBlock(detail.transform, "Detail", string.Empty, 21,
+                TextAnchor.MiddleCenter, new Vector2(0.035f, 0.08f), new Vector2(0.965f, 0.92f),
+                ReleaseUiKit.Muted, FontStyle.Bold);
+            _detailText.lineSpacing = 1.05f;
+
             _cardButton = ReleaseUiKit.Button(_canvas.transform, "ShareCard", "ПОДЕЛИТЬСЯ КАРТОЧКОЙ",
                 new Vector2(0.245f, 0.207f), new Vector2(0.755f, 0.252f),
                 ReleaseUiKit.Violet, ReleaseUiKit.Text, 22, ShareCard);
             _cardButtonText = _cardButton.GetComponentInChildren<Text>(true);
+        }
+
+        private void SuppressLegacyResultHeader()
+        {
+            Text title = GameBootstrapRuntimeBridge.Title(_bootstrap);
+            Text status = GameBootstrapRuntimeBridge.Status(_bootstrap);
+
+            if (title != null)
+            {
+                if (_legacyTitleGroup == null) _legacyTitleGroup = EnsureCanvasGroup(title.gameObject);
+                _legacyTitleGroup.alpha = 0f;
+                _legacyTitleGroup.interactable = false;
+                _legacyTitleGroup.blocksRaycasts = false;
+            }
+
+            if (status != null)
+            {
+                if (_legacyStatusGroup == null) _legacyStatusGroup = EnsureCanvasGroup(status.gameObject);
+                _legacyStatusGroup.alpha = 0f;
+                _legacyStatusGroup.interactable = false;
+                _legacyStatusGroup.blocksRaycasts = false;
+            }
+        }
+
+        private void RefreshResultDetail()
+        {
+            if (_detailText == null || _detailCard == null || _bootstrap == null) return;
+
+            Text status = GameBootstrapRuntimeBridge.Status(_bootstrap);
+            string value = status?.text?.Replace("\r", string.Empty).Trim() ?? string.Empty;
+            bool numericOnly = IsScoreOnly(value);
+
+            _detailText.text = numericOnly ? string.Empty : value;
+            bool show = !string.IsNullOrWhiteSpace(_detailText.text);
+            if (_detailCard.activeSelf != show) _detailCard.SetActive(show);
+        }
+
+        private static bool IsScoreOnly(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return true;
+            string trimmed = value.Trim();
+            if (!trimmed.EndsWith("%", StringComparison.Ordinal)) return false;
+
+            string number = trimmed.Substring(0, trimmed.Length - 1).Trim().Replace(',', '.');
+            return double.TryParse(
+                number,
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out _);
+        }
+
+        private static CanvasGroup EnsureCanvasGroup(GameObject target)
+        {
+            CanvasGroup group = target.GetComponent<CanvasGroup>();
+            if (group == null) group = target.AddComponent<CanvasGroup>();
+            return group;
         }
 
         private void SetResultUiVisible(bool visible)
@@ -354,6 +428,7 @@ namespace DontGetSidetracked.Presentation
             if (_scoreText != null) _scoreText.gameObject.SetActive(visible);
             if (_badge != null) _badge.gameObject.SetActive(visible);
             if (_recordLabel != null) _recordLabel.gameObject.SetActive(visible && !string.IsNullOrWhiteSpace(_recordLabel.text));
+            if (_detailCard != null) _detailCard.SetActive(visible && _detailText != null && !string.IsNullOrWhiteSpace(_detailText.text));
             if (_cardButton != null) _cardButton.gameObject.SetActive(visible);
         }
 
