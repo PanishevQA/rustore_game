@@ -35,15 +35,34 @@ foreach ($quarantined in @("ru.rustore.installreferrer", "ru.rustore.remoteconfi
     }
 }
 
-Remove-Item (Join-Path $projectPath "Packages\packages-lock.json") -Force -ErrorAction SilentlyContinue
-
-# Unity 6 can restore the previous resolved-package graph from generated Library state even
-# after individual PackageCache folders are removed. For a release-candidate check prefer
-# determinism over import speed and force a completely fresh UPM/compile state.
+$lockPath = Join-Path $projectPath "Packages\packages-lock.json"
 $libraryPath = Join-Path $projectPath "Library"
-if (Test-Path $libraryPath) {
-    Write-Host "Resetting generated Unity Library for a deterministic package resolve..." -ForegroundColor Yellow
-    Remove-Item $libraryPath -Recurse -Force
+$packageCache = Join-Path $libraryPath "PackageCache"
+$staleRuStoreState = $false
+
+if (Test-Path $lockPath) {
+    $lockText = Get-Content $lockPath -Raw
+    foreach ($quarantined in @("ru.rustore.installreferrer", "ru.rustore.remoteconfig")) {
+        if ($lockText -match [Regex]::Escape('"' + $quarantined + '"')) {
+            $staleRuStoreState = $true
+        }
+    }
+}
+
+if (Test-Path $packageCache) {
+    $staleRuStoreState = $staleRuStoreState -or [bool](
+        Get-ChildItem $packageCache -Directory -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -like "ru.rustore.installreferrer@*" -or $_.Name -like "ru.rustore.remoteconfig@*" } |
+            Select-Object -First 1
+    )
+}
+
+if ($staleRuStoreState) {
+    Write-Host "Stale quarantined RuStore package state detected; resetting generated Unity Library..." -ForegroundColor Yellow
+    Remove-Item $lockPath -Force -ErrorAction SilentlyContinue
+    if (Test-Path $libraryPath) {
+        Remove-Item $libraryPath -Recurse -Force
+    }
 }
 
 if (-not (Test-Path $projectVersionPath)) {
@@ -101,9 +120,17 @@ $readinessCopy = Join-Path $artifacts "release-readiness.txt"
 Remove-Item $testResults, $testLog, $readinessLog, $readinessCopy -Force -ErrorAction SilentlyContinue
 
 Write-Host "[1/2] Unity compile + EditMode tests..." -ForegroundColor Yellow
-& $unity -batchmode -nographics -projectPath $projectPath -runTests -testPlatform EditMode -testResults $testResults -logFile $testLog
-
-$testExit = $LASTEXITCODE
+$testArgs = @(
+    "-batchmode",
+    "-nographics",
+    "-projectPath", ('"' + $projectPath + '"'),
+    "-runTests",
+    "-testPlatform", "EditMode",
+    "-testResults", ('"' + $testResults + '"'),
+    "-logFile", ('"' + $testLog + '"')
+)
+$testProcess = Start-Process -FilePath $unity -ArgumentList $testArgs -Wait -PassThru
+$testExit = $testProcess.ExitCode
 if ($testExit -ne 0) {
     Write-Host "Unity EditMode tests FAILED (exit $testExit)." -ForegroundColor Red
     Write-Host "Log: $testLog"
@@ -119,9 +146,16 @@ Write-Host "Unity compile + EditMode tests passed." -ForegroundColor Green
 if (-not $SkipReadiness) {
     Write-Host ""
     Write-Host "[2/2] Prepare Android release environment + readiness report..." -ForegroundColor Yellow
-    & $unity -batchmode -nographics -quit -projectPath $projectPath -executeMethod DontGetSidetracked.EditorTools.ReleaseReadinessReporter.Report -logFile $readinessLog
-
-    $readinessExit = $LASTEXITCODE
+    $readinessArgs = @(
+        "-batchmode",
+        "-nographics",
+        "-quit",
+        "-projectPath", ('"' + $projectPath + '"'),
+        "-executeMethod", "DontGetSidetracked.EditorTools.ReleaseReadinessReporter.Report",
+        "-logFile", ('"' + $readinessLog + '"')
+    )
+    $readinessProcess = Start-Process -FilePath $unity -ArgumentList $readinessArgs -Wait -PassThru
+    $readinessExit = $readinessProcess.ExitCode
     if ($readinessExit -ne 0) {
         Write-Host "Readiness command FAILED (exit $readinessExit)." -ForegroundColor Red
         Write-Host "Log: $readinessLog"
