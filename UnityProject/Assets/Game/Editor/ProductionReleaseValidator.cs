@@ -16,6 +16,9 @@ namespace DontGetSidetracked.EditorTools
         private const string PackagesManifestPath = "Packages/manifest.json";
         private const string RuntimeSettingsPath = "Assets/Game/Presentation/GameRuntimeSettings.cs";
         private const string AdsSettingsPath = "Assets/Game/Monetization/YandexMobileAdsService.cs";
+        private const string ProjectSettingsAssetPath = "ProjectSettings/ProjectSettings.asset";
+        private const string MainGradleTemplatePath = "Assets/Plugins/Android/mainTemplate.gradle";
+        private const string GradlePropertiesTemplatePath = "Assets/Plugins/Android/gradleTemplate.properties";
         private const string RemoteConfigSettingsPath = "Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs";
         private const string SdkVersionsPath = "Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs";
         public int callbackOrder => -1000;
@@ -218,6 +221,8 @@ namespace DontGetSidetracked.EditorTools
             if (!hasYandexSymbol)
                 errors.Add("Import the official Yandex Mobile Ads Unity plugin and define YANDEX_MOBILE_ADS for Android production builds.");
 
+            ValidateYandexGradleTemplates(errors);
+
             if (!File.Exists(AdsSettingsPath))
             {
                 errors.Add("YandexMobileAdsService.cs is missing.");
@@ -230,6 +235,26 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Configure production Yandex rewarded and interstitial ad unit IDs before release.");
             if (ads.IndexOf("= \"demo-", StringComparison.OrdinalIgnoreCase) >= 0)
                 errors.Add("Demo Yandex ad unit IDs are forbidden in production builds.");
+        }
+
+        private static void ValidateYandexGradleTemplates(List<string> errors)
+        {
+            if (!File.Exists(ProjectSettingsAssetPath))
+            {
+                errors.Add("ProjectSettings.asset is missing; cannot verify Yandex Mobile Ads Gradle template settings.");
+                return;
+            }
+
+            string settings = File.ReadAllText(ProjectSettingsAssetPath);
+            if (!settings.Contains("useCustomMainGradleTemplate: 1", StringComparison.Ordinal))
+                errors.Add("Enable Custom Main Gradle Template for the Yandex Mobile Ads Android production build.");
+            if (!settings.Contains("useCustomGradlePropertiesTemplate: 1", StringComparison.Ordinal))
+                errors.Add("Enable Custom Gradle Properties Template for the Yandex Mobile Ads Android production build.");
+
+            if (!File.Exists(MainGradleTemplatePath))
+                errors.Add("Yandex Mobile Ads production integration requires Assets/Plugins/Android/mainTemplate.gradle.");
+            if (!File.Exists(GradlePropertiesTemplatePath))
+                errors.Add("Yandex Mobile Ads production integration requires Assets/Plugins/Android/gradleTemplate.properties.");
         }
 
         private static void ValidateFileContains(string path, List<string> errors, params (string Needle, string Error)[] checks)
