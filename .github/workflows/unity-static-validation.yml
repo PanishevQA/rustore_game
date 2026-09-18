@@ -85,7 +85,7 @@ jobs:
           grep -q 'GameBootstrapRuntimeBridge.IsResult' "$ads"
           grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' "$rewarded"
           grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' "$platform"
-          grep -q 'GameBootstrapRuntimeBridge.IsHome' "$meta"
+          grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' "$meta"
           grep -q 'GameBootstrapRuntimeBridge.PrepareCampaign' "$campaign"
           grep -q 'GameBootstrapRuntimeBridge.BeginRoute' "$campaign"
           grep -q 'GameBootstrapRuntimeBridge.TryCaptureResult' "$result"
