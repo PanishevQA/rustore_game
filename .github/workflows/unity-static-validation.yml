@@ -38,6 +38,8 @@ jobs:
         run: python scripts/validate_release_placeholders.py
       - name: Validate Yandex Mobile Ads release contract
         run: python scripts/validate_yandex_ads_release.py
+      - name: Validate release UI regression contract
+        run: python scripts/validate_release_ui.py
       - name: Validate async navigation invariants
         run: python scripts/validate_async_navigation.py
       - name: Validate platform and store async invariants
