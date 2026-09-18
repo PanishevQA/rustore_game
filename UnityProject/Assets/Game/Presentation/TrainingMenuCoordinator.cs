@@ -122,52 +122,107 @@ namespace DontGetSidetracked.Presentation
             scaler.referenceResolution = new Vector2(1080, 1920);
             scaler.matchWidthOrHeight = 0.5f;
 
+            var dim = new GameObject("TrainingBackdrop", typeof(RectTransform), typeof(Image));
+            dim.transform.SetParent(_canvas.transform, false);
+            ReleaseUiKit.Stretch(dim.GetComponent<RectTransform>());
+            Image dimImage = dim.GetComponent<Image>();
+            dimImage.color = new Color(0.005f, 0.010f, 0.028f, 0.86f);
+            dimImage.raycastTarget = true;
+
             _panel = new GameObject("TrainingPanel", typeof(RectTransform), typeof(Image));
             _panel.transform.SetParent(_canvas.transform, false);
-            SetAnchors(_panel.GetComponent<RectTransform>(), new Vector2(0.08f, 0.22f), new Vector2(0.92f, 0.78f));
-            _panel.GetComponent<Image>().color = new Color(0.02f, 0.035f, 0.075f, 0.995f);
+            ReleaseUiKit.SetAnchors(_panel.GetComponent<RectTransform>(), new Vector2(0.055f, 0.105f), new Vector2(0.945f, 0.895f));
+            Image panelImage = _panel.GetComponent<Image>();
+            panelImage.sprite = ReleaseUiKit.Rounded;
+            panelImage.type = Image.Type.Sliced;
+            panelImage.color = ReleaseUiKit.Surface;
 
-            Text title = CreateText(_panel.transform, "Title", "ТРЕНИРОВКА", 54, new Vector2(0.08f, 0.82f), new Vector2(0.92f, 0.95f));
-            title.fontStyle = FontStyle.Bold;
-            Text subtitle = CreateText(_panel.transform, "Subtitle", "Выбери сложность. Результат не влияет на Daily и кампанию.", 27, new Vector2(0.08f, 0.70f), new Vector2(0.92f, 0.82f));
-            subtitle.color = new Color(0.65f, 0.74f, 0.86f, 1f);
+            Outline outline = _panel.AddComponent<Outline>();
+            outline.effectColor = new Color(ReleaseUiKit.Cyan.r, ReleaseUiKit.Cyan.g, ReleaseUiKit.Cyan.b, 0.14f);
+            outline.effectDistance = new Vector2(2f, -2f);
 
-            CreateButton(_panel.transform, "ЛЁГКАЯ", new Vector2(0.10f, 0.55f), new Vector2(0.90f, 0.66f), StartEasy);
-            CreateButton(_panel.transform, "СРЕДНЯЯ", new Vector2(0.10f, 0.41f), new Vector2(0.90f, 0.52f), StartMedium);
-            CreateButton(_panel.transform, "СЛОЖНАЯ", new Vector2(0.10f, 0.27f), new Vector2(0.90f, 0.38f), StartHard);
-            CreateButton(_panel.transform, "СЛУЧАЙНАЯ", new Vector2(0.10f, 0.13f), new Vector2(0.90f, 0.24f), StartRandom);
-            CreateButton(_panel.transform, "ЗАКРЫТЬ", new Vector2(0.32f, 0.025f), new Vector2(0.68f, 0.10f), Close);
+            Shadow shadow = _panel.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.52f);
+            shadow.effectDistance = new Vector2(0f, -12f);
+
+            var releaseVisual = new GameObject("ReleaseVisual", typeof(RectTransform));
+            releaseVisual.transform.SetParent(_panel.transform, false);
+            ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
+
+            Text kicker = ReleaseUiKit.TextBlock(_panel.transform, "Kicker", "СВОБОДНЫЙ РЕЖИМ", 20,
+                TextAnchor.MiddleLeft, new Vector2(0.075f, 0.875f), new Vector2(0.60f, 0.925f),
+                ReleaseUiKit.Cyan, FontStyle.Bold);
+
+            Text title = ReleaseUiKit.TextBlock(_panel.transform, "Title", "ТРЕНИРОВКА", 58,
+                TextAnchor.MiddleLeft, new Vector2(0.075f, 0.790f), new Vector2(0.78f, 0.875f),
+                ReleaseUiKit.Text, FontStyle.Bold);
+            ReleaseUiKit.AddTextShadow(title, 0.45f, -3f);
+
+            Text subtitle = ReleaseUiKit.TextBlock(_panel.transform, "Subtitle",
+                "Выбери темп. Здесь можно набить руку — результат не влияет на Daily и кампанию.", 25,
+                TextAnchor.UpperLeft, new Vector2(0.075f, 0.705f), new Vector2(0.88f, 0.790f),
+                ReleaseUiKit.Muted);
+
+            CreateDifficultyCard(
+                "EasyCard", "ЛЁГКАЯ", "3.5 СЕК", "Мягкие углы\nи спокойный темп",
+                ReleaseUiKit.Green, new Vector2(0.075f, 0.445f), new Vector2(0.485f, 0.680f), StartEasy);
+
+            CreateDifficultyCard(
+                "MediumCard", "СРЕДНЯЯ", "3.0 СЕК", "Больше поворотов\nи меньше времени",
+                ReleaseUiKit.Cyan, new Vector2(0.515f, 0.445f), new Vector2(0.925f, 0.680f), StartMedium);
+
+            CreateDifficultyCard(
+                "HardCard", "СЛОЖНАЯ", "2.5 СЕК", "Плотная траектория\nи сложный ритм",
+                ReleaseUiKit.Danger, new Vector2(0.075f, 0.185f), new Vector2(0.485f, 0.420f), StartHard);
+
+            CreateDifficultyCard(
+                "RandomCard", "СЛУЧАЙНАЯ", "∞", "Каждый раунд\nновая сложность",
+                new Color(0.72f, 0.54f, 1f, 1f), new Vector2(0.515f, 0.185f), new Vector2(0.925f, 0.420f), StartRandom);
+
+            Button close = ReleaseUiKit.Button(_panel.transform, "Close", "ЗАКРЫТЬ",
+                new Vector2(0.315f, 0.055f), new Vector2(0.685f, 0.125f),
+                new Color(0.09f, 0.12f, 0.19f, 0.94f), ReleaseUiKit.Muted, 23, Close);
+            close.gameObject.name = "ЗАКРЫТЬ";
         }
 
-        private static Button CreateButton(Transform parent, string label, Vector2 min, Vector2 max, UnityEngine.Events.UnityAction action)
+        private void CreateDifficultyCard(
+            string name,
+            string title,
+            string timing,
+            string description,
+            Color accent,
+            Vector2 min,
+            Vector2 max,
+            UnityEngine.Events.UnityAction action)
         {
-            var go = new GameObject(label, typeof(RectTransform), typeof(Image), typeof(Button));
-            go.transform.SetParent(parent, false);
-            SetAnchors(go.GetComponent<RectTransform>(), min, max);
-            go.GetComponent<Image>().color = new Color(0.08f, 0.14f, 0.24f, 1f);
-            Button button = go.GetComponent<Button>();
+            Image card = ReleaseUiKit.Panel(_panel.transform, name, min, max, ReleaseUiKit.SurfaceRaised, accent);
+            Button button = card.gameObject.AddComponent<Button>();
+            button.targetGraphic = card;
+            button.transition = Selectable.Transition.ColorTint;
+            ColorBlock colors = button.colors;
+            colors.normalColor = ReleaseUiKit.SurfaceRaised;
+            colors.highlightedColor = ReleaseUiKit.Lighten(ReleaseUiKit.SurfaceRaised, 0.05f);
+            colors.pressedColor = ReleaseUiKit.Darken(ReleaseUiKit.SurfaceRaised, 0.07f);
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
             button.onClick.AddListener(action);
-            Text text = CreateText(go.transform, "Label", label, 32, Vector2.zero, Vector2.one);
-            text.fontStyle = FontStyle.Bold;
-            text.raycastTarget = false;
-            return button;
-        }
 
-        private static Text CreateText(Transform parent, string name, string value, int size, Vector2 min, Vector2 max)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Text));
-            go.transform.SetParent(parent, false);
-            SetAnchors(go.GetComponent<RectTransform>(), min, max);
-            Text text = go.GetComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = size;
-            text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = 16;
-            text.resizeTextMaxSize = size;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.color = Color.white;
-            text.text = value;
-            return text;
+            ReleaseUiKit.Dot(card.transform, "Icon", accent,
+                new Vector2(0.075f, 0.68f), new Vector2(0.19f, 0.89f));
+
+            Text timingText = ReleaseUiKit.TextBlock(card.transform, "Timing", timing, 18,
+                TextAnchor.MiddleRight, new Vector2(0.57f, 0.70f), new Vector2(0.90f, 0.88f),
+                accent, FontStyle.Bold);
+
+            Text heading = ReleaseUiKit.TextBlock(card.transform, "Label", title, 31,
+                TextAnchor.MiddleLeft, new Vector2(0.075f, 0.40f), new Vector2(0.90f, 0.68f),
+                ReleaseUiKit.Text, FontStyle.Bold);
+            heading.raycastTarget = false;
+
+            Text body = ReleaseUiKit.TextBlock(card.transform, "Description", description, 20,
+                TextAnchor.UpperLeft, new Vector2(0.075f, 0.10f), new Vector2(0.90f, 0.41f),
+                ReleaseUiKit.Muted);
+            body.raycastTarget = false;
         }
 
         private static void SetAnchors(RectTransform rect, Vector2 min, Vector2 max)
