@@ -36,7 +36,7 @@ Registry меняется только после проверки **конкр�
 
 ## Remote Config
 
-Актуальная официальная Unity-линия на дату проверки — **10.5.1**. Пакет установлен через официальный npm registry; runtime adapter/cache/default сохраняют безопасный offline fallback. Production preflight требует реально загруженный `RuStoreRemoteConfigClient`, заданный AppId и Android fallback/device test.
+Актуальная официальная Unity-линия на дату проверки — **10.5.1**. Для Unity manifest `<application>` должен использовать `android:name="ru.rustore.unitysdk.RuStoreRemoteConfigApplication"`. Пакет установлен через официальный npm registry; runtime adapter/cache/default сохраняют безопасный offline fallback. Production preflight требует реально загруженный `RuStoreRemoteConfigClient`, заданный AppId и Android fallback/device test.
 
 Runtime использует один `RuStoreRemoteConfigRuntime` instance. Gameplay tuning, review/update policy и локальные Daily reminders читают один общий snapshot/cache; при Unity Play без Domain Reload provider пересоздаётся на `SubsystemRegistration`.
 
