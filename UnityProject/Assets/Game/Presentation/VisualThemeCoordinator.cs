@@ -70,22 +70,27 @@ namespace DontGetSidetracked.Presentation
             EnsureBackground(root);
 
             Text title = Find<Text>(root, "Title");
+            bool resultState = title != null && string.Equals(title.text, "РЕЗУЛЬТАТ", StringComparison.Ordinal);
             if (title != null)
             {
-                title.color = TextPrimary;
+                title.color = resultState ? Cyan : TextPrimary;
                 title.fontStyle = FontStyle.Bold;
-                title.fontSize = 64;
-                title.resizeTextMinSize = 28;
+                title.fontSize = resultState ? 42 : 64;
+                title.resizeTextMinSize = resultState ? 24 : 28;
+                title.resizeTextMaxSize = resultState ? 42 : 64;
                 ApplyTextShadow(title, 0.48f, new Vector2(0f, -3f));
             }
 
             Text status = Find<Text>(root, "Status");
             if (status != null)
             {
-                status.color = TextMuted;
-                status.fontStyle = FontStyle.Normal;
+                status.color = resultState ? TextPrimary : TextMuted;
+                status.fontStyle = resultState ? FontStyle.Bold : FontStyle.Normal;
+                status.fontSize = resultState ? 86 : 50;
+                status.resizeTextMinSize = resultState ? 46 : 22;
+                status.resizeTextMaxSize = resultState ? 86 : 50;
                 status.lineSpacing = 1.12f;
-                ApplyTextShadow(status, 0.28f, new Vector2(0f, -2f));
+                ApplyTextShadow(status, resultState ? 0.52f : 0.28f, new Vector2(0f, -2f));
             }
 
             Image playArea = Find<Image>(root, "PlayArea");
