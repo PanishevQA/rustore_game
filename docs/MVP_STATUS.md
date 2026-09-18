@@ -84,11 +84,11 @@ Remote Config runtime также не зависит от нашего backend: 
 
 ## UI state
 
-Собран единый portrait presentation-layer: dark surface, cyan/violet accents, rounded CTA/cards, Home hero, campaign selector, Training selector, meta/settings/store/result overlays и safe-area обработка. Устранены конфликтующие layout/theme owners и Home flicker.
+Собран единый portrait presentation-layer: dark surface, cyan/violet accents, rounded CTA/cards, campaign selector, Training selector, meta/settings/store/result overlays и safe-area обработка. Home переработан в отдельный карточный dashboard: Daily — главный CTA, campaign progress вынесен в отдельную карточку, ресурсы показаны chips, Training/Statistics/Store доступны быстрыми действиями.
 
 Meta/Training/Campaign overlays имеют публичные open/close state contracts для mobile Back вместо чтения их private state через reflection.
 
-Это **functional final UI candidate** для общей приёмки. Авторская типографика/иллюстрации/иконки могут быть заменены после общей визуальной приёмки без изменения gameplay architecture.
+Это **активный visual-polish candidate**: основной navigation/gameplay уже стабилен, а presentation layer последовательно доводится до high-fidelity уровня без изменения gameplay architecture.
 
 ## Автоматические проверки
 
@@ -117,7 +117,7 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 - targetSdk baseline: `34` / highest installed;
 - minSdk проекта: `25` из-за Unity 6000.3 baseline.
 
-Required RuStore Unity packages теперь закреплены в `UnityProject/Packages/manifest.json`: `ru.rustore.pay` `11.1.0`, `ru.rustore.installreferrer` `10.6.1`, `ru.rustore.remoteconfig` `10.5.1`, `ru.rustore.update` `10.5.1` и `ru.rustore.review` `10.5.1`. Install Referrer/Remote Config adapters по-прежнему изолированы от gameplay и имеют safe fallback, а production preflight требует реально загруженные official Unity client types перед non-development AAB.
+Локальный Unity Editor baseline временно не устанавливает RuStore UPM packages, потому что текущий resolve дал compiler errors внутри `Library/PackageCache` на Unity `6000.3.24f1`. Exact release targets сохранены; adapters остаются изолированы от gameplay и имеют safe fallback, а production preflight обязан блокировать non-development AAB до восстановления и реальной загрузки проверенных official Unity client types.
 
 ## Что нельзя честно завершить только изменениями в GitHub
 
