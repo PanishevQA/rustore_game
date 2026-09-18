@@ -345,25 +345,47 @@ namespace DontGetSidetracked.Presentation
             CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1080, 1920);
+            scaler.matchWidthOrHeight = 0.5f;
 
-            _notificationPrompt = new GameObject("Prompt", typeof(RectTransform), typeof(Image));
-            _notificationPrompt.transform.SetParent(canvasGo.transform, false);
-            RectTransform panel = _notificationPrompt.GetComponent<RectTransform>();
-            panel.anchorMin = new Vector2(0.08f, 0.30f);
-            panel.anchorMax = new Vector2(0.92f, 0.70f);
-            panel.offsetMin = Vector2.zero;
-            panel.offsetMax = Vector2.zero;
-            _notificationPrompt.GetComponent<Image>().color = new Color(0.025f, 0.04f, 0.065f, 0.99f);
+            var backdrop = new GameObject("Backdrop", typeof(RectTransform), typeof(Image));
+            backdrop.transform.SetParent(canvasGo.transform, false);
+            ReleaseUiKit.Stretch(backdrop.GetComponent<RectTransform>());
+            Image backdropImage = backdrop.GetComponent<Image>();
+            backdropImage.color = new Color(0.003f, 0.008f, 0.023f, 0.86f);
+            backdropImage.raycastTarget = true;
 
-            Text title = CreateText(_notificationPrompt.transform, "Title", 52, TextAnchor.MiddleCenter,
-                new Vector2(0.08f, 0.68f), new Vector2(0.92f, 0.90f));
-            title.text = "НЕ ПРОПУСКАТЬ DAILY?";
-            Text body = CreateText(_notificationPrompt.transform, "Body", 32, TextAnchor.MiddleCenter,
-                new Vector2(0.10f, 0.38f), new Vector2(0.90f, 0.68f));
-            body.text = "Разрешить локальное напоминание, когда появится новый Daily Challenge?";
+            Image panel = ReleaseUiKit.Panel(
+                canvasGo.transform,
+                "Prompt",
+                new Vector2(0.075f, 0.285f),
+                new Vector2(0.925f, 0.715f),
+                ReleaseUiKit.Surface,
+                ReleaseUiKit.Cyan,
+                true);
+            _notificationPrompt = panel.gameObject;
 
-            CreateButton(_notificationPrompt.transform, "ВКЛЮЧИТЬ", new Vector2(0.10f, 0.12f), new Vector2(0.57f, 0.30f), AcceptNotificationValuePrompt);
-            CreateButton(_notificationPrompt.transform, "БЕЗ НАПОМИНАНИЙ", new Vector2(0.60f, 0.12f), new Vector2(0.90f, 0.30f), DeclineNotificationValuePrompt);
+            ReleaseUiKit.TextBlock(panel.transform, "Kicker", "DAILY CHALLENGE", 19,
+                TextAnchor.MiddleCenter, new Vector2(0.10f, 0.79f), new Vector2(0.90f, 0.90f),
+                ReleaseUiKit.Cyan, FontStyle.Bold);
+
+            Text title = ReleaseUiKit.TextBlock(panel.transform, "Title", "НЕ ПРОПУСКАТЬ DAILY?", 43,
+                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.61f), new Vector2(0.92f, 0.79f),
+                ReleaseUiKit.Text, FontStyle.Bold);
+            ReleaseUiKit.AddTextShadow(title, 0.38f, -3f);
+
+            ReleaseUiKit.TextBlock(panel.transform, "Body",
+                "После нового Daily игра сможет напомнить о нём локальным уведомлением. Никакие контакты или геолокация не нужны.",
+                25, TextAnchor.MiddleCenter, new Vector2(0.09f, 0.36f), new Vector2(0.91f, 0.61f),
+                ReleaseUiKit.Muted);
+
+            ReleaseUiKit.Button(panel.transform, "Enable", "ВКЛЮЧИТЬ НАПОМИНАНИЯ",
+                new Vector2(0.09f, 0.18f), new Vector2(0.91f, 0.31f),
+                ReleaseUiKit.Cyan, new Color(0.01f, 0.03f, 0.05f, 1f), 24, AcceptNotificationValuePrompt);
+
+            ReleaseUiKit.Button(panel.transform, "Decline", "НЕ СЕЙЧАС",
+                new Vector2(0.29f, 0.065f), new Vector2(0.71f, 0.145f),
+                new Color(0.075f, 0.095f, 0.145f, 0.98f), ReleaseUiKit.Muted, 20, DeclineNotificationValuePrompt);
+
             _notificationPrompt.SetActive(false);
         }
 
@@ -389,24 +411,43 @@ namespace DontGetSidetracked.Presentation
             CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1080, 1920);
+            scaler.matchWidthOrHeight = 0.5f;
 
             _updateBlocker = new GameObject("Blocker", typeof(RectTransform), typeof(Image));
             _updateBlocker.transform.SetParent(canvasGo.transform, false);
-            RectTransform panel = _updateBlocker.GetComponent<RectTransform>();
-            panel.anchorMin = Vector2.zero;
-            panel.anchorMax = Vector2.one;
-            panel.offsetMin = Vector2.zero;
-            panel.offsetMax = Vector2.zero;
-            _updateBlocker.GetComponent<Image>().color = new Color(0.02f, 0.03f, 0.05f, 0.99f);
+            ReleaseUiKit.Stretch(_updateBlocker.GetComponent<RectTransform>());
+            Image background = _updateBlocker.GetComponent<Image>();
+            background.color = ReleaseUiKit.Background;
+            background.raycastTarget = true;
 
-            Text title = CreateText(_updateBlocker.transform, "Title", 66, TextAnchor.MiddleCenter,
-                new Vector2(0.08f, 0.62f), new Vector2(0.92f, 0.75f));
-            title.text = "ТРЕБУЕТСЯ ОБНОВЛЕНИЕ";
-            _updateStatus = CreateText(_updateBlocker.transform, "Status", 36, TextAnchor.MiddleCenter,
-                new Vector2(0.10f, 0.43f), new Vector2(0.90f, 0.60f));
+            ReleaseUiKit.Dot(_updateBlocker.transform, "Signal", ReleaseUiKit.Danger,
+                new Vector2(0.44f, 0.735f), new Vector2(0.56f, 0.805f));
 
-            CreateButton(_updateBlocker.transform, "ПРОВЕРИТЬ ЕЩЁ РАЗ",
-                new Vector2(0.18f, 0.31f), new Vector2(0.82f, 0.39f), RetryMandatoryUpdate);
+            ReleaseUiKit.TextBlock(_updateBlocker.transform, "Kicker", "ВЕРСИЯ УСТАРЕЛА", 20,
+                TextAnchor.MiddleCenter, new Vector2(0.20f, 0.68f), new Vector2(0.80f, 0.73f),
+                ReleaseUiKit.Danger, FontStyle.Bold);
+
+            Text title = ReleaseUiKit.TextBlock(_updateBlocker.transform, "Title", "НУЖНО ОБНОВЛЕНИЕ", 52,
+                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.575f), new Vector2(0.92f, 0.68f),
+                ReleaseUiKit.Text, FontStyle.Bold);
+            ReleaseUiKit.AddTextShadow(title, 0.45f, -3f);
+
+            Image statusCard = ReleaseUiKit.Panel(_updateBlocker.transform, "StatusCard",
+                new Vector2(0.10f, 0.405f), new Vector2(0.90f, 0.555f),
+                ReleaseUiKit.Surface, ReleaseUiKit.Danger, false);
+
+            _updateStatus = ReleaseUiKit.TextBlock(statusCard.transform, "Status", string.Empty, 25,
+                TextAnchor.MiddleCenter, new Vector2(0.06f, 0.12f), new Vector2(0.94f, 0.88f),
+                ReleaseUiKit.Muted);
+
+            ReleaseUiKit.Button(_updateBlocker.transform, "Retry", "ПРОВЕРИТЬ ОБНОВЛЕНИЕ",
+                new Vector2(0.19f, 0.300f), new Vector2(0.81f, 0.365f),
+                ReleaseUiKit.Violet, ReleaseUiKit.Text, 24, RetryMandatoryUpdate);
+
+            ReleaseUiKit.TextBlock(_updateBlocker.transform, "Footnote",
+                "Прогресс хранится на устройстве и останется после обновления.", 19,
+                TextAnchor.MiddleCenter, new Vector2(0.12f, 0.235f), new Vector2(0.88f, 0.285f),
+                ReleaseUiKit.Muted);
         }
 
         private static Button CreateButton(
