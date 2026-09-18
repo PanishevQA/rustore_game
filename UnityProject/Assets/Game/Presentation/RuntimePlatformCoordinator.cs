@@ -328,7 +328,22 @@ namespace DontGetSidetracked.Presentation
         private bool IsSafeHome()
         {
             if (_bootstrap == null) ResolveBootstrap();
-            return _bootstrap != null && GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap);
+            if (_bootstrap == null || !GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap)) return false;
+
+            DailyIntroCoordinator dailyIntro = FindFirstObjectByType<DailyIntroCoordinator>();
+            if (dailyIntro != null && dailyIntro.IsOpen) return false;
+
+            MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
+            if (meta != null && meta.IsPanelOpen) return false;
+
+            TrainingMenuCoordinator training = FindFirstObjectByType<TrainingMenuCoordinator>();
+            if (training != null && training.IsOpen) return false;
+
+            CampaignLevelMenuOverlay campaign = FindFirstObjectByType<CampaignLevelMenuOverlay>();
+            if (campaign != null && campaign.IsOpen) return false;
+
+            ReferralOfferCoordinator referral = FindFirstObjectByType<ReferralOfferCoordinator>();
+            return referral == null || !referral.IsVisible;
         }
 
         private void ShowNotificationValuePrompt()
