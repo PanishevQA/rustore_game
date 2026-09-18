@@ -332,6 +332,7 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.075f, 0.765f), new Vector2(0.925f, 0.935f),
                 new Color(0.025f, 0.045f, 0.085f, 0.985f), ReleaseUiKit.Cyan, true);
             _resultHeader = header.gameObject;
+            _resultHeader.AddComponent<ReleasePanelMotion>();
 
             _modeLabel = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЗУЛЬТАТ", 19,
                 TextAnchor.MiddleLeft, new Vector2(0.055f, 0.72f), new Vector2(0.58f, 0.91f),
