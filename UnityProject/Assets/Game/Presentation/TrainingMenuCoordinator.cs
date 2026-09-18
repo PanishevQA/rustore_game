@@ -84,7 +84,14 @@ namespace DontGetSidetracked.Presentation
             }
         }
 
-        private void Open() => SetVisible(true);
+        private void Open() => OpenFromHome();
+
+        public void OpenFromHome()
+        {
+            if (_bootstrap == null) ResolveBootstrap();
+            if (_bootstrap == null || !GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap)) return;
+            SetVisible(true);
+        }
 
         private void StartEasy() => StartDifficulty(0);
         private void StartMedium() => StartDifficulty(1);
