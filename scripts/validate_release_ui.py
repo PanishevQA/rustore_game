@@ -8,6 +8,8 @@ PRESENTATION = ROOT / "UnityProject/Assets/Game/Presentation"
 FILES = {
     "home": PRESENTATION / "HomeDashboardCoordinator.cs",
     "ui_kit": PRESENTATION / "ReleaseUiKit.cs",
+    "ui_components": PRESENTATION / "ReleaseUiComponents.cs",
+    "daily_intro": PRESENTATION / "DailyIntroCoordinator.cs",
     "gameplay_hud": PRESENTATION / "GameplayHudCoordinator.cs",
     "training": PRESENTATION / "TrainingMenuCoordinator.cs",
     "campaign": PRESENTATION / "CampaignLevelMenuOverlay.cs",
@@ -40,45 +42,81 @@ required = {
         "public static Button Button",
         "public static Image Panel",
     ),
+    "ui_components": (
+        "PrimaryButton(",
+        "SecondaryButton(",
+        "GlassCard(",
+        "Backdrop(",
+        "StatTile(",
+        "CurrencyPill(",
+        "CreateGradientRoundedSprite",
+        "CreateBackdropTexture",
+    ),
+    "daily_intro": (
+        "DailyIntroCanvas",
+        "ИСПЫТАНИЕ ДНЯ",
+        "GameBootstrapRuntimeBridge.StartDaily",
+        "ReleaseUiComponents.PrimaryButton",
+        "public bool IsOpen",
+    ),
     "home": (
         "HomeDashboard",
         "BuildDailyCard",
         "BuildCampaignCard",
+        "BuildStatRow",
         "BuildQuickActions",
+        "DailyIntroCoordinator",
+        "ReleaseUiComponents.Backdrop",
+        "ОДИН МАРШРУТ.",
         "GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap)",
         "_dashboardMotion?.Cancel()",
-        "MEMORY TRACE",
     ),
     "gameplay_hud": (
         "ReleaseGameplayHud",
         "GameplayHeader",
+        "GameplayMetrics",
+        "GameplayInstruction",
+        "ReleaseUiComponents.GlassCard",
         "GameBootstrapRuntimeBridge.IsActiveRound(_bootstrap)",
         "ЗАПОМНИ МАРШРУТ",
         "ТВОЯ ОЧЕРЕДЬ",
     ),
     "training": (
-        "ReleaseUiKit.Panel",
+        "ReleaseUiComponents.GlassCard",
+        "SelectDifficulty",
+        "StartSelected",
         "ЛЁГКАЯ",
         "СРЕДНЯЯ",
         "СЛОЖНАЯ",
-        "СЛУЧАЙНАЯ",
+        "НАЧАТЬ ТРЕНИРОВКУ",
     ),
     "campaign": (
         "ChapterProgressTrack",
+        "LevelPath",
+        "CreatePathRail",
         "CreateLevelButton(",
-        "ReleaseUiKit.SurfaceRaised",
+        "StartHighestUnlocked",
+        "CampaignReleaseBackdrop",
     ),
     "meta": (
+        "MetaReleaseBackdrop",
+        "RenderStatisticsRows",
+        "AddInfoRow",
         "BodyCard",
         "ActionsCard",
         "AddStoreProductAction",
         "ProductPrice",
-        "ReleaseUiKit.Button",
     ),
     "result": (
         "ResultHeader",
         "ResultDetail",
         "ResultActions",
+        "MeanDeviation",
+        "EndAccuracy",
+        "Completion",
+        "GestureTime",
+        "LastScoreBreakdown",
+        "ReleaseUiComponents.PrimaryButton",
         "SuppressLegacyResultHeader",
         "SuppressLegacyResultControls",
         "RestoreLegacyResultHeader",
@@ -97,10 +135,11 @@ required = {
         'CreateMarker(routePanel.transform, "End"',
     ),
     "rewarded": (
-        "new Vector2(0.075f, 0.092f)",
-        "new Vector2(0.925f, 0.142f)",
-        "ПОДСКАЗКА ЗА РЕКЛАМУ",
-        "ReleaseUiKit.Button",
+        "new Vector2(0.07f, 0.078f)",
+        "new Vector2(0.93f, 0.145f)",
+        "СМОТРЕТЬ РЕКЛАМУ",
+        "ReleaseUiComponents.SecondaryButton",
+        "dailyIntro.IsOpen",
     ),
     "hint": (
         "ПОКАЗАТЬ МАРШРУТ ЕЩЁ РАЗ",
@@ -132,7 +171,7 @@ if "_hudVisible == visible" in texts["gameplay_hud"]:
     errors.append("Gameplay HUD visibility must always write CanvasGroup state; equality short-circuit can leak HUD on initial Home.")
 
 # Avoid emoji glyphs in runtime text rendered through Unity's built-in fallback font.
-for key in ("meta", "result", "share_card", "rewarded", "hint", "gameplay_hud", "referral_offer"):
+for key in ("ui_components", "daily_intro", "meta", "result", "share_card", "rewarded", "hint", "gameplay_hud", "referral_offer"):
     text = texts[key]
     for char in text:
         if ord(char) > 0xFFFF:
@@ -142,6 +181,12 @@ for key in ("meta", "result", "share_card", "rewarded", "hint", "gameplay_hud", 
 result = texts["result"]
 if "group.interactable = visible;" not in result or "group.blocksRaycasts = visible;" not in result:
     errors.append("Result release action sheet must restore legacy fallback controls after leaving Result.")
+
+if "+50 МОНЕТ" in texts["home"]:
+    errors.append("Home must not advertise an unimplemented fixed Daily coin reward.")
+
+if 'ReleaseUiComponents.Backdrop(_canvas.transform, "ResultBackdrop")' in texts["result"]:
+    errors.append("Result release chrome must not hide the underlying route comparison with an opaque backdrop.")
 
 # The share card should use the textual celebration label, not provider emoji/icon glyphs.
 if "Celebration?.Icon" in texts["share_card"]:
