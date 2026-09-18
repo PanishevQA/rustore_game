@@ -180,6 +180,9 @@ namespace DontGetSidetracked.Presentation
 
         private static void StyleResultCanvas(Transform root)
         {
+            Transform releaseVisual = FindTransform(root, "ReleaseVisual");
+            if (releaseVisual != null) return;
+
             Text medal = Find<Text>(root, "Medal");
             if (medal != null)
             {
