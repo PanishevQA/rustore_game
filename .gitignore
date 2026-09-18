@@ -57,3 +57,6 @@ UnityProject/Assets/Plugins/Android/gradleTemplate.properties
 UnityProject/Assets/Plugins/Android/gradleTemplate.properties.meta
 UnityProject/Assets/Plugins/Android/settingsTemplate.gradle
 UnityProject/Assets/Plugins/Android/settingsTemplate.gradle.meta
+
+# Deterministically generated release branding
+UnityProject/Assets/GeneratedBrand/
