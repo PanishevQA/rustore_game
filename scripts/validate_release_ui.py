@@ -67,7 +67,7 @@ required = {
         "BuildQuickActions",
         "DailyIntroCoordinator",
         "ReleaseUiComponents.Backdrop",
-        "ОДИН МАРШРУТ.",
+        "ОДИН ЧЕЛЛЕНДЖ.",
         "GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap)",
         "_dashboardMotion?.Cancel()",
     ),
