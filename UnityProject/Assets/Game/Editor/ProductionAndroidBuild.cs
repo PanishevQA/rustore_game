@@ -39,6 +39,10 @@ namespace DontGetSidetracked.EditorTools
         private static void BuildProductionAab()
         {
             ProjectConfigurator.Configure();
+            AndroidDependencyConfigurator.Configure();
+            BrandAssetConfigurator.Configure();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            AssetDatabase.SaveAssets();
 
             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
             {
