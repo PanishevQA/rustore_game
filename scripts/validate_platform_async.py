@@ -6,12 +6,14 @@ REVIEW = ROOT / "UnityProject/Assets/Game/Platform/RuStore/RuStoreReviewService.
 GATE = ROOT / "UnityProject/Assets/Game/Services/PlatformUiLaunchGate.cs"
 RUNTIME = ROOT / "UnityProject/Assets/Game/Presentation/PlatformUiLaunchGateRuntime.cs"
 META = ROOT / "UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs"
+PLATFORM_RUNTIME = ROOT / "UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs"
 
 update = UPDATE.read_text(encoding="utf-8")
 review = REVIEW.read_text(encoding="utf-8")
 gate = GATE.read_text(encoding="utf-8")
 runtime = RUNTIME.read_text(encoding="utf-8")
 meta = META.read_text(encoding="utf-8")
+platform_runtime = PLATFORM_RUNTIME.read_text(encoding="utf-8")
 
 required_gate = [
     "public static bool CanLaunchNow()",
@@ -33,12 +35,18 @@ required_runtime = [
     "referral.IsVisible",
     "platform.IsNotificationPromptOpen",
     'GameObject.Find("MandatoryUpdateCanvas")',
-    "EnforceMandatoryUpdateWhenSafeHome",
-    "while (!IsSafeHome())",
 ]
 for value in required_runtime:
     if value not in runtime:
         raise SystemExit(f"Platform UI runtime gate is incomplete: {value}")
+
+for value in [
+    "EnforceMandatoryUpdateWhenSafeHome",
+    "while (!IsSafeHome())",
+    'ShowMandatoryUpdateBlocker("Для продолжения нужна новая версия игры.")',
+]:
+    if value not in platform_runtime:
+        raise SystemExit(f"Runtime platform safe-update transition is incomplete: {value}")
 
 update_gate = update.find("PlatformUiLaunchGate.CanLaunchNow()")
 update_launch = update.find("await StartFlexibleAsync()")
