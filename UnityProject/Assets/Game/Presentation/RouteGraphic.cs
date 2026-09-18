@@ -18,6 +18,12 @@ namespace DontGetSidetracked.Presentation
             SetVerticesDirty();
         }
 
+        public void AppendPoint(FixedPoint2 point)
+        {
+            _points.Add(point);
+            SetVerticesDirty();
+        }
+
         public void Clear()
         {
             _points.Clear();
