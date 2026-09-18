@@ -37,6 +37,7 @@ namespace DontGetSidetracked.Presentation
         private static readonly FieldInfo SecondaryField = typeof(GameBootstrap).GetField("_secondary", PrivateInstance);
         private static readonly FieldInfo ShareField = typeof(GameBootstrap).GetField("_share", PrivateInstance);
         private static readonly FieldInfo LastResultScoreField = typeof(GameBootstrap).GetField("_lastResultScore", PrivateInstance);
+        private static readonly FieldInfo LastScoreBreakdownField = typeof(GameBootstrap).GetField("_lastScoreBreakdown", PrivateInstance);
         private static readonly FieldInfo LastDailyScoreField = typeof(GameBootstrap).GetField("_lastDailyScore", PrivateInstance);
         private static readonly FieldInfo RouteField = typeof(GameBootstrap).GetField("_route", PrivateInstance);
         private static readonly FieldInfo RecordingField = typeof(GameBootstrap).GetField("_recording", PrivateInstance);
@@ -166,6 +167,9 @@ namespace DontGetSidetracked.Presentation
                     ModeName = ReadEnumName(bootstrap, ModeField),
                     DailyCompleted = ReadBool(bootstrap, DailyCompletedField),
                     LastResultScore = ReadDouble(bootstrap, LastResultScoreField),
+                    LastScoreBreakdown = LastScoreBreakdownField != null && LastScoreBreakdownField.GetValue(bootstrap) is ScoreBreakdown breakdown
+                        ? breakdown
+                        : default,
                     LastDailyScore = ReadDouble(bootstrap, LastDailyScoreField),
                     Daily = DailyField.GetValue(bootstrap) as DailyChallengeDefinition,
                     Route = RouteField.GetValue(bootstrap) as RouteDefinition,
@@ -455,6 +459,7 @@ namespace DontGetSidetracked.Presentation
         public string ModeName;
         public bool DailyCompleted;
         public double LastResultScore;
+        public ScoreBreakdown LastScoreBreakdown;
         public double LastDailyScore;
         public DailyChallengeDefinition Daily;
         public RouteDefinition Route;
