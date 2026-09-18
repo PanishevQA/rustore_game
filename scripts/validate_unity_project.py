@@ -52,8 +52,6 @@ def validate_package_manifest() -> None:
         "com.unity.modules.audio": "1.0.0",
         "com.unity.modules.imageconversion": "1.0.0",
         "ru.rustore.pay": "11.1.0",
-        "ru.rustore.installreferrer": "10.6.1",
-        "ru.rustore.remoteconfig": "10.5.1",
         "ru.rustore.update": "10.5.1",
         "ru.rustore.review": "10.5.1",
     }
@@ -66,6 +64,10 @@ def validate_package_manifest() -> None:
     # feature package. Do not pin a potentially incompatible core version directly.
     if "ru.rustore.core" in dependencies:
         fail("ru.rustore.core must resolve transitively; remove the direct core pin from Packages/manifest.json.")
+
+    for quarantined in ("ru.rustore.installreferrer", "ru.rustore.remoteconfig"):
+        if quarantined in dependencies:
+            fail(f"{quarantined} must stay out of the Unity 6000.3.24f1 Editor baseline until a fixed official/source integration is re-verified.")
 
     registries = manifest.get("scopedRegistries") or []
     expected_registry = "https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/"
@@ -149,9 +151,6 @@ def validate_android_manifest() -> None:
     if application is None:
         fail("AndroidManifest.xml must declare an application element.")
         return
-    if application.attrib.get(ANDROID_NAME) != "ru.rustore.unitysdk.RuStoreRemoteConfigApplication":
-        fail("AndroidManifest.xml must use ru.rustore.unitysdk.RuStoreRemoteConfigApplication for Remote Config 10.5.1.")
-
     activities = list(root.findall("./application/activity"))
     unity_activities = [a for a in activities if a.attrib.get(ANDROID_NAME) == "com.unity3d.player.UnityPlayerActivity"]
     if not unity_activities:
@@ -285,8 +284,7 @@ def validate_release_preflight_contract() -> None:
     text = read(UNITY / "Assets/Game/Editor/ProductionReleaseValidator.cs")
     required = {
         r'\"ru.rustore.pay\": \"11.1.0\"': "Production preflight must enforce RuStore Pay 11.1.0.",
-        r'\"ru.rustore.installreferrer\": \"10.6.1\"': "Production preflight must enforce RuStore Install Referrer 10.6.1.",
-        r'\"ru.rustore.remoteconfig\": \"10.5.1\"': "Production preflight must enforce RuStore Remote Config 10.5.1.",
+        'ValidateQuarantinedRuStorePackages(errors)': "Production preflight must keep known-broken RuStore Editor packages quarantined.",
         'HasLoadedRuStoreType("InstallReferrerClient")': "Production preflight must require an actually loaded Install Referrer Unity integration.",
         'HasLoadedRuStoreType("RuStoreRemoteConfigClient")': "Production preflight must require an actually loaded Remote Config Unity integration.",
         'InstallReferrer = \\"10.6.1\\"': "Production preflight must protect the current Install Referrer target version.",
