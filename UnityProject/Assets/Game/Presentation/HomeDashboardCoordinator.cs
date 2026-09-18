@@ -221,7 +221,7 @@ namespace DontGetSidetracked.Presentation
             _dailyMeta = CreateText(card, "DailyMeta", "СЕГОДНЯ", 21, TextAnchor.MiddleRight,
                 new Vector2(0.58f, 0.79f), new Vector2(0.94f, 0.94f), TextMuted);
 
-            Text headline = CreateText(card, "DailyHeadline", "ОДИН МАРШРУТ.\nСМОЖЕШЬ ТОЧНЕЕ?", 38, TextAnchor.MiddleLeft,
+            Text headline = CreateText(card, "DailyHeadline", "ИСПЫТАНИЕ ДНЯ.\nСМОЖЕШЬ ТОЧНЕЕ?", 38, TextAnchor.MiddleLeft,
                 new Vector2(0.055f, 0.42f), new Vector2(0.64f, 0.79f), TextPrimary);
             headline.fontStyle = FontStyle.Bold;
             headline.lineSpacing = 0.90f;
