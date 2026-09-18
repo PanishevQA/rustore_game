@@ -97,7 +97,8 @@ namespace DontGetSidetracked.Presentation
             scaler.matchWidthOrHeight = 0.5f;
 
             _group = _canvas.GetComponent<CanvasGroup>();
-            ReleaseUiComponents.Backdrop(_canvas.transform);
+            RawImage backdrop = ReleaseUiComponents.Backdrop(_canvas.transform);
+            backdrop.raycastTarget = true;
 
             var releaseVisual = new GameObject("ReleaseVisual", typeof(RectTransform));
             releaseVisual.transform.SetParent(_canvas.transform, false);
@@ -122,6 +123,7 @@ namespace DontGetSidetracked.Presentation
 
             Image hero = ReleaseUiComponents.GlassCard(_canvas.transform, "DailyHero",
                 new Vector2(0.07f, 0.470f), new Vector2(0.93f, 0.735f), ReleaseUiComponents.Cyan, true);
+            hero.gameObject.AddComponent<ReleasePanelMotion>();
 
             ReleaseUiKit.TextBlock(hero.transform, "Headline", "ОДИН ЧЕЛЛЕНДЖ.\nВСЕ ИГРОКИ.\nКТО ТОЧНЕЕ?", 35,
                 TextAnchor.MiddleLeft, new Vector2(0.055f, 0.49f), new Vector2(0.68f, 0.91f),
@@ -158,10 +160,6 @@ namespace DontGetSidetracked.Presentation
             _coins = ReleaseUiComponents.CurrencyPill(_canvas.transform, "Coins", "●", "0",
                 new Vector2(0.74f, 0.895f), new Vector2(0.94f, 0.94f), ReleaseUiComponents.Gold);
 
-            var motionRoot = new GameObject("DailyIntroMotion", typeof(RectTransform));
-            motionRoot.transform.SetParent(_canvas.transform, false);
-            ReleaseUiKit.SetAnchors(motionRoot.GetComponent<RectTransform>(), new Vector2(0.07f, 0.105f), new Vector2(0.93f, 0.855f));
-            motionRoot.AddComponent<ReleasePanelMotion>();
         }
     }
 }
