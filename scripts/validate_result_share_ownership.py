@@ -30,7 +30,7 @@ result_required = (
     "CampaignRuntimeCoordinator.IsCampaignActive",
     'ModeLabel = campaign ? "КАМПАНИЯ" : ModeLabel(mode)',
     'ChallengeLabel = campaign',
-    '"📸 КАРТОЧКА УРОВНЯ"',
+    '"КАРТОЧКА УРОВНЯ"',
     'analytics["level"] = campaignLevel',
     'analytics["chapter"] = campaignChapter',
 )
