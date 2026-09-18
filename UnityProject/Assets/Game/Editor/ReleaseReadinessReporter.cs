@@ -82,6 +82,7 @@ namespace DontGetSidetracked.EditorTools
             try
             {
                 ProjectConfigurator.Configure();
+                RuStorePayProductionConfigurator.ConfigureExistingAsset();
                 AndroidDependencyConfigurator.Configure();
                 BrandAssetConfigurator.Configure();
                 AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
