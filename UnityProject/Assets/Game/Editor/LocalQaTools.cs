@@ -20,6 +20,7 @@ namespace DontGetSidetracked.EditorTools
             "analytics-local.json.tmp",
             "crash-local.log",
             "rustore-remote-config.json",
+            "rustore-remote-config.json.bak",
             "rustore-remote-config.json.tmp"
         };
 
