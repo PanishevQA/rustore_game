@@ -145,6 +145,10 @@ namespace DontGetSidetracked.Presentation
             scaler.referenceResolution = new Vector2(1080, 1920);
             scaler.matchWidthOrHeight = 0.5f;
 
+            var releaseVisual = new GameObject("ReleaseVisual", typeof(RectTransform));
+            releaseVisual.transform.SetParent(_canvas.transform, false);
+            ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
+
             _button = ReleaseUiKit.Button(
                 _canvas.transform,
                 "RewardedHint",
