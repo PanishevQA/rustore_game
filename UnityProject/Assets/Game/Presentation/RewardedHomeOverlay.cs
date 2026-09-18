@@ -105,7 +105,7 @@ namespace DontGetSidetracked.Presentation
         {
             if (_label == null) return;
             SaveData save = _saveRepository.Load();
-            _label.text = $"ПОДСКАЗКА ЗА РЕКЛАМУ  •  +1  •  У ВАС {save.Hints}";
+            _label.text = $"▣  СМОТРЕТЬ РЕКЛАМУ   •   +1 ПОДСКАЗКА   •   У ВАС {save.Hints}";
         }
 
         private bool IsSafeHome() =>
@@ -113,6 +113,9 @@ namespace DontGetSidetracked.Presentation
 
         private static bool IsAnyHomeOverlayOpen()
         {
+            DailyIntroCoordinator dailyIntro = FindFirstObjectByType<DailyIntroCoordinator>();
+            if (dailyIntro != null && dailyIntro.IsOpen) return true;
+
             MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
             if (meta != null && meta.IsPanelOpen) return true;
 
@@ -152,16 +155,14 @@ namespace DontGetSidetracked.Presentation
             releaseVisual.transform.SetParent(_canvas.transform, false);
             ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
 
-            _button = ReleaseUiKit.Button(
+            _button = ReleaseUiComponents.SecondaryButton(
                 _canvas.transform,
                 "RewardedHint",
-                "БЕСПЛАТНАЯ ПОДСКАЗКА",
-                new Vector2(0.075f, 0.092f),
-                new Vector2(0.925f, 0.142f),
-                new Color(0.035f, 0.070f, 0.095f, 0.98f),
-                ReleaseUiKit.Green,
-                18,
-                ClaimRewardedHint);
+                "▣  СМОТРЕТЬ РЕКЛАМУ   •   +1 ПОДСКАЗКА",
+                new Vector2(0.07f, 0.078f),
+                new Vector2(0.93f, 0.145f),
+                ClaimRewardedHint,
+                18);
 
             _label = _button.GetComponentInChildren<Text>(true);
             if (_label != null)
