@@ -159,6 +159,9 @@ jobs:
           grep -q 'save.PendingReferralId = string.Empty' UnityProject/Assets/Game/Presentation/ReferralRuntimePolicy.cs
           grep -q 'ReferralRuntimePolicy.TryNormalizeForCurrentRuntime' UnityProject/Assets/Game/Presentation/InstallReferrerCapture.cs
           grep -q 'ReferralRuntimePolicy.TryNormalizeForCurrentRuntime' UnityProject/Assets/Game/Presentation/ReferralDeepLinkReceiver.cs
+          grep -q 'NotifyPendingReferralAvailable(normalized)' UnityProject/Assets/Game/Presentation/ReferralDeepLinkReceiver.cs
+          grep -q 'NotifyPendingReferralAvailable(save.PendingReferralId)' UnityProject/Assets/Game/Presentation/InstallReferrerCapture.cs
+          grep -q 'internal void NotifyPendingReferralAvailable' UnityProject/Assets/Game/Presentation/GameBootstrap.cs
 
           # Local diagnostics/session services reset static runtime state for Editor Play without domain reload.
           grep -q 'RuntimeInitializeLoadType.SubsystemRegistration' UnityProject/Assets/Game/Presentation/AnalyticsLifecycle.cs
