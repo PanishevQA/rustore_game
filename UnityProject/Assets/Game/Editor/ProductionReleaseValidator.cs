@@ -19,6 +19,7 @@ namespace DontGetSidetracked.EditorTools
         private const string ProjectSettingsAssetPath = "ProjectSettings/ProjectSettings.asset";
         private const string MainGradleTemplatePath = "Assets/Plugins/Android/mainTemplate.gradle";
         private const string GradlePropertiesTemplatePath = "Assets/Plugins/Android/gradleTemplate.properties";
+        private const string GradleSettingsTemplatePath = "Assets/Plugins/Android/settingsTemplate.gradle";
         private const string RemoteConfigSettingsPath = "Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs";
         private const string SdkVersionsPath = "Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs";
         public int callbackOrder => -1000;
@@ -222,19 +223,12 @@ namespace DontGetSidetracked.EditorTools
 
         private static void ValidateAds(List<string> errors)
         {
-            string symbols = PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.Android) ?? string.Empty;
-            bool hasYandexSymbol = false;
-            string[] split = symbols.Split(';');
-            for (int i = 0; i < split.Length; i++)
-            {
-                if (string.Equals(split[i].Trim(), "YANDEX_MOBILE_ADS", StringComparison.Ordinal))
-                {
-                    hasYandexSymbol = true;
-                    break;
-                }
-            }
-            if (!hasYandexSymbol)
-                errors.Add("Import the official Yandex Mobile Ads Unity plugin and define YANDEX_MOBILE_ADS for Android production builds.");
+            ValidateFileContains(PackagesManifestPath, errors,
+                ("yandexmobile/yandex-ads-unity-plugin.git?path=/mobileads-sdk#8.4.0", "Yandex Mobile Ads 8.4.0 package must stay pinned to the verified official repository tag."));
+            ValidateFileContains("Assets/Game/Monetization/Game.Monetization.asmdef", errors,
+                ("\"YandexMobileAds\"", "Game.Monetization must reference the YandexMobileAds assembly."),
+                ("\"YANDEX_MOBILE_ADS\"", "Game.Monetization must auto-enable the Yandex adapter through an asmdef version define."),
+                ("[8.4.0,8.5.0)", "Yandex adapter version define must stay constrained to the verified 8.4.x line."));
 
             ValidateYandexGradleTemplates(errors);
 
@@ -265,11 +259,15 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Enable Custom Main Gradle Template for the Yandex Mobile Ads Android production build.");
             if (!settings.Contains("useCustomGradlePropertiesTemplate: 1", StringComparison.Ordinal))
                 errors.Add("Enable Custom Gradle Properties Template for the Yandex Mobile Ads Android production build.");
+            if (!settings.Contains("useCustomGradleSettingsTemplate: 1", StringComparison.Ordinal))
+                errors.Add("Enable Custom Gradle Settings Template so EDM4U can own Android repositories consistently.");
 
             if (!File.Exists(MainGradleTemplatePath))
-                errors.Add("Yandex Mobile Ads production integration requires Assets/Plugins/Android/mainTemplate.gradle.");
+                errors.Add("Android production integration requires Assets/Plugins/Android/mainTemplate.gradle.");
             if (!File.Exists(GradlePropertiesTemplatePath))
-                errors.Add("Yandex Mobile Ads production integration requires Assets/Plugins/Android/gradleTemplate.properties.");
+                errors.Add("Android production integration requires Assets/Plugins/Android/gradleTemplate.properties.");
+            if (!File.Exists(GradleSettingsTemplatePath))
+                errors.Add("Android production integration requires Assets/Plugins/Android/settingsTemplate.gradle.");
         }
 
         private static void ValidateFileContains(string path, List<string> errors, params (string Needle, string Error)[] checks)
