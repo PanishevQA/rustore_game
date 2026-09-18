@@ -54,8 +54,10 @@ jobs:
           # Mobile Back uses stable overlay contracts instead of private-state reflection for product overlays.
           grep -q 'public bool IsOpen' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'public void Close()' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q '_backdrop.SetActive(visible)' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'public bool IsOpen' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
           grep -q 'public void Close()' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+          grep -q '_backdrop.SetActive(visible)' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
           grep -q 'training.IsOpen' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
           grep -q 'training.Close()' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
           grep -q 'campaign.IsOpen' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
@@ -63,6 +65,7 @@ jobs:
           grep -q 'public bool IsNotificationPromptOpen' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
           grep -q 'public bool DismissNotificationPrompt()' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
           grep -q '_notificationPromptDeferredForSession' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
+          grep -q '_notificationBackdrop.SetActive(false)' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
           grep -q 'platform.DismissNotificationPrompt()' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
           grep -q 'referral.Dismiss()' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
           grep -q 'public bool Dismiss()' UnityProject/Assets/Game/Presentation/ReferralOfferCoordinator.cs
