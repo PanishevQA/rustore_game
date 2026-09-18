@@ -95,8 +95,12 @@ namespace DontGetSidetracked.EditorTools
                 ("\"ru.rustore.installreferrer\": \"10.6.1\"", "RuStore Install Referrer must remain pinned to the verified version."),
                 ("\"ru.rustore.remoteconfig\": \"10.5.1\"", "RuStore Remote Config must remain pinned to the verified version."),
                 ("\"ru.rustore.update\": \"10.5.1\"", "RuStore Update must remain pinned to the verified version."),
-                ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."));
+                ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."),
+                ("nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed", "RuStore npm registry must use the current verified vkteam endpoint."),
+                ("com.google.external-dependency-manager", "EDM4U must be installed for RuStore/Yandex Android dependency resolution."),
+                ("v1.2.188", "EDM4U must stay pinned to the verified 1.2.188 release."));
 
+            ValidateNoDirectRuStoreCorePin(errors);
             ValidateRuStoreIntegrationPresence(errors);
             ValidateFileContains(SdkVersionsPath, errors,
                 ("InstallReferrer = \"10.6.1\"", "Install Referrer release target must be re-verified before production."),
@@ -127,6 +131,17 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Production Android keystore path/name is empty.");
             if (string.IsNullOrWhiteSpace(PlayerSettings.Android.keyaliasName))
                 errors.Add("Production Android key alias is empty.");
+        }
+
+        private static void ValidateNoDirectRuStoreCorePin(List<string> errors)
+        {
+            if (!File.Exists(PackagesManifestPath)) return;
+            string manifest = File.ReadAllText(PackagesManifestPath);
+            if (manifest.Contains("\"ru.rustore.core\"", StringComparison.Ordinal))
+                errors.Add("Do not pin ru.rustore.core directly; verified RuStore feature packages must resolve their compatible core transitively.");
+            if (manifest.Contains("nexus-external.rustore.ru", StringComparison.Ordinal) ||
+                manifest.Contains("artifactory-external.vkpartner.ru", StringComparison.Ordinal))
+                errors.Add("Obsolete RuStore repository address detected in Packages/manifest.json.");
         }
 
         private static void ValidateRuStoreIntegrationPresence(List<string> errors)
