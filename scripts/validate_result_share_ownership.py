@@ -30,7 +30,10 @@ result_required = (
     "CampaignRuntimeCoordinator.IsCampaignActive",
     'ModeLabel = campaign ? "КАМПАНИЯ" : ModeLabel(mode)',
     'ChallengeLabel = campaign',
-    '"КАРТОЧКА УРОВНЯ"',
+    '"ПОДЕЛИТЬСЯ УРОВНЕМ"',
+    '"БРОСИТЬ ВЫЗОВ"',
+    '"ResultActions"',
+    "SuppressLegacyResultControls()",
     'analytics["level"] = campaignLevel',
     'analytics["chapter"] = campaignChapter',
 )
