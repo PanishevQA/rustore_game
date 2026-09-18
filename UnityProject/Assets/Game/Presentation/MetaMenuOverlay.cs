@@ -395,6 +395,7 @@ namespace DontGetSidetracked.Presentation
             Shadow shadow = _panel.AddComponent<Shadow>();
             shadow.effectColor = new Color(0f, 0f, 0f, 0.52f);
             shadow.effectDistance = new Vector2(0f, -12f);
+            _panel.AddComponent<ReleasePanelMotion>();
 
             var releaseVisual = new GameObject("ReleaseVisual", typeof(RectTransform));
             releaseVisual.transform.SetParent(_panel.transform, false);
