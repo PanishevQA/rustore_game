@@ -11,8 +11,8 @@ namespace DontGetSidetracked.EditorTools
     [InitializeOnLoad]
     public static class ProjectConfigurator
     {
-        // Development fallbacks only. Once real release values are configured, Editor startup must never overwrite them.
-        public const string DevelopmentPackageName = "ru.panishedqa.nesbeisya.dev";
+        public const string ProductionPackageName = "ru.release.nesbeisya";
+        public const string LegacyDevelopmentPackageName = "ru.panishedqa.nesbeisya.dev";
         public const string DevelopmentVersion = "0.1.0";
         private const string ScenePath = "Assets/Scenes/Main.unity";
 
@@ -33,8 +33,8 @@ namespace DontGetSidetracked.EditorTools
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
 
             string currentPackage = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android);
-            if (ShouldAssignDevelopmentPackageName(currentPackage))
-                PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, DevelopmentPackageName);
+            if (ShouldAssignProductionPackageName(currentPackage))
+                PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, ProductionPackageName);
 
             if (string.IsNullOrWhiteSpace(PlayerSettings.bundleVersion))
                 PlayerSettings.bundleVersion = DevelopmentVersion;
@@ -53,15 +53,13 @@ namespace DontGetSidetracked.EditorTools
             EnsureScene();
         }
 
-        private static bool ShouldAssignDevelopmentPackageName(string currentPackage)
+        private static bool ShouldAssignProductionPackageName(string currentPackage)
         {
             if (string.IsNullOrWhiteSpace(currentPackage)) return true;
 
-            // Fresh Unity projects commonly start with a generated DefaultCompany identifier.
-            // Replace only that bootstrap value. Any explicit identifier, including a production RuStore one,
-            // belongs to the developer and must survive Editor reloads and this menu command.
             return currentPackage.StartsWith("com.DefaultCompany.", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(currentPackage, "com.DefaultCompany.ProductName", StringComparison.OrdinalIgnoreCase);
+                   string.Equals(currentPackage, "com.DefaultCompany.ProductName", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(currentPackage, LegacyDevelopmentPackageName, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool ShouldRaiseMinimumSdk(AndroidSdkVersions currentMinimum)
