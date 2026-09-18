@@ -68,7 +68,7 @@ namespace DontGetSidetracked.Presentation
         private void Open(GameBootstrap bootstrap)
         {
             _bootstrap = ResolveLiveBootstrap(bootstrap);
-            if (_bootstrap == null)
+            if (_bootstrap == null || !GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap))
             {
                 Close();
                 return;
