@@ -69,8 +69,8 @@ namespace DontGetSidetracked.EditorTools
             var errors = new List<string>();
 
             string packageName = PlayerSettings.GetApplicationIdentifier(NamedBuildTarget.Android);
-            if (LooksLikePlaceholder(packageName) || packageName.EndsWith(".dev", StringComparison.OrdinalIgnoreCase))
-                errors.Add("Android package name still looks like a development/example value. Use the exact RuStore Console package name.");
+            if (!string.Equals(packageName, ProjectConfigurator.ProductionPackageName, StringComparison.Ordinal))
+                errors.Add($"Android package name must be exactly '{ProjectConfigurator.ProductionPackageName}' for the RuStore production app.");
 
             ValidateConstString(RemoteConfigSettingsPath, "AppId", "RuStore Remote Config AppId", errors, rejectDemoPrefix: false);
             ValidateConstString(AdsSettingsPath, "RewardedUnitId", "Yandex rewarded ad unit ID", errors, rejectDemoPrefix: true);
