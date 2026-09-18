@@ -18,7 +18,11 @@ namespace DontGetSidetracked.Platform.RuStore
 
         // Current official RuStore Unity registry re-verified against the Pay / Install Referrer /
         // Remote Config / Update / Review documentation on 2026-09-18.
-        // Direct SDK packages are pinned in Packages/manifest.json; ru.rustore.core resolves transitively.
+        // Pay/Update/Review remain in the compile-safe Editor manifest. Install Referrer 10.6.1
+        // and Remote Config 10.5.1 remain verified release targets but are intentionally quarantined
+        // from Unity 6000.3.24f1 after a real batchmode compile reproduced PackageCache compiler
+        // errors and duplicate package GUIDs. Production preflight still requires a re-verified
+        // working integration before release. ru.rustore.core must continue to resolve transitively.
         public const string NpmRegistry = "https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/";
         public const string MavenRepository = "https://nexus-external.vkteam.ru/repository/maven-rustore-exposed";
     }
