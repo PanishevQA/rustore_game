@@ -16,7 +16,7 @@
 
 `RuStoreSdkVersions.LastVerifiedUtc` должен совпадать с датой этой матрицы. CI проверяет дату, exact release targets и установленные feature packages. `ru.rustore.core` должен разрешаться транзитивно и не pin-иться отдельно.
 
-На 2026-09-17 официальные Unity-источники подтверждают следующие release targets: Pay `11.1.0`, Install Referrer `10.6.1`, Update `10.5.1`, Review `10.5.1`, GameCenter `10.5.2`, Remote Config `10.5.1`.
+На 2026-09-18 официальные Unity-источники подтверждают следующие release targets: Pay `11.1.0`, Install Referrer `10.6.1`, Update `10.5.1`, Review `10.5.1`, GameCenter `10.5.2`, Remote Config `10.5.1`.
 
 ## Android baseline
 
@@ -26,7 +26,7 @@
 
 ## Репозитории и package integration
 
-Текущий Editor baseline сохраняет scoped registry `https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/`, scope `ru.rustore`, но не устанавливает RuStore packages, чтобы локальная разработка не блокировалась package compile regression. Maven `https://nexus-external.vkteam.ru/repository/maven-rustore-exposed` остаётся в release constants. В официальной документации отдельных SDK всё ещё встречаются переходные registry URL, поэтому адрес нельзя менять по одному примеру из одной страницы.
+Текущий Editor baseline использует scoped registry `https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/`, scope `ru.rustore`, и устанавливает feature packages с точными версиями из этой матрицы. `ru.rustore.core` не pin-ится напрямую и разрешается как зависимость feature packages. Maven `https://nexus-external.vkteam.ru/repository/maven-rustore-exposed` остаётся в release constants.
 
 Registry меняется только после проверки **конкретных pinned packages**, успешного package resolve в закреплённой версии Unity и полного regression-test. Старый `artifactory-external.vkpartner.ru` запрещён.
 
