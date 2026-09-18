@@ -55,7 +55,6 @@ namespace DontGetSidetracked.Presentation
         {
             if (_group != null && _animating)
             {
-                _group.alpha = 1f;
                 _group.interactable = _restoreInteractable;
                 _group.blocksRaycasts = _restoreBlocksRaycasts;
             }
@@ -94,6 +93,7 @@ namespace DontGetSidetracked.Presentation
         private void OnDisable()
         {
             Cancel();
+            if (_group != null) _group.alpha = 1f;
         }
     }
 }
