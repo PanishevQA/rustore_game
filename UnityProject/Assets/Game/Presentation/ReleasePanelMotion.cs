@@ -51,6 +51,19 @@ namespace DontGetSidetracked.Presentation
             transform.localScale = Vector3.one * Mathf.Clamp(_startScale, 0.90f, 1f);
         }
 
+        public void Cancel()
+        {
+            if (_group != null && _animating)
+            {
+                _group.alpha = 1f;
+                _group.interactable = _restoreInteractable;
+                _group.blocksRaycasts = _restoreBlocksRaycasts;
+            }
+
+            transform.localScale = Vector3.one;
+            _animating = false;
+        }
+
         private void Update()
         {
             if (!_animating) return;
@@ -80,17 +93,7 @@ namespace DontGetSidetracked.Presentation
 
         private void OnDisable()
         {
-            if (_group != null)
-            {
-                _group.alpha = 1f;
-                if (_animating)
-                {
-                    _group.interactable = _restoreInteractable;
-                    _group.blocksRaycasts = _restoreBlocksRaycasts;
-                }
-            }
-            transform.localScale = Vector3.one;
-            _animating = false;
+            Cancel();
         }
     }
 }
