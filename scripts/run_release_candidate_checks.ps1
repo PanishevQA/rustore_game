@@ -27,12 +27,23 @@ foreach ($relative in $orphanMeta) {
     }
 }
 
+$manifestPath = Join-Path $projectPath "Packages\manifest.json"
+$manifestText = Get-Content $manifestPath -Raw
+foreach ($quarantined in @("ru.rustore.installreferrer", "ru.rustore.remoteconfig")) {
+    if ($manifestText -match [Regex]::Escape('"' + $quarantined + '"')) {
+        throw "$quarantined is still present in Packages/manifest.json. Run git pull on feat/mvp-foundation before release-candidate checks."
+    }
+}
+
 Remove-Item (Join-Path $projectPath "Packages\packages-lock.json") -Force -ErrorAction SilentlyContinue
-$packageCache = Join-Path $projectPath "Library\PackageCache"
-if (Test-Path $packageCache) {
-    Get-ChildItem $packageCache -Directory -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -like "ru.rustore.installreferrer@*" -or $_.Name -like "ru.rustore.remoteconfig@*" } |
-        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
+# Unity 6 can restore the previous resolved-package graph from generated Library state even
+# after individual PackageCache folders are removed. For a release-candidate check prefer
+# determinism over import speed and force a completely fresh UPM/compile state.
+$libraryPath = Join-Path $projectPath "Library"
+if (Test-Path $libraryPath) {
+    Write-Host "Resetting generated Unity Library for a deterministic package resolve..." -ForegroundColor Yellow
+    Remove-Item $libraryPath -Recurse -Force
 }
 
 if (-not (Test-Path $projectVersionPath)) {
