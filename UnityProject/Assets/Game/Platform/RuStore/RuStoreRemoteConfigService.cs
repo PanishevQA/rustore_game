@@ -556,6 +556,6 @@ namespace DontGetSidetracked.Platform.RuStore
     public static class RuStoreRemoteConfigSettings
     {
         // Remote Config application/tool ID from RuStore Console. Required for production release.
-        public const string AppId = "";
+        public const string AppId = "4e0feafb-1ce7-4b71-966b-0122938b282a";
     }
 }
