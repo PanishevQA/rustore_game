@@ -114,7 +114,7 @@ Production требует официальный Yandex Unity plugin, define `YA
 - target API baseline 34 / highest installed;
 - minSdk проекта 25, потому что Unity 6.3 уже не поддерживает API 24 как рабочий baseline.
 
-Официальные RuStore packages закреплены прямо в `UnityProject/Packages/manifest.json`: `ru.rustore.pay` `11.1.0`, `ru.rustore.installreferrer` `10.6.1`, `ru.rustore.remoteconfig` `10.5.1`, `ru.rustore.update` `10.5.1` и `ru.rustore.review` `10.5.1`. Install Referrer и Remote Config остаются изолированы за adapters/fallback, а production preflight требует реально загруженные Unity client types. Перед release всё равно обязательны UPM resolve/compile и physical-device smoke tests с реальными RuStore Console параметрами.
+RuStore release targets зафиксированы в коде и документации, но локальный Unity Editor baseline временно не устанавливает RuStore UPM packages: текущий resolve вызвал compiler errors внутри `Library/PackageCache` на Unity `6000.3.24f1`. Gameplay/Save/Daily/Campaign остаются полностью локальными и компилируемыми; production preflight намеренно остаётся строгим и не позволит release без восстановления, UPM resolve/compile и physical-device smoke tests проверенного набора RuStore SDK с реальными Console параметрами.
 
 ## Remote Config
 
@@ -148,7 +148,7 @@ Daily reminder планируется через `com.unity.mobile.notifications
 - Campaign/Daily статистика находится прямо в Meta UI;
 - Sound/Haptics имеют реальный feedback, а не декоративные toggles.
 
-Текущий UI — функциональный финальный кандидат для общей приёмки. Финальная авторская типографика/иконки/иллюстрации могут быть заменены после визуальной приёмки без изменения gameplay architecture.
+UI проходит отдельный visual-polish этап. Home уже переведён на карточный dashboard с отдельным Daily CTA, campaign progress и быстрыми Training/Statistics/Store действиями; экран результата получил отдельную визуальную иерархию score. Остальные surfaces продолжают доводиться без изменения gameplay architecture.
 
 ## QA в Unity Editor
 
