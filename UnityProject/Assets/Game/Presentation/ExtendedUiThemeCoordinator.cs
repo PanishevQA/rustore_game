@@ -54,6 +54,7 @@ namespace DontGetSidetracked.Presentation
             if (canvas == null) return;
             Transform panel = Find(canvas.transform, "TrainingPanel");
             if (panel == null) return;
+            if (Find(panel, "ReleaseVisual") != null) return;
             StylePanel(panel.GetComponent<Image>());
 
             Text title = Find<Text>(panel, "Title");
