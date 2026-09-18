@@ -55,6 +55,7 @@ namespace DontGetSidetracked.Presentation
         private bool _pointerDown;
         private int _trainingIndex;
         private double _lastResultScore;
+        private ScoreBreakdown _lastScoreBreakdown;
         private double _lastDailyScore;
         private bool _dailyCompleted;
         private bool _referralOfferLoading;
@@ -393,6 +394,7 @@ namespace DontGetSidetracked.Presentation
         {
             _state = RoundState.Result;
             ScoreBreakdown result = _scorer.Calculate(_route, _recording);
+            _lastScoreBreakdown = result;
             _lastResultScore = result.Score;
             _referenceGraphic.SetPoints(_route.ReferencePoints);
             _referenceGraphic.color = new Color(0.1f, 0.9f, 1f, 0.65f);
