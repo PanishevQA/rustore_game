@@ -145,6 +145,13 @@ def validate_android_manifest() -> None:
     if forbidden_found:
         fail("Unnecessary sensitive Android permissions declared: " + ", ".join(forbidden_found))
 
+    application = root.find("./application")
+    if application is None:
+        fail("AndroidManifest.xml must declare an application element.")
+        return
+    if application.attrib.get(ANDROID_NAME) != "ru.rustore.unitysdk.RuStoreRemoteConfigApplication":
+        fail("AndroidManifest.xml must use ru.rustore.unitysdk.RuStoreRemoteConfigApplication for Remote Config 10.5.1.")
+
     activities = list(root.findall("./application/activity"))
     unity_activities = [a for a in activities if a.attrib.get(ANDROID_NAME) == "com.unity3d.player.UnityPlayerActivity"]
     if not unity_activities:
