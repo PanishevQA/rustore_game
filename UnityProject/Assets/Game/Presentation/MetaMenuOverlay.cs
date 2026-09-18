@@ -368,7 +368,7 @@ namespace DontGetSidetracked.Presentation
             canvasGo.transform.SetParent(transform, false);
             Canvas canvas = canvasGo.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 40;
+            canvas.sortingOrder = 80;
             var scaler = canvasGo.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1080, 1920);
@@ -376,30 +376,69 @@ namespace DontGetSidetracked.Presentation
 
             _homeButtons = new GameObject("HomeMetaButtons", typeof(RectTransform));
             _homeButtons.transform.SetParent(canvasGo.transform, false);
-            SetAnchors(_homeButtons.GetComponent<RectTransform>(), Vector2.zero, Vector2.one);
+            ReleaseUiKit.Stretch(_homeButtons.GetComponent<RectTransform>());
             CreateButton(_homeButtons.transform, "СТАТИСТИКА", new Vector2(0.52f, 0.035f), new Vector2(0.71f, 0.105f), OpenStatistics);
             CreateButton(_homeButtons.transform, "МАГАЗИН", new Vector2(0.72f, 0.035f), new Vector2(0.92f, 0.105f), OpenStore);
 
             _panel = new GameObject("MetaPanel", typeof(RectTransform), typeof(Image));
             _panel.transform.SetParent(canvasGo.transform, false);
-            SetAnchors(_panel.GetComponent<RectTransform>(), new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.94f));
-            _panel.GetComponent<Image>().color = new Color(0.025f, 0.04f, 0.065f, 0.98f);
+            ReleaseUiKit.SetAnchors(_panel.GetComponent<RectTransform>(), new Vector2(0.035f, 0.055f), new Vector2(0.965f, 0.955f));
+            Image panelImage = _panel.GetComponent<Image>();
+            panelImage.sprite = ReleaseUiKit.Rounded;
+            panelImage.type = Image.Type.Sliced;
+            panelImage.color = new Color(0.014f, 0.022f, 0.052f, 0.995f);
 
-            _panelTitle = CreateText(_panel.transform, "Title", 58, TextAnchor.MiddleCenter, new Vector2(0.06f, 0.87f), new Vector2(0.94f, 0.98f));
-            _panelBody = CreateText(_panel.transform, "Body", 34, TextAnchor.UpperLeft, new Vector2(0.08f, 0.48f), new Vector2(0.92f, 0.86f));
+            Outline outline = _panel.AddComponent<Outline>();
+            outline.effectColor = new Color(ReleaseUiKit.Cyan.r, ReleaseUiKit.Cyan.g, ReleaseUiKit.Cyan.b, 0.13f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            Shadow shadow = _panel.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.52f);
+            shadow.effectDistance = new Vector2(0f, -12f);
+
+            var releaseVisual = new GameObject("ReleaseVisual", typeof(RectTransform));
+            releaseVisual.transform.SetParent(_panel.transform, false);
+            ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
+
+            ReleaseUiKit.TextBlock(_panel.transform, "Kicker", "ПРОФИЛЬ И НАСТРОЙКИ", 18,
+                TextAnchor.MiddleLeft, new Vector2(0.07f, 0.925f), new Vector2(0.65f, 0.962f),
+                ReleaseUiKit.Cyan, FontStyle.Bold);
+
+            _panelTitle = ReleaseUiKit.TextBlock(_panel.transform, "Title", string.Empty, 52,
+                TextAnchor.MiddleLeft, new Vector2(0.07f, 0.845f), new Vector2(0.72f, 0.925f),
+                ReleaseUiKit.Text, FontStyle.Bold);
+            ReleaseUiKit.AddTextShadow(_panelTitle, 0.42f, -3f);
+
+            Button close = ReleaseUiKit.Button(_panel.transform, "Close", "ЗАКРЫТЬ",
+                new Vector2(0.74f, 0.866f), new Vector2(0.93f, 0.925f),
+                new Color(0.09f, 0.12f, 0.19f, 0.96f), ReleaseUiKit.Muted, 20, ClosePanel);
+            close.gameObject.name = "ЗАКРЫТЬ";
+
+            Image bodyCard = ReleaseUiKit.Panel(_panel.transform, "BodyCard",
+                new Vector2(0.07f, 0.455f), new Vector2(0.93f, 0.825f),
+                ReleaseUiKit.Surface, ReleaseUiKit.Cyan, true);
+
+            _panelBody = ReleaseUiKit.TextBlock(bodyCard.transform, "Body", string.Empty, 27,
+                TextAnchor.UpperLeft, new Vector2(0.055f, 0.07f), new Vector2(0.945f, 0.93f),
+                ReleaseUiKit.Muted);
             _panelBody.horizontalOverflow = HorizontalWrapMode.Wrap;
             _panelBody.verticalOverflow = VerticalWrapMode.Overflow;
+            _panelBody.lineSpacing = 1.14f;
+
+            var actionsCard = ReleaseUiKit.Panel(_panel.transform, "ActionsCard",
+                new Vector2(0.07f, 0.075f), new Vector2(0.93f, 0.425f),
+                new Color(0.025f, 0.038f, 0.074f, 0.94f), ReleaseUiKit.Violet, false);
 
             var actions = new GameObject("Actions", typeof(RectTransform), typeof(VerticalLayoutGroup));
-            actions.transform.SetParent(_panel.transform, false);
-            SetAnchors(actions.GetComponent<RectTransform>(), new Vector2(0.08f, 0.12f), new Vector2(0.92f, 0.47f));
+            actions.transform.SetParent(actionsCard.transform, false);
+            ReleaseUiKit.SetAnchors(actions.GetComponent<RectTransform>(), new Vector2(0.035f, 0.055f), new Vector2(0.965f, 0.945f));
             var layout = actions.GetComponent<VerticalLayoutGroup>();
-            layout.spacing = 12;
+            layout.spacing = 10;
             layout.childControlHeight = true;
-            layout.childForceExpandHeight = true;
+            layout.childForceExpandHeight = false;
+            layout.childAlignment = TextAnchor.UpperCenter;
             _actionsRoot = actions.transform;
 
-            CreateButton(_panel.transform, "ЗАКРЫТЬ", new Vector2(0.30f, 0.025f), new Vector2(0.70f, 0.095f), ClosePanel);
             _panel.SetActive(false);
         }
 
@@ -452,44 +491,39 @@ namespace DontGetSidetracked.Presentation
         {
             var go = new GameObject("Action", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
             go.transform.SetParent(parent, false);
-            go.GetComponent<Image>().color = new Color(0.12f, 0.22f, 0.32f, 1f);
-            go.GetComponent<LayoutElement>().preferredHeight = 84;
-            var button = go.GetComponent<Button>();
+
+            Image image = go.GetComponent<Image>();
+            image.sprite = ReleaseUiKit.Rounded;
+            image.type = Image.Type.Sliced;
+            image.color = ReleaseUiKit.SurfaceRaised;
+
+            LayoutElement element = go.GetComponent<LayoutElement>();
+            element.preferredHeight = 72;
+            element.minHeight = 64;
+
+            Button button = go.GetComponent<Button>();
+            button.targetGraphic = image;
             button.onClick.AddListener(action);
-            var text = CreateText(go.transform, "Label", 30, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one);
-            text.text = label;
+            ColorBlock colors = button.colors;
+            colors.normalColor = ReleaseUiKit.SurfaceRaised;
+            colors.highlightedColor = ReleaseUiKit.Lighten(ReleaseUiKit.SurfaceRaised, 0.06f);
+            colors.pressedColor = ReleaseUiKit.Darken(ReleaseUiKit.SurfaceRaised, 0.08f);
+            colors.disabledColor = new Color(0.07f, 0.08f, 0.12f, 0.68f);
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+
+            Text text = ReleaseUiKit.TextBlock(go.transform, "Label", label, 25,
+                TextAnchor.MiddleLeft, new Vector2(0.055f, 0f), new Vector2(0.945f, 1f),
+                ReleaseUiKit.Text, FontStyle.Bold);
             text.raycastTarget = false;
+
             return button;
         }
 
         private static Button CreateButton(Transform parent, string label, Vector2 min, Vector2 max, UnityEngine.Events.UnityAction action)
         {
-            var go = new GameObject(label, typeof(RectTransform), typeof(Image), typeof(Button));
-            go.transform.SetParent(parent, false);
-            SetAnchors(go.GetComponent<RectTransform>(), min, max);
-            go.GetComponent<Image>().color = new Color(0.12f, 0.22f, 0.32f, 1f);
-            var button = go.GetComponent<Button>();
-            button.onClick.AddListener(action);
-            var text = CreateText(go.transform, "Label", 28, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one);
-            text.text = label;
-            text.raycastTarget = false;
-            return button;
-        }
-
-        private static Text CreateText(Transform parent, string name, int size, TextAnchor anchor, Vector2 min, Vector2 max)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Text));
-            go.transform.SetParent(parent, false);
-            SetAnchors(go.GetComponent<RectTransform>(), min, max);
-            var text = go.GetComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = size;
-            text.alignment = anchor;
-            text.color = Color.white;
-            text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = 16;
-            text.resizeTextMaxSize = size;
-            return text;
+            return ReleaseUiKit.Button(parent, label, label, min, max,
+                ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 24, action);
         }
 
         private static void SetAnchors(RectTransform rt, Vector2 min, Vector2 max)
