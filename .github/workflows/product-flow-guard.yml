@@ -23,6 +23,7 @@ jobs:
           test -f UnityProject/Assets/Game/Presentation/CampaignVisualThemeCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/ExtendedUiThemeCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/ReferralRuntimePolicy.cs
+          test -f UnityProject/Assets/Game/Presentation/ReferralOfferCoordinator.cs
           test -f UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
           test -f UnityProject/Assets/Game/Editor/LocalQaTools.cs
 
@@ -65,6 +66,11 @@ jobs:
           grep -q 'public bool DismissNotificationPrompt()' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
           grep -q '_notificationPromptDeferredForSession' UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs
           grep -q 'platform.DismissNotificationPrompt()' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+          grep -q 'referral.Dismiss()' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+          grep -q 'public bool Dismiss()' UnityProject/Assets/Game/Presentation/ReferralOfferCoordinator.cs
+          grep -q 'ПРИНЯТЬ ВЫЗОВ' UnityProject/Assets/Game/Presentation/ReferralOfferCoordinator.cs
+          grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs
+          grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
 
           # Safe-area geometry belongs to a wrapper, never to individual layout anchors. Full-bleed background stays outside.
           grep -q 'SafeAreaRootName = "SafeAreaRoot"' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
