@@ -9,8 +9,9 @@ using UnityEngine;
 namespace DontGetSidetracked.EditorTools
 {
     /// <summary>
-    /// One-click, non-mutating release readiness report.
-    /// Reuses the exact fail-closed validators used by the production AAB pipeline.
+    /// One-click release preparation + readiness report.
+    /// Runs the same deterministic editor preparation as the production AAB entrypoint,
+    /// then reuses the exact fail-closed validators without producing an artifact.
     /// </summary>
     public static class ReleaseReadinessReporter
     {
@@ -19,8 +20,12 @@ namespace DontGetSidetracked.EditorTools
         [MenuItem("Tools/НЕ СБЕЙСЯ!/Release Readiness Report")]
         public static void Report()
         {
+            var preparationErrors = new List<string>();
+            PrepareReleaseEnvironment(preparationErrors);
+
             var sections = new List<Section>
             {
+                new Section("Release preparation", preparationErrors),
                 new Section("Release version", ProductionReleaseVersionValidator.CollectErrors()),
                 new Section("Production configuration", ProductionPlaceholderValidator.CollectErrors()),
                 new Section("Android / SDK / build contract", ProductionReleaseValidator.CollectErrors()),
@@ -70,6 +75,42 @@ namespace DontGetSidetracked.EditorTools
                 Debug.LogWarning(report);
 
             Debug.Log("Release readiness report written to: " + Path.GetFullPath(ReportPath));
+        }
+
+        private static void PrepareReleaseEnvironment(List<string> errors)
+        {
+            try
+            {
+                ProjectConfigurator.Configure();
+                AndroidDependencyConfigurator.Configure();
+                BrandAssetConfigurator.Configure();
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.SaveAssets();
+
+                if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
+                {
+                    bool switched = EditorUserBuildSettings.SwitchActiveBuildTarget(
+                        BuildTargetGroup.Android,
+                        BuildTarget.Android);
+                    if (!switched)
+                    {
+                        errors.Add("Could not switch active build target to Android.");
+                        return;
+                    }
+                }
+
+                if (!AndroidDependencyConfigurator.ForceResolveAndroidDependencies())
+                    errors.Add("EDM4U Android dependency resolution failed.");
+
+                EditorUserBuildSettings.buildAppBundle = true;
+                EditorUserBuildSettings.development = false;
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.SaveAssets();
+            }
+            catch (Exception error)
+            {
+                errors.Add("Release preparation failed: " + error.Message);
+            }
         }
 
         private readonly struct Section
