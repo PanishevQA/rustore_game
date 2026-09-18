@@ -281,15 +281,105 @@ namespace DontGetSidetracked.Presentation
                 return;
             }
 
-            for (int i = 0; i < products.Count; i++)
+            StoreProduct hero = FindProduct(products, ProductIds.StarterPack) ??
+                                FindProduct(products, ProductIds.RemoveAds);
+            if (hero != null) AddStoreHeroProduct(hero, IsOwned(hero.Id));
+
+            AddStoreSectionLabel("СКИНЫ ЛИНИИ", ReleaseUiComponents.Violet);
+            AddStoreProductIfPresent(products, ProductIds.SkinNeon);
+            AddStoreProductIfPresent(products, ProductIds.SkinRetro);
+
+            AddStoreSectionLabel("ПОДСКАЗКИ", ReleaseUiComponents.Gold);
+            AddStoreProductIfPresent(products, ProductIds.Hints10);
+
+            string alternatePremium = hero != null && string.Equals(hero.Id, ProductIds.StarterPack, StringComparison.Ordinal)
+                ? ProductIds.RemoveAds
+                : ProductIds.StarterPack;
+            StoreProduct alternate = FindProduct(products, alternatePremium);
+            if (alternate != null)
             {
-                StoreProduct product = products[i];
-                if (product == null || string.IsNullOrWhiteSpace(product.Id)) continue;
-                AddStoreProductAction(product, IsOwned(product.Id));
+                AddStoreSectionLabel("ПРЕМИУМ", ReleaseUiComponents.Cyan);
+                AddStoreProductAction(alternate, IsOwned(alternate.Id));
             }
 
             AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases);
-            AddAction("КОСМЕТИКА", OpenCosmetics);
+            AddAction("МОИ СКИНЫ", OpenCosmetics);
+        }
+
+        private void AddStoreHeroProduct(StoreProduct product, bool owned)
+        {
+            string productId = product.Id;
+            string title = string.IsNullOrWhiteSpace(product.Title) ? ProductLabel(productId) : product.Title;
+            string price = string.IsNullOrWhiteSpace(product.PriceLabel) ? "—" : product.PriceLabel;
+            bool interactable = !owned || product.IsConsumable;
+
+            var go = new GameObject("PremiumOffer", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
+            go.transform.SetParent(_actionsRoot, false);
+            Image image = go.GetComponent<Image>();
+            image.sprite = ReleaseUiKit.Rounded;
+            image.type = Image.Type.Sliced;
+            image.color = new Color(0.090f, 0.045f, 0.175f, 0.99f);
+
+            Outline outline = go.AddComponent<Outline>();
+            outline.effectColor = new Color(ReleaseUiComponents.Violet.r, ReleaseUiComponents.Violet.g, ReleaseUiComponents.Violet.b, 0.55f);
+            outline.effectDistance = new Vector2(3f, -3f);
+
+            Shadow glow = go.AddComponent<Shadow>();
+            glow.effectColor = new Color(ReleaseUiComponents.Violet.r, ReleaseUiComponents.Violet.g, ReleaseUiComponents.Violet.b, 0.25f);
+            glow.effectDistance = new Vector2(0f, -6f);
+
+            LayoutElement element = go.GetComponent<LayoutElement>();
+            element.preferredHeight = 122;
+            element.minHeight = 112;
+
+            Button button = go.GetComponent<Button>();
+            button.targetGraphic = image;
+            button.interactable = interactable;
+            if (interactable) button.onClick.AddListener(() => Purchase(productId));
+
+            ReleaseUiKit.TextBlock(go.transform, "Crown", "★", 44, TextAnchor.MiddleCenter,
+                new Vector2(0.035f, 0.22f), new Vector2(0.19f, 0.84f),
+                ReleaseUiComponents.Gold, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(go.transform, "Title", title, 27, TextAnchor.MiddleLeft,
+                new Vector2(0.20f, 0.55f), new Vector2(0.70f, 0.88f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(go.transform, "Benefits",
+                ProductSubtitle(productId) + "\nБольше свободы от рекламы", 15, TextAnchor.UpperLeft,
+                new Vector2(0.20f, 0.13f), new Vector2(0.70f, 0.56f),
+                ReleaseUiComponents.Muted);
+            ReleaseUiKit.TextBlock(go.transform, "Price",
+                owned && !product.IsConsumable ? "КУПЛЕНО" : price, 23, TextAnchor.MiddleCenter,
+                new Vector2(0.72f, 0.24f), new Vector2(0.95f, 0.76f),
+                owned ? ReleaseUiComponents.Success : ReleaseUiComponents.Gold, FontStyle.Bold);
+        }
+
+        private void AddStoreSectionLabel(string label, Color accent)
+        {
+            var go = new GameObject("StoreSection", typeof(RectTransform), typeof(LayoutElement));
+            go.transform.SetParent(_actionsRoot, false);
+            LayoutElement element = go.GetComponent<LayoutElement>();
+            element.preferredHeight = 36;
+            element.minHeight = 32;
+            ReleaseUiKit.TextBlock(go.transform, "Label", label, 17, TextAnchor.MiddleLeft,
+                new Vector2(0.02f, 0.05f), new Vector2(0.98f, 0.95f), accent, FontStyle.Bold);
+        }
+
+        private void AddStoreProductIfPresent(IReadOnlyList<StoreProduct> products, string productId)
+        {
+            StoreProduct product = FindProduct(products, productId);
+            if (product != null) AddStoreProductAction(product, IsOwned(product.Id));
+        }
+
+        private static StoreProduct FindProduct(IReadOnlyList<StoreProduct> products, string productId)
+        {
+            if (products == null || string.IsNullOrWhiteSpace(productId)) return null;
+            for (int i = 0; i < products.Count; i++)
+            {
+                StoreProduct product = products[i];
+                if (product != null && string.Equals(product.Id, productId, StringComparison.Ordinal))
+                    return product;
+            }
+            return null;
         }
 
         private void AddStoreProductAction(StoreProduct product, bool owned)
