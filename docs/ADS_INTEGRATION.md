@@ -16,11 +16,11 @@ The official plugin is now repository-managed through `Packages/manifest.json` a
 ## Production setup
 
 1. Open the project and let Unity Package Manager resolve the pinned Yandex Mobile Ads Unity **8.4.0** package from `Packages/manifest.json`.
-2. External Dependency Manager is also pinned (Google upstream tag `v1.2.188`); run **Assets → External Dependency Manager → Android Resolver → Force Resolve** after a clean package import or when Android templates are regenerated.
+2. External Dependency Manager is also pinned (Google upstream tag `v1.2.188`). The production AAB entrypoint runs synchronous forced resolution automatically after Android becomes the active build target. A manual **Force Resolve** remains available only for diagnostics.
 3. `AndroidDependencyConfigurator` creates **Custom Main Gradle Template**, **Custom Gradle Properties Template**, and **Custom Gradle Settings Template** from the exact installed Unity editor template set and enables the corresponding Player Settings flags. This avoids committing stale Gradle templates from another Unity patch.
 4. Replace empty values in `YandexMobileAdsSettings.RewardedUnitId` and `InterstitialUnitId` with real `R-M-...` IDs from Yandex Advertising Network.
 5. Never ship `demo-rewarded-yandex`, `demo-interstitial-yandex`, or any other demo block ID in release.
-6. Run `Tools → НЕ СБЕЙСЯ! → Prepare Android Dependency Templates`, then Force Resolve, then `Tools → НЕ СБЕЙСЯ! → Validate Production Release`.
+6. For diagnostics you can run `Tools → НЕ СБЕЙСЯ! → Prepare Android Dependency Templates` and `Force Resolve Android Dependencies`. The normal `Production Android AAB` command performs both automatically and fails if resolution is incomplete.
 7. Build a signed Android release and verify initialization/device callbacks with `adb logcat`.
 
 ## Behaviour rules
