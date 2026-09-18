@@ -45,7 +45,7 @@ namespace DontGetSidetracked.Presentation
             }
             if (_bootstrap == null) return;
 
-            if (!GameBootstrapRuntimeBridge.IsHome(_bootstrap))
+            if (!GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap))
             {
                 _wired = false;
                 if (IsOpen) SetVisible(false);
@@ -98,7 +98,7 @@ namespace DontGetSidetracked.Presentation
 
         private void StartDifficulty(int difficulty)
         {
-            if (_bootstrap == null || !GameBootstrapRuntimeBridge.IsHome(_bootstrap)) return;
+            if (_bootstrap == null || !GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap)) return;
             if (!GameBootstrapRuntimeBridge.StartTrainingDifficulty(_bootstrap, difficulty)) return;
             SetVisible(false);
             _wired = false;
