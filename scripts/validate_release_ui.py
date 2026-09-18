@@ -124,14 +124,6 @@ if "Celebration?.Icon" in texts["share_card"]:
 if "new Vector2(0.20f, 0.276f)" in texts["rewarded"]:
     errors.append("Rewarded hint regressed into the Home quick-action card area.")
 
-if errors:
-    print("Release UI contract FAILED:")
-    for error in errors:
-        print(f"- {error}")
-    sys.exit(1)
-
-print("Release UI contract passed.")
-
 # Superseded Home composition layers must stay removed so one surface has one visual owner.
 for obsolete in (
     PRESENTATION / "HomeHeroCoordinator.cs",
@@ -140,3 +132,11 @@ for obsolete in (
 ):
     if obsolete.exists():
         errors.append(f"Superseded Home presentation layer returned: {obsolete.name}")
+
+if errors:
+    print("Release UI contract FAILED:")
+    for error in errors:
+        print(f"- {error}")
+    sys.exit(1)
+
+print("Release UI contract passed.")
