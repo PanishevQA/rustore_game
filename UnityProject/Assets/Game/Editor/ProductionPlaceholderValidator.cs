@@ -103,8 +103,17 @@ namespace DontGetSidetracked.EditorTools
                 return;
             }
 
-            if (rejectDemoPrefix && value.StartsWith("demo-", StringComparison.OrdinalIgnoreCase))
-                errors.Add($"{displayName} uses a demo unit and is forbidden in production.");
+            if (rejectDemoPrefix)
+            {
+                if (value.StartsWith("demo-", StringComparison.OrdinalIgnoreCase))
+                {
+                    errors.Add($"{displayName} uses a demo unit and is forbidden in production.");
+                    return;
+                }
+
+                if (!value.StartsWith("R-M-", StringComparison.OrdinalIgnoreCase))
+                    errors.Add($"{displayName} must use a production Yandex unit ID starting with R-M-.");
+            }
         }
 
         private static bool TryReadConstString(string path, string constantName, out string value)
