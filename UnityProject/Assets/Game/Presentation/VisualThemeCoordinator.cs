@@ -205,6 +205,7 @@ namespace DontGetSidetracked.Presentation
         {
             GameObject go = GameObject.Find(canvasName);
             if (go == null) return;
+            if (FindTransform(go.transform, "ReleaseVisual") != null) return;
 
             Button[] buttons = go.GetComponentsInChildren<Button>(true);
             for (int i = 0; i < buttons.Length; i++)
