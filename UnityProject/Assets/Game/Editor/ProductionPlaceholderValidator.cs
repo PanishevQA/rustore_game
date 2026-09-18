@@ -64,7 +64,7 @@ namespace DontGetSidetracked.EditorTools
                 throw new BuildFailedException("Android production build contains placeholder configuration:\n- " + string.Join("\n- ", errors));
         }
 
-        private static List<string> CollectErrors()
+        internal static List<string> CollectErrors()
         {
             var errors = new List<string>();
 
