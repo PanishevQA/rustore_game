@@ -206,7 +206,7 @@ namespace DontGetSidetracked.Presentation
             BuildQuickActions(root.transform);
 
             Text footer = CreateText(root.transform, "Footer", "Короткие сессии  •  одной рукой  •  прогресс хранится локально", 20,
-                new Vector2(0.075f, 0.075f), new Vector2(0.925f, 0.112f), TextMuted);
+                TextAnchor.MiddleCenter, new Vector2(0.075f, 0.075f), new Vector2(0.925f, 0.112f), TextMuted);
             footer.alignment = TextAnchor.MiddleCenter;
         }
 
