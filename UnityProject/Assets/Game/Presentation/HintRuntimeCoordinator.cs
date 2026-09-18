@@ -69,7 +69,7 @@ namespace DontGetSidetracked.Presentation
             SaveData save = _saveRepository.Load();
             bool visible = save.Hints > 0 && route != null && !IsMetaPanelOpen();
             SetVisible(visible);
-            if (visible) _label.text = $"💡 ПОКАЗАТЬ ЕЩЁ РАЗ   •   {save.Hints}";
+            if (visible) _label.text = $"ПОКАЗАТЬ МАРШРУТ ЕЩЁ РАЗ  •  {save.Hints}";
         }
 
         private void UseHint()
@@ -106,7 +106,7 @@ namespace DontGetSidetracked.Presentation
                     ["source"] = "local_inventory"
                 });
 
-            _label.text = $"💡 ПОКАЗАТЬ ЕЩЁ РАЗ   •   {save.Hints}";
+            _label.text = $"ПОКАЗАТЬ МАРШРУТ ЕЩЁ РАЗ  •  {save.Hints}";
             if (save.Hints <= 0) SetVisible(false);
         }
 
@@ -173,33 +173,27 @@ namespace DontGetSidetracked.Presentation
             scaler.referenceResolution = new Vector2(1080, 1920);
             scaler.matchWidthOrHeight = 0.5f;
 
-            var go = new GameObject("UseHint", typeof(RectTransform), typeof(Image), typeof(Button));
-            go.transform.SetParent(_canvas.transform, false);
-            RectTransform rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.18f, 0.205f);
-            rect.anchorMax = new Vector2(0.82f, 0.245f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            go.GetComponent<Image>().color = new Color(0.10f, 0.18f, 0.27f, 0.96f);
-            _button = go.GetComponent<Button>();
-            _button.onClick.AddListener(UseHint);
+            _button = ReleaseUiKit.Button(
+                _canvas.transform,
+                "UseHint",
+                "ПОКАЗАТЬ МАРШРУТ ЕЩЁ РАЗ",
+                new Vector2(0.18f, 0.195f),
+                new Vector2(0.82f, 0.247f),
+                new Color(0.055f, 0.080f, 0.140f, 0.98f),
+                ReleaseUiKit.Gold,
+                23,
+                UseHint);
 
-            var textGo = new GameObject("Label", typeof(RectTransform), typeof(Text));
-            textGo.transform.SetParent(go.transform, false);
-            RectTransform textRect = textGo.GetComponent<RectTransform>();
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = Vector2.zero;
-            textRect.offsetMax = Vector2.zero;
-            _label = textGo.GetComponent<Text>();
-            _label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            _label.fontSize = 28;
-            _label.alignment = TextAnchor.MiddleCenter;
-            _label.color = Color.white;
-            _label.resizeTextForBestFit = true;
-            _label.resizeTextMinSize = 16;
-            _label.resizeTextMaxSize = 28;
-            _label.raycastTarget = false;
+            _label = _button.GetComponentInChildren<Text>(true);
+            if (_label != null)
+            {
+                _label.alignment = TextAnchor.MiddleCenter;
+                _label.fontStyle = FontStyle.Bold;
+            }
+
+            Outline outline = _button.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(ReleaseUiKit.Gold.r, ReleaseUiKit.Gold.g, ReleaseUiKit.Gold.b, 0.20f);
+            outline.effectDistance = new Vector2(2f, -2f);
         }
 
         private void SetVisible(bool visible)
