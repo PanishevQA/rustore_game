@@ -3,7 +3,8 @@
     <!-- Declared for optional Daily reminders. Android 13+ runtime request is feature-flagged and contextual. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <application>
+    <application
+        android:name="ru.rustore.unitysdk.RuStoreRemoteConfigApplication">
         <!-- RuStore Pay 11.x requires UnityPlayerActivity. Do not switch Android Application Entry to GameActivity. -->
         <activity
             android:name="com.unity3d.player.UnityPlayerActivity"
