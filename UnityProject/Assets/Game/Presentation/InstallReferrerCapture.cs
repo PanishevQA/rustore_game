@@ -49,6 +49,13 @@ namespace DontGetSidetracked.Presentation
             }
 
             repository.Save(save);
+
+            if (!string.IsNullOrWhiteSpace(save.PendingReferralId))
+            {
+                GameBootstrap bootstrap = FindFirstObjectByType<GameBootstrap>();
+                bootstrap?.NotifyPendingReferralAvailable(save.PendingReferralId);
+            }
+
             if (AnalyticsLifecycle.Service != null) _ = AnalyticsLifecycle.Service.FlushAsync();
         }
     }
