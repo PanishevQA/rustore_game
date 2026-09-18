@@ -45,6 +45,7 @@ required = {
         "BuildDailyCard",
         "BuildCampaignCard",
         "BuildQuickActions",
+        "_dashboardMotion?.Cancel()",
     ),
     "gameplay_hud": (
         "ReleaseGameplayHud",
@@ -128,6 +129,12 @@ if "Celebration?.Icon" in texts["share_card"]:
 # Rewarded placement must stay below Home quick-action cards rather than covering them.
 if "new Vector2(0.20f, 0.276f)" in texts["rewarded"]:
     errors.append("Rewarded hint regressed into the Home quick-action card area.")
+
+
+motion = (PRESENTATION / "ReleasePanelMotion.cs").read_text(encoding="utf-8")
+for marker in ("public void Cancel()", "_animating = false;"):
+    if marker not in motion:
+        errors.append(f"ReleasePanelMotion cancel contract is missing: {marker}")
 
 # Superseded Home composition layers must stay removed so one surface has one visual owner.
 for obsolete in (
