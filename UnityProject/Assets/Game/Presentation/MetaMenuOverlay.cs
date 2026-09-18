@@ -298,8 +298,8 @@ namespace DontGetSidetracked.Presentation
             outline.effectDistance = new Vector2(2f, -2f);
 
             LayoutElement element = go.GetComponent<LayoutElement>();
-            element.preferredHeight = 92;
-            element.minHeight = 84;
+            element.preferredHeight = 76;
+            element.minHeight = 70;
 
             Button button = go.GetComponent<Button>();
             button.targetGraphic = image;
@@ -313,18 +313,18 @@ namespace DontGetSidetracked.Presentation
             colors.fadeDuration = 0.08f;
             button.colors = colors;
 
-            Text titleText = ReleaseUiKit.TextBlock(go.transform, "ProductTitle", title, 23,
+            Text titleText = ReleaseUiKit.TextBlock(go.transform, "ProductTitle", title, 20,
                 TextAnchor.MiddleLeft, new Vector2(0.055f, 0.46f), new Vector2(0.69f, 0.90f),
                 ReleaseUiKit.Text, FontStyle.Bold);
             titleText.raycastTarget = false;
 
-            Text subtitle = ReleaseUiKit.TextBlock(go.transform, "ProductSubtitle", description, 15,
+            Text subtitle = ReleaseUiKit.TextBlock(go.transform, "ProductSubtitle", description, 13,
                 TextAnchor.MiddleLeft, new Vector2(0.055f, 0.10f), new Vector2(0.69f, 0.48f),
                 ReleaseUiKit.Muted);
             subtitle.raycastTarget = false;
 
             Text priceText = ReleaseUiKit.TextBlock(go.transform, "ProductPrice",
-                owned && !product.IsConsumable ? "КУПЛЕНО" : price, 20,
+                owned && !product.IsConsumable ? "КУПЛЕНО" : price, 18,
                 TextAnchor.MiddleRight, new Vector2(0.70f, 0.18f), new Vector2(0.945f, 0.82f),
                 accent, FontStyle.Bold);
             priceText.raycastTarget = false;
