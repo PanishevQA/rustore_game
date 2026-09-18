@@ -235,6 +235,8 @@ def validate_required_runtime_files() -> None:
         "Assets/Game/Platform/RuStore/RuStoreUpdateService.cs",
         "Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs",
         "Assets/Game/Editor/ProjectConfigurator.cs",
+        "Assets/Game/Editor/AndroidDependencyConfigurator.cs",
+        "Assets/Game/Editor/BrandAssetConfigurator.cs",
         "Assets/Game/Editor/ProductionReleaseValidator.cs",
         "Assets/ResultShare.androidlib/src/main/res/xml/nesbeisya_file_paths.xml",
     )
@@ -271,7 +273,8 @@ def validate_release_preflight_contract() -> None:
         'android.permission.POST_NOTIFICATIONS': "Production preflight must protect the Daily reminder permission.",
         'androidx.core.content.FileProvider': "Production preflight must protect result-card FileProvider wiring.",
         'ValidateForbiddenManifestPermissions': "Production preflight must reject unnecessary sensitive permissions.",
-        'YANDEX_MOBILE_ADS': "Production preflight must require the Yandex ads integration symbol.",
+        'yandexmobile/yandex-ads-unity-plugin.git?path=/mobileads-sdk#8.4.0': "Production preflight must require the pinned Yandex package.",
+        'ValidateBranding(errors)': "Production preflight must validate launcher branding.",
         'useCustomKeystore': "Production preflight must require custom signing.",
         'buildAppBundle': "Production preflight must require AAB output.",
         'ScriptingImplementation.IL2CPP': "Production preflight must require IL2CPP.",
