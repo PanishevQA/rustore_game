@@ -105,7 +105,7 @@ namespace DontGetSidetracked.Presentation
         {
             if (_label == null) return;
             SaveData save = _saveRepository.Load();
-            _label.text = $"🎁 +1 ПОДСКАЗКА ЗА РЕКЛАМУ   •   {save.Hints}";
+            _label.text = $"БЕСПЛАТНАЯ ПОДСКАЗКА  •  +1  •  У ВАС {save.Hints}";
         }
 
         private bool IsSafeHome() =>
@@ -145,33 +145,27 @@ namespace DontGetSidetracked.Presentation
             scaler.referenceResolution = new Vector2(1080, 1920);
             scaler.matchWidthOrHeight = 0.5f;
 
-            var go = new GameObject("RewardedHint", typeof(RectTransform), typeof(Image), typeof(Button));
-            go.transform.SetParent(_canvas.transform, false);
-            RectTransform rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.20f, 0.276f);
-            rect.anchorMax = new Vector2(0.80f, 0.301f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            go.GetComponent<Image>().color = new Color(0.10f, 0.18f, 0.27f, 0.96f);
-            _button = go.GetComponent<Button>();
-            _button.onClick.AddListener(ClaimRewardedHint);
+            _button = ReleaseUiKit.Button(
+                _canvas.transform,
+                "RewardedHint",
+                "БЕСПЛАТНАЯ ПОДСКАЗКА",
+                new Vector2(0.23f, 0.118f),
+                new Vector2(0.77f, 0.157f),
+                new Color(0.055f, 0.085f, 0.145f, 0.98f),
+                ReleaseUiKit.Green,
+                20,
+                ClaimRewardedHint);
 
-            var textGo = new GameObject("Label", typeof(RectTransform), typeof(Text));
-            textGo.transform.SetParent(go.transform, false);
-            RectTransform textRect = textGo.GetComponent<RectTransform>();
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = Vector2.zero;
-            textRect.offsetMax = Vector2.zero;
-            _label = textGo.GetComponent<Text>();
-            _label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            _label.fontSize = 24;
-            _label.alignment = TextAnchor.MiddleCenter;
-            _label.color = Color.white;
-            _label.resizeTextForBestFit = true;
-            _label.resizeTextMinSize = 15;
-            _label.resizeTextMaxSize = 24;
-            _label.raycastTarget = false;
+            _label = _button.GetComponentInChildren<Text>(true);
+            if (_label != null)
+            {
+                _label.alignment = TextAnchor.MiddleCenter;
+                _label.fontStyle = FontStyle.Bold;
+            }
+
+            Outline outline = _button.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(ReleaseUiKit.Green.r, ReleaseUiKit.Green.g, ReleaseUiKit.Green.b, 0.20f);
+            outline.effectDistance = new Vector2(2f, -2f);
             RefreshLabel();
         }
 
