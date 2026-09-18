@@ -87,8 +87,7 @@ namespace DontGetSidetracked.Presentation
 
             if (!_dashboardBuilt || _bootstrap == null || _legacyTitle == null) return;
 
-            bool show = GameBootstrapRuntimeBridge.IsHome(_bootstrap) &&
-                        string.Equals(_legacyTitle.text, "НЕ СБЕЙСЯ!", StringComparison.Ordinal);
+            bool show = GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap);
 
             if (show != _homeVisible)
             {
