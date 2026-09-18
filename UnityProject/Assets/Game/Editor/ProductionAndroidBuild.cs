@@ -53,6 +53,12 @@ namespace DontGetSidetracked.EditorTools
                     throw new BuildFailedException("Could not switch the active Unity build target to Android.");
             }
 
+            if (!AndroidDependencyConfigurator.ForceResolveAndroidDependencies())
+                throw new BuildFailedException("Android dependency resolution failed. Production AAB build is blocked.");
+
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            AssetDatabase.SaveAssets();
+
             EditorUserBuildSettings.buildAppBundle = true;
             EditorUserBuildSettings.development = false;
 
