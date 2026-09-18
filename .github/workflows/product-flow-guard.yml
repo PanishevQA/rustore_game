@@ -110,6 +110,16 @@ jobs:
           grep -q 'NormalizeDailyBests' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'data.PendingAttempts.Clear()' UnityProject/Assets/Game/Core/SaveData.cs
 
+          # Release Home cards must route to explicit product contracts instead of whichever hidden legacy button
+          # happens to occupy the same visual role.
+          grep -q 'StartDailyFromHome' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
+          grep -q 'GameBootstrapRuntimeBridge.StartDaily(_bootstrap)' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
+          grep -q 'OpenCampaignFromHome' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
+          grep -q 'CampaignLevelMenuOverlay.OpenFor(_bootstrap)' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
+          grep -q 'OpenTrainingFromHome' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
+          grep -q 'training.OpenFromHome()' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
+          grep -q 'public void OpenFromHome()' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+
           # Training must be explicit to the player instead of silently cycling difficulty.
           grep -q 'TrainingSelectCanvas' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'ЛЁГКАЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
