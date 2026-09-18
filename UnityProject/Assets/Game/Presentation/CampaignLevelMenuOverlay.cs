@@ -21,6 +21,8 @@ namespace DontGetSidetracked.Presentation
         private GameObject _panel;
         private Text _title;
         private Text _summary;
+        private Text _chapterProgressText;
+        private Image _chapterProgressFill;
         private Transform _gridRoot;
         private Button _previous;
         private Button _next;
@@ -101,27 +103,22 @@ namespace DontGetSidetracked.Presentation
 
             int first = ((_chapter - 1) * CampaignLevelCatalog.LevelsPerChapter) + 1;
             int last = Math.Min(first + CampaignLevelCatalog.LevelsPerChapter - 1, CampaignLevelCatalog.TotalLevels);
+            int chapterCompleted = 0;
             for (int level = first; level <= last; level++)
             {
                 int capturedLevel = level;
                 bool unlocked = _progress.IsUnlocked(level);
                 LevelProgressData record = _progress.GetProgress(level);
-                string label;
-                if (!unlocked)
-                {
-                    label = $"{level:00}\nЗАКРЫТ";
-                }
-                else if (record == null || record.Stars <= 0)
-                {
-                    label = $"{level:00}\n☆ ☆ ☆";
-                }
-                else
-                {
-                    label = $"{level:00}\n{Stars(record.Stars)}\n{record.BestScore:0.0}%";
-                }
+                if (record != null && record.Stars > 0) chapterCompleted++;
+                CreateLevelButton(_gridRoot, level, unlocked, record, () => SelectLevel(capturedLevel));
+            }
 
-                Button button = CreateLevelButton(_gridRoot, label, () => SelectLevel(capturedLevel));
-                button.interactable = unlocked;
+            if (_chapterProgressText != null)
+                _chapterProgressText.text = $"ПРОГРЕСС ГЛАВЫ  {chapterCompleted}/{CampaignLevelCatalog.LevelsPerChapter}";
+            if (_chapterProgressFill != null)
+            {
+                float chapterRatio = Mathf.Clamp01(chapterCompleted / (float)CampaignLevelCatalog.LevelsPerChapter);
+                _chapterProgressFill.rectTransform.anchorMax = new Vector2(Mathf.Max(0.02f, chapterRatio), 1f);
             }
 
             _previous.interactable = _chapter > 1;
@@ -227,86 +224,138 @@ namespace DontGetSidetracked.Presentation
             scaler.referenceResolution = new Vector2(1080, 1920);
             scaler.matchWidthOrHeight = 0.5f;
 
+            var dim = new GameObject("CampaignBackdrop", typeof(RectTransform), typeof(Image));
+            dim.transform.SetParent(_canvas.transform, false);
+            ReleaseUiKit.Stretch(dim.GetComponent<RectTransform>());
+            Image dimImage = dim.GetComponent<Image>();
+            dimImage.color = new Color(0.004f, 0.009f, 0.025f, 0.90f);
+            dimImage.raycastTarget = true;
+
             _panel = new GameObject("CampaignPanel", typeof(RectTransform), typeof(Image));
             _panel.transform.SetParent(_canvas.transform, false);
-            SetAnchors(_panel.GetComponent<RectTransform>(), new Vector2(0.035f, 0.035f), new Vector2(0.965f, 0.965f));
-            _panel.GetComponent<Image>().color = new Color(0.018f, 0.028f, 0.060f, 0.995f);
+            ReleaseUiKit.SetAnchors(_panel.GetComponent<RectTransform>(), new Vector2(0.035f, 0.035f), new Vector2(0.965f, 0.965f));
+            Image panelImage = _panel.GetComponent<Image>();
+            panelImage.sprite = ReleaseUiKit.Rounded;
+            panelImage.type = Image.Type.Sliced;
+            panelImage.color = ReleaseUiKit.Background;
 
-            _title = CreateText(_panel.transform, "Title", 56, TextAnchor.MiddleCenter,
-                new Vector2(0.06f, 0.875f), new Vector2(0.94f, 0.965f));
-            _title.fontStyle = FontStyle.Bold;
+            var releaseVisual = new GameObject("ReleaseVisual", typeof(RectTransform));
+            releaseVisual.transform.SetParent(_panel.transform, false);
+            ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
 
-            _summary = CreateText(_panel.transform, "Summary", 27, TextAnchor.MiddleCenter,
-                new Vector2(0.06f, 0.800f), new Vector2(0.94f, 0.875f));
-            _summary.color = new Color(0.62f, 0.72f, 0.86f, 1f);
+            Text kicker = ReleaseUiKit.TextBlock(_panel.transform, "Kicker", "КАМПАНИЯ", 19,
+                TextAnchor.MiddleLeft, new Vector2(0.065f, 0.925f), new Vector2(0.45f, 0.962f),
+                ReleaseUiKit.Cyan, FontStyle.Bold);
+
+            _title = ReleaseUiKit.TextBlock(_panel.transform, "Title", string.Empty, 49,
+                TextAnchor.MiddleLeft, new Vector2(0.065f, 0.835f), new Vector2(0.93f, 0.925f),
+                ReleaseUiKit.Text, FontStyle.Bold);
+            _title.lineSpacing = 0.88f;
+            ReleaseUiKit.AddTextShadow(_title, 0.42f, -3f);
+
+            _summary = ReleaseUiKit.TextBlock(_panel.transform, "Summary", string.Empty, 23,
+                TextAnchor.MiddleLeft, new Vector2(0.065f, 0.765f), new Vector2(0.93f, 0.835f),
+                ReleaseUiKit.Muted);
+
+            Image progressTrack = ReleaseUiKit.Panel(_panel.transform, "ChapterProgressTrack",
+                new Vector2(0.065f, 0.730f), new Vector2(0.935f, 0.748f),
+                new Color(0.09f, 0.11f, 0.18f, 0.95f), ReleaseUiKit.Violet, false);
+            _chapterProgressFill = ReleaseUiKit.Panel(progressTrack.transform, "ChapterProgressFill",
+                Vector2.zero, new Vector2(0.02f, 1f), ReleaseUiKit.Violet, ReleaseUiKit.Violet, false);
+            _chapterProgressText = ReleaseUiKit.TextBlock(_panel.transform, "ChapterProgressText", "ПРОГРЕСС ГЛАВЫ  0/10", 18,
+                TextAnchor.MiddleRight, new Vector2(0.57f, 0.748f), new Vector2(0.935f, 0.775f),
+                new Color(0.72f, 0.66f, 1f, 1f), FontStyle.Bold);
 
             var grid = new GameObject("LevelGrid", typeof(RectTransform), typeof(GridLayoutGroup));
             grid.transform.SetParent(_panel.transform, false);
             RectTransform gridRect = grid.GetComponent<RectTransform>();
-            SetAnchors(gridRect, new Vector2(0.07f, 0.245f), new Vector2(0.93f, 0.785f));
+            ReleaseUiKit.SetAnchors(gridRect, new Vector2(0.065f, 0.245f), new Vector2(0.935f, 0.705f));
             GridLayoutGroup layout = grid.GetComponent<GridLayoutGroup>();
-            layout.cellSize = new Vector2(400f, 150f);
-            layout.spacing = new Vector2(28f, 18f);
+            layout.cellSize = new Vector2(418f, 142f);
+            layout.spacing = new Vector2(24f, 16f);
             layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             layout.constraintCount = 2;
             layout.childAlignment = TextAnchor.UpperCenter;
             _gridRoot = grid.transform;
 
-            _coinHint = CreateButton(_panel.transform, "МОНЕТЫ → ПОДСКАЗКА", new Vector2(0.22f, 0.185f), new Vector2(0.78f, 0.235f), BuyHintWithCoins);
-            _previous = CreateButton(_panel.transform, "← ГЛАВА", new Vector2(0.07f, 0.105f), new Vector2(0.31f, 0.165f), PreviousChapter);
-            CreateButton(_panel.transform, "ДОМОЙ", new Vector2(0.38f, 0.105f), new Vector2(0.62f, 0.165f), GoHome);
-            _next = CreateButton(_panel.transform, "ГЛАВА →", new Vector2(0.69f, 0.105f), new Vector2(0.93f, 0.165f), NextChapter);
+            _coinHint = ReleaseUiKit.Button(_panel.transform, "CoinHint", "30 МОНЕТ → +1 ПОДСКАЗКА",
+                new Vector2(0.245f, 0.178f), new Vector2(0.755f, 0.225f),
+                new Color(0.115f, 0.125f, 0.20f, 0.96f), ReleaseUiKit.Gold, 22, BuyHintWithCoins);
 
-            Text hint = CreateText(_panel.transform, "Hint", 23, TextAnchor.MiddleCenter,
-                new Vector2(0.08f, 0.045f), new Vector2(0.92f, 0.095f));
-            hint.text = "Новые звёзды дают монеты • финал главы даёт +1 подсказку";
-            hint.color = new Color(0.45f, 0.88f, 1f, 1f);
+            _previous = ReleaseUiKit.Button(_panel.transform, "PreviousChapter", "← ГЛАВА",
+                new Vector2(0.065f, 0.095f), new Vector2(0.305f, 0.155f),
+                ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 23, PreviousChapter);
+
+            ReleaseUiKit.Button(_panel.transform, "Home", "ДОМОЙ",
+                new Vector2(0.38f, 0.095f), new Vector2(0.62f, 0.155f),
+                ReleaseUiKit.Violet, ReleaseUiKit.Text, 23, GoHome);
+
+            _next = ReleaseUiKit.Button(_panel.transform, "NextChapter", "ГЛАВА →",
+                new Vector2(0.695f, 0.095f), new Vector2(0.935f, 0.155f),
+                ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 23, NextChapter);
+
+            Text hint = ReleaseUiKit.TextBlock(_panel.transform, "Hint",
+                "Новые звёзды дают монеты  •  финал главы даёт +1 подсказку", 19,
+                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.045f), new Vector2(0.92f, 0.082f),
+                ReleaseUiKit.Muted);
+            hint.raycastTarget = false;
         }
 
-        private static Button CreateLevelButton(Transform parent, string label, UnityEngine.Events.UnityAction action)
+        private static Button CreateLevelButton(
+            Transform parent,
+            int levelNumber,
+            bool unlocked,
+            LevelProgressData record,
+            UnityEngine.Events.UnityAction action)
         {
+            Color accent = !unlocked
+                ? new Color(0.30f, 0.34f, 0.43f, 0.75f)
+                : record != null && record.Stars >= 3
+                    ? ReleaseUiKit.Gold
+                    : record != null && record.Stars > 0
+                        ? ReleaseUiKit.Cyan
+                        : new Color(0.46f, 0.38f, 1f, 1f);
+
             var go = new GameObject("Level", typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(parent, false);
             Image image = go.GetComponent<Image>();
-            image.color = new Color(0.07f, 0.10f, 0.17f, 1f);
-            Button button = go.GetComponent<Button>();
-            button.onClick.AddListener(action);
-            Text text = CreateText(go.transform, "Label", 32, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one);
-            text.text = label;
-            text.fontStyle = FontStyle.Bold;
-            text.raycastTarget = false;
-            return button;
-        }
+            image.sprite = ReleaseUiKit.Rounded;
+            image.type = Image.Type.Sliced;
+            image.color = unlocked ? ReleaseUiKit.SurfaceRaised : new Color(0.035f, 0.045f, 0.070f, 0.78f);
 
-        private static Button CreateButton(Transform parent, string label, Vector2 min, Vector2 max, UnityEngine.Events.UnityAction action)
-        {
-            var go = new GameObject(label, typeof(RectTransform), typeof(Image), typeof(Button));
-            go.transform.SetParent(parent, false);
-            SetAnchors(go.GetComponent<RectTransform>(), min, max);
-            go.GetComponent<Image>().color = new Color(0.10f, 0.16f, 0.25f, 1f);
-            Button button = go.GetComponent<Button>();
-            button.onClick.AddListener(action);
-            Text text = CreateText(go.transform, "Label", 26, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one);
-            text.text = label;
-            text.fontStyle = FontStyle.Bold;
-            text.raycastTarget = false;
-            return button;
-        }
+            Outline outline = go.AddComponent<Outline>();
+            outline.effectColor = new Color(accent.r, accent.g, accent.b, unlocked ? 0.18f : 0.08f);
+            outline.effectDistance = new Vector2(2f, -2f);
 
-        private static Text CreateText(Transform parent, string name, int size, TextAnchor alignment, Vector2 min, Vector2 max)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Text));
-            go.transform.SetParent(parent, false);
-            SetAnchors(go.GetComponent<RectTransform>(), min, max);
-            Text text = go.GetComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = size;
-            text.alignment = alignment;
-            text.color = Color.white;
-            text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = 16;
-            text.resizeTextMaxSize = size;
-            return text;
+            Button button = go.GetComponent<Button>();
+            button.interactable = unlocked;
+            button.onClick.AddListener(action);
+            button.targetGraphic = image;
+
+            ColorBlock block = button.colors;
+            block.normalColor = image.color;
+            block.highlightedColor = unlocked ? ReleaseUiKit.Lighten(image.color, 0.05f) : image.color;
+            block.pressedColor = unlocked ? ReleaseUiKit.Darken(image.color, 0.08f) : image.color;
+            block.disabledColor = image.color;
+            block.fadeDuration = 0.08f;
+            button.colors = block;
+
+            Text number = ReleaseUiKit.TextBlock(go.transform, "LevelNumber", levelNumber.ToString("00"), 36,
+                TextAnchor.MiddleLeft, new Vector2(0.07f, 0.48f), new Vector2(0.36f, 0.92f),
+                unlocked ? ReleaseUiKit.Text : new Color(0.43f, 0.48f, 0.58f, 0.90f), FontStyle.Bold);
+
+            string stars = !unlocked ? "ЗАКРЫТ" : record == null || record.Stars <= 0 ? "☆ ☆ ☆" : Stars(record.Stars);
+            Text state = ReleaseUiKit.TextBlock(go.transform, "State", stars, 22,
+                TextAnchor.MiddleRight, new Vector2(0.38f, 0.52f), new Vector2(0.92f, 0.90f),
+                accent, FontStyle.Bold);
+
+            string best = !unlocked ? "Открой предыдущий уровень" :
+                record == null || record.Stars <= 0 ? "Новый маршрут" : $"ЛУЧШИЙ  {record.BestScore:0.0}%";
+            ReleaseUiKit.TextBlock(go.transform, "Best", best, 17,
+                TextAnchor.MiddleLeft, new Vector2(0.07f, 0.10f), new Vector2(0.92f, 0.45f),
+                unlocked ? ReleaseUiKit.Muted : new Color(0.38f, 0.42f, 0.50f, 0.85f));
+
+            return button;
         }
 
         private static void SetAnchors(RectTransform rect, Vector2 min, Vector2 max)
