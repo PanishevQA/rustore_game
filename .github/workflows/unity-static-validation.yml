@@ -73,6 +73,7 @@ jobs:
 
           test -f "$bridge"
           grep -q 'public static bool IsIdleHome' "$bridge"
+          grep -q 'public static bool IsPlainHome' "$bridge"
           grep -q 'public static bool IsResult' "$bridge"
 
           grep -q 'GameBootstrapRuntimeBridge.IsHome' "$mobile"
@@ -80,10 +81,10 @@ jobs:
           grep -q 'GameBootstrapRuntimeBridge.IsTutorial' "$mobile"
           grep -q 'GameBootstrapRuntimeBridge.AbortToHome' "$mobile"
           grep -q 'GameBootstrapRuntimeBridge.RestartTutorial' "$mobile"
-          grep -q 'GameBootstrapRuntimeBridge.IsIdleHome' "$ads"
+          grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' "$ads"
           grep -q 'GameBootstrapRuntimeBridge.IsResult' "$ads"
-          grep -q 'GameBootstrapRuntimeBridge.IsIdleHome' "$rewarded"
-          grep -q 'GameBootstrapRuntimeBridge.IsIdleHome' "$platform"
+          grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' "$rewarded"
+          grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' "$platform"
           grep -q 'GameBootstrapRuntimeBridge.IsHome' "$meta"
           grep -q 'GameBootstrapRuntimeBridge.PrepareCampaign' "$campaign"
           grep -q 'GameBootstrapRuntimeBridge.BeginRoute' "$campaign"
