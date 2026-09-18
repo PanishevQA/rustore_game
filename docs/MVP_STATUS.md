@@ -52,7 +52,8 @@
 - rematch;
 - text share + PNG result card;
 - deeplink/referrer adapters без нашего backend;
-- RuStore install URL использует официальный формат `https://www.rustore.ru/catalog/app/<package>?referrerId=<token>`.
+- поздний Install Referrer и runtime deeplink доставляются в уже запущенный Home на следующем безопасном переходе; повторное открытие отложенного deeplink снова поднимает вызов;
+- RuStore install URL использует официальный формат `https://www.rustore.ru/catalog/app/<package>?referrerId=<token>`; share-текст явно разделяет путь «игра установлена» и установку через RuStore.
 
 ### Store / monetization
 
@@ -115,9 +116,16 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 - GameCenter Unity: `10.5.2` — optional;
 - RuStore Push не используется: Daily reminder реализован локально;
 - targetSdk baseline: `34` / highest installed;
-- minSdk проекта: `25` из-за Unity 6000.3 baseline.
+- minSdk проекта: `25` из-за Unity 6000.3 baseline;
+- Android manifest использует `ru.rustore.unitysdk.RuStoreRemoteConfigApplication` согласно текущей Remote Config Unity 10.5.1 integration.
 
 Официальные RuStore feature packages снова закреплены в `Packages/manifest.json` через актуальный `nexus-external.vkteam.ru` npm registry. `ru.rustore.core` намеренно не pin-ится напрямую и разрешается транзитивно, чтобы не повторять конфликт несовместимой core-версии. Production preflight по-прежнему требует реальные client types, production settings и device tests.
+
+## Release readiness tooling
+
+- `Tools → НЕ СБЕЙСЯ! → Release Readiness Report` выполняет Android/branding/Gradle/EDM preparation и объединяет version/placeholder/Android-SDK/RuStore Pay blockers в один отчёт;
+- `scripts/run_release_candidate_checks.ps1` на Windows автоматически находит Unity Hub Editor из `ProjectVersion.txt`, запускает Unity compile + EditMode tests и затем readiness report;
+- QA reset удаляет также backup Remote Config cache, поэтому clean-state regression больше не восстанавливает старую конфигурацию.
 
 ## Что нельзя честно завершить только изменениями в GitHub
 
