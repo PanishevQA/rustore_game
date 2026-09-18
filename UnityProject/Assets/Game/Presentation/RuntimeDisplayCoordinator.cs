@@ -11,6 +11,12 @@ namespace DontGetSidetracked.Presentation
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void EnsureDisplayInfrastructure()
         {
+            // The interaction is a one-finger precision gesture; keep frame pacing predictable
+            // and ignore extra touches before any gameplay state is created.
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = 60;
+            Input.multiTouchEnabled = false;
+
             Camera camera = FindFirstObjectByType<Camera>();
             if (camera == null)
             {
