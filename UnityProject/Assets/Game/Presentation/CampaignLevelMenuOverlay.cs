@@ -238,6 +238,7 @@ namespace DontGetSidetracked.Presentation
             panelImage.sprite = ReleaseUiKit.Rounded;
             panelImage.type = Image.Type.Sliced;
             panelImage.color = ReleaseUiKit.Background;
+            _panel.AddComponent<ReleasePanelMotion>();
 
             var releaseVisual = new GameObject("ReleaseVisual", typeof(RectTransform));
             releaseVisual.transform.SetParent(_panel.transform, false);
