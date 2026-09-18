@@ -16,10 +16,13 @@ expected = {
     "GameCenter": "10.5.2",
     "RemoteConfig": "10.5.1",
 }
+# Only packages proven to compile cleanly in the pinned Unity editor belong to the
+# local/editor baseline. Install Referrer and Remote Config remain verified release
+# targets, but their current UPM packages are quarantined after an Editor compile
+# regression. ProductionReleaseValidator still blocks a release until they are
+# restored and their runtime types are actually loaded.
 installed_packages = {
     "ru.rustore.pay": expected["Pay"],
-    "ru.rustore.installreferrer": expected["InstallReferrer"],
-    "ru.rustore.remoteconfig": expected["RemoteConfig"],
     "ru.rustore.update": expected["Update"],
     "ru.rustore.review": expected["Review"],
 }
