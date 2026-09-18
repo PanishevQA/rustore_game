@@ -115,6 +115,11 @@ namespace DontGetSidetracked.Presentation
             Image end = Find<Image>(root, "End");
             StyleMarker(start, Green);
             StyleMarker(end, new Color(1f, 0.40f, 0.48f, 1f));
+
+            RouteGraphic reference = Find<RouteGraphic>(root, "Reference");
+            RouteGraphic player = Find<RouteGraphic>(root, "Player");
+            StyleRouteGlow(reference, 0.30f, 3f);
+            StyleRouteGlow(player, 0.26f, 3f);
         }
 
         private static void StyleMetaCanvas(Transform root)
@@ -264,6 +269,17 @@ namespace DontGetSidetracked.Presentation
             if (shadow == null) shadow = marker.gameObject.AddComponent<Shadow>();
             shadow.effectColor = new Color(color.r, color.g, color.b, 0.55f);
             shadow.effectDistance = new Vector2(0f, -2f);
+        }
+
+        private static void StyleRouteGlow(RouteGraphic graphic, float alpha, float distance)
+        {
+            if (graphic == null) return;
+            Shadow shadow = graphic.GetComponent<Shadow>();
+            if (shadow == null) shadow = graphic.gameObject.AddComponent<Shadow>();
+            Color color = graphic.color;
+            shadow.effectColor = new Color(color.r, color.g, color.b, Mathf.Clamp01(color.a * alpha));
+            shadow.effectDistance = new Vector2(distance, -distance);
+            shadow.useGraphicAlpha = true;
         }
 
         private static void StyleButton(Button button, ButtonVariant variant, int fontSize = 32)
