@@ -21,8 +21,7 @@ namespace DontGetSidetracked.Presentation
             if (!Application.isFocused) return false;
 
             GameBootstrap bootstrap = Object.FindFirstObjectByType<GameBootstrap>();
-            if (bootstrap == null || !GameBootstrapRuntimeBridge.IsHome(bootstrap) ||
-                GameBootstrapRuntimeBridge.IsActiveRound(bootstrap))
+            if (bootstrap == null || !GameBootstrapRuntimeBridge.IsPlainHome(bootstrap))
                 return false;
 
             MetaMenuOverlay meta = Object.FindFirstObjectByType<MetaMenuOverlay>();
@@ -33,6 +32,9 @@ namespace DontGetSidetracked.Presentation
 
             CampaignLevelMenuOverlay campaign = Object.FindFirstObjectByType<CampaignLevelMenuOverlay>();
             if (campaign != null && campaign.IsOpen) return false;
+
+            ReferralOfferCoordinator referral = Object.FindFirstObjectByType<ReferralOfferCoordinator>();
+            if (referral != null && referral.IsVisible) return false;
 
             RuntimePlatformCoordinator platform = Object.FindFirstObjectByType<RuntimePlatformCoordinator>();
             if (platform != null && platform.IsNotificationPromptOpen) return false;
