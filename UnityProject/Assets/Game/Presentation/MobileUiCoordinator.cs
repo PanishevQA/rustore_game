@@ -65,6 +65,13 @@ namespace DontGetSidetracked.Presentation
             RuntimePlatformCoordinator platform = FindFirstObjectByType<RuntimePlatformCoordinator>();
             if (TryDismissNotificationPrompt(platform)) return;
 
+            DailyIntroCoordinator dailyIntro = FindFirstObjectByType<DailyIntroCoordinator>();
+            if (dailyIntro != null && dailyIntro.IsOpen)
+            {
+                dailyIntro.Close();
+                return;
+            }
+
             TrainingMenuCoordinator training = FindFirstObjectByType<TrainingMenuCoordinator>();
             if (training != null && training.IsOpen)
             {
@@ -205,6 +212,7 @@ namespace DontGetSidetracked.Presentation
             string.Equals(canvasName, "GameCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "MetaCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "CampaignCanvas", StringComparison.Ordinal) ||
+            string.Equals(canvasName, "DailyIntroCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "TrainingSelectCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "RewardedCanvas", StringComparison.Ordinal) ||
             string.Equals(canvasName, "HintCanvas", StringComparison.Ordinal) ||
