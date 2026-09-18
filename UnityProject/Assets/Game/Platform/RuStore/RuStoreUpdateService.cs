@@ -1,55 +1,109 @@
+using System;
 using System.Threading.Tasks;
 using DontGetSidetracked.Services;
-using UnityEngine;
+using RuStore.AppUpdate;
 
 namespace DontGetSidetracked.Platform.RuStore
 {
-    /// <summary>
-    /// Offline/editor-safe update adapter.
-    /// The official RuStore Update SDK is intentionally not part of the local Editor baseline.
-    /// Production release validation remains responsible for requiring the verified SDK set.
-    /// </summary>
     public sealed class RuStoreUpdateService : IUpdateService
     {
         public bool IsUpdateAvailable { get; private set; }
         public bool IsUpdateInProgress { get; private set; }
         public long AvailableVersionCode { get; private set; }
 
-        public Task CheckForUpdateAsync(bool mandatory)
+        /// <summary>
+        /// Refreshes RuStore update state, then launches the update only at the final safe point.
+        /// Mandatory updates are allowed to take over immediately; optional flexible updates must
+        /// pass the presentation-owned PlatformUiLaunchGate after the asynchronous SDK check.
+        /// </summary>
+        public async Task CheckForUpdateAsync(bool mandatory)
         {
-            ResetState();
 #if UNITY_ANDROID && !UNITY_EDITOR
-            Debug.LogWarning("RuStore Update SDK is not present in the local baseline; update check skipped.");
+            var completion = new TaskCompletionSource<bool>();
+            try
+            {
+                RuStoreAppUpdateManager manager = RuStoreAppUpdateManager.Instance;
+                if (!manager.IsInitialized) manager.Init();
+
+                manager.GetAppUpdateInfo(
+                    onFailure: error => completion.TrySetException(
+                        new InvalidOperationException($"RuStore update check failed: {error}")),
+                    onSuccess: info =>
+                    {
+                        IsUpdateAvailable = info != null &&
+                            info.updateAvailability == AppUpdateInfo.UpdateAvailability.UPDATE_AVAILABLE;
+                        IsUpdateInProgress = info != null &&
+                            info.updateAvailability == AppUpdateInfo.UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS;
+                        AvailableVersionCode = info?.availableVersionCode ?? 0;
+                        completion.TrySetResult(true);
+                    });
+            }
+            catch (Exception error)
+            {
+                completion.TrySetException(error);
+            }
+
+            await completion.Task;
+            if (!IsUpdateAvailable) return;
+
+            if (mandatory)
+            {
+                await StartImmediateAsync();
+                return;
+            }
+
+            if (PlatformUiLaunchGate.CanLaunchNow())
+                await StartFlexibleAsync();
+#else
+            IsUpdateAvailable = false;
+            IsUpdateInProgress = false;
+            AvailableVersionCode = 0;
+            await Task.CompletedTask;
 #endif
-            return Task.CompletedTask;
         }
 
-        public Task StartFlexibleAsync()
-        {
-#if UNITY_ANDROID && !UNITY_EDITOR
-            Debug.LogWarning("RuStore Update SDK is not present in the local baseline; flexible update skipped.");
-#endif
-            return Task.CompletedTask;
-        }
+        public Task StartFlexibleAsync() => StartFlowAsync(UpdateType.FLEXIBLE);
 
         public Task StartImmediateAsync()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
-            Debug.LogWarning("RuStore Update SDK is not present in the local baseline; immediate update skipped.");
+            if (!RuStoreAppUpdateManager.Instance.IsImmediateUpdateAllowed())
+                return Task.FromException(new InvalidOperationException("Immediate RuStore update is not allowed."));
 #endif
-            return Task.CompletedTask;
+            return StartFlowAsync(UpdateType.IMMEDIATE);
         }
 
         public void CompleteFlexibleUpdate()
         {
-            ResetState();
+#if UNITY_ANDROID && !UNITY_EDITOR
+            RuStoreAppUpdateManager.Instance.CompleteUpdate(
+                UpdateType.FLEXIBLE,
+                error => UnityEngine.Debug.LogWarning($"RuStore update completion failed: {error}"));
+#endif
         }
 
-        private void ResetState()
+        private static Task StartFlowAsync(UpdateType updateType)
         {
-            IsUpdateAvailable = false;
-            IsUpdateInProgress = false;
-            AvailableVersionCode = 0;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            var completion = new TaskCompletionSource<bool>();
+            try
+            {
+                RuStoreAppUpdateManager manager = RuStoreAppUpdateManager.Instance;
+                if (!manager.IsInitialized) manager.Init();
+                manager.StartUpdateFlow(
+                    updateType,
+                    error => completion.TrySetException(
+                        new InvalidOperationException($"RuStore update flow failed: {error}")),
+                    _ => completion.TrySetResult(true));
+            }
+            catch (Exception error)
+            {
+                completion.TrySetException(error);
+            }
+            return completion.Task;
+#else
+            return Task.CompletedTask;
+#endif
         }
     }
 }
