@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.IO;
+using System.Reflection;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -45,6 +46,74 @@ namespace DontGetSidetracked.EditorTools
             {
                 Debug.LogWarning("Android dependency template preparation failed: " + error.Message);
             }
+        }
+
+        [MenuItem("Tools/НЕ СБЕЙСЯ!/Force Resolve Android Dependencies")]
+        public static void ForceResolveMenu()
+        {
+            if (!ForceResolveAndroidDependencies())
+                throw new InvalidOperationException("EDM4U Android dependency resolution failed. See the Unity Console for details.");
+        }
+
+        public static bool ForceResolveAndroidDependencies()
+        {
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
+            {
+                Debug.LogError("EDM4U Android resolution requires Android to be the active build target.");
+                return false;
+            }
+
+            Type resolverType = FindType("GooglePlayServices.PlayServicesResolver");
+            if (resolverType == null)
+            {
+                Debug.LogError("External Dependency Manager Android Resolver is not loaded.");
+                return false;
+            }
+
+            MethodInfo resolveSync = resolverType.GetMethod(
+                "ResolveSync",
+                BindingFlags.Public | BindingFlags.Static,
+                null,
+                new[] { typeof(bool) },
+                null);
+            if (resolveSync == null)
+            {
+                Debug.LogError("EDM4U PlayServicesResolver.ResolveSync(bool) was not found.");
+                return false;
+            }
+
+            try
+            {
+                object result = resolveSync.Invoke(null, new object[] { true });
+                bool success = result is bool value && value;
+                if (!success)
+                    Debug.LogError("EDM4U Force Resolve reported failure.");
+                else
+                    Debug.Log("EDM4U Force Resolve completed successfully.");
+                return success;
+            }
+            catch (TargetInvocationException error)
+            {
+                Exception cause = error.InnerException ?? error;
+                Debug.LogError("EDM4U Force Resolve threw an exception: " + cause.Message);
+                return false;
+            }
+            catch (Exception error)
+            {
+                Debug.LogError("EDM4U Force Resolve failed: " + error.Message);
+                return false;
+            }
+        }
+
+        private static Type FindType(string fullName)
+        {
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                Type type = assemblies[i].GetType(fullName, false);
+                if (type != null) return type;
+            }
+            return null;
         }
 
         private static bool EnsureUnityTemplate(string fileName)
