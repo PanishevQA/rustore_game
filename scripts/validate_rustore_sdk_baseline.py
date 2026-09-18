@@ -21,10 +21,13 @@ expected = {
 }
 installed_packages = {
     "ru.rustore.pay": expected["Pay"],
-    "ru.rustore.installreferrer": expected["InstallReferrer"],
-    "ru.rustore.remoteconfig": expected["RemoteConfig"],
     "ru.rustore.update": expected["Update"],
     "ru.rustore.review": expected["Review"],
+}
+
+quarantined_packages = {
+    "ru.rustore.installreferrer": expected["InstallReferrer"],
+    "ru.rustore.remoteconfig": expected["RemoteConfig"],
 }
 
 versions_text = VERSIONS.read_text(encoding="utf-8")
@@ -56,6 +59,12 @@ for package, value in installed_packages.items():
     actual = dependencies.get(package)
     if actual != value:
         errors.append(f"Installed package {package} must match verified baseline {value}; found {actual!r}.")
+
+for package, value in quarantined_packages.items():
+    if package in dependencies:
+        errors.append(
+            f"{package} {value} is a verified release target but must remain quarantined from the Unity 6000.3.24f1 Editor baseline until its current compile regression is resolved."
+        )
 
 if not matrix_text.startswith(f"# RuStore SDK matrix — {verified_date}\n"):
     errors.append("RUSTORE_SDK_MATRIX.md verification date does not match RuStoreSdkVersions.LastVerifiedUtc.")
