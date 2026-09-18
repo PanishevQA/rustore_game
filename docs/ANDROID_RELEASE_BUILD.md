@@ -20,6 +20,12 @@
 
 Перед началом сборки entrypoint удаляет старый AAB, старый `.release.json` и незавершённый `.tmp` по целевому пути. Если новая сборка или запись metadata завершается ошибкой, частичный AAB и metadata удаляются. Поэтому после failed build по целевому пути не остаётся старый AAB, который можно случайно принять за свежий релиз.
 
+## Readiness report
+
+Перед production AAB запустите **Tools → НЕ СБЕЙСЯ! → Release Readiness Report**. Команда использует те же fail-closed проверки версии, placeholder-конфигурации, Android/SDK-контракта и RuStore Pay, что и production build, и сохраняет копию отчёта в `Library/NesbeisyaReleaseReadiness.txt`.
+
+Статус `READY FOR SIGNED ANDROID DEVICE SMOKE TEST` означает, что репозиторий и локальная production-конфигурация готовы к финальной проверке на реальном Android-устройстве. Это не заменяет device-тесты Pay, Install Referrer, рекламы, Review, Update, notifications и share.
+
 ## Сборка из Unity Editor
 
 Используйте меню:
