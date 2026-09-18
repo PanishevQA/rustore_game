@@ -19,8 +19,6 @@
     "com.unity.modules.unitywebrequest": "1.0.0",
     "ru.rustore.core": "10.5.0",
     "ru.rustore.pay": "11.1.0",
-    "ru.rustore.installreferrer": "10.6.1",
-    "ru.rustore.remoteconfig": "10.5.1",
     "ru.rustore.update": "10.5.1",
     "ru.rustore.review": "10.5.1"
   }
