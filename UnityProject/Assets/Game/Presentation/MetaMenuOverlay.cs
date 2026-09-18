@@ -78,7 +78,7 @@ namespace DontGetSidetracked.Presentation
         }
 
         private bool IsHomeMode() =>
-            _bootstrap != null && GameBootstrapRuntimeBridge.IsHome(_bootstrap);
+            _bootstrap != null && GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap);
 
         private int BeginPanelNavigation()
         {
