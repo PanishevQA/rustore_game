@@ -16,7 +16,8 @@ for path, text in ((TRAINING, training), (HINT, hint)):
             raise SystemExit(f"{path.name} must not reflect into runtime state directly: {forbidden}")
 
 for needle in (
-    "GameBootstrapRuntimeBridge.IsHome(_bootstrap)",
+    "GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap)",
+    "public void OpenFromHome()",
     "GameBootstrapRuntimeBridge.StartTrainingDifficulty(_bootstrap, difficulty)",
 ):
     if needle not in training:
