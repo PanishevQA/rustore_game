@@ -323,7 +323,7 @@ def validate_local_release_candidate_runner() -> None:
         "-Wait -PassThru",
         ".ExitCode",
         "-runTests",
-        "-testPlatform EditMode",
+        '"-testPlatform", "EditMode"',
         "DontGetSidetracked.EditorTools.ReleaseReadinessReporter.Report",
         "release-readiness.txt",
     )
@@ -388,10 +388,11 @@ def validate_android_dependency_configurator() -> None:
 def validate_editor_configuration_safety() -> None:
     text = read(UNITY / "Assets/Game/Editor/ProjectConfigurator.cs")
     required = (
-        "DevelopmentPackageName",
+        "ProductionPackageName",
+        "LegacyDevelopmentPackageName",
         "PlayerSettings.GetApplicationIdentifier",
-        "ShouldAssignDevelopmentPackageName",
-        "if (ShouldAssignDevelopmentPackageName(currentPackage))",
+        "ShouldAssignProductionPackageName",
+        "if (ShouldAssignProductionPackageName(currentPackage))",
     )
     for needle in required:
         if needle not in text:
