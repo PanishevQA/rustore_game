@@ -57,6 +57,7 @@ required = {
         "ИСПЫТАНИЕ ДНЯ",
         "GameBootstrapRuntimeBridge.StartDaily",
         "ReleaseUiComponents.PrimaryButton",
+        "backdrop.raycastTarget = true",
         "public bool IsOpen",
     ),
     "home": (
