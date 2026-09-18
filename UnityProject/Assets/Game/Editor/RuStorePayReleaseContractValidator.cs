@@ -49,7 +49,7 @@ namespace DontGetSidetracked.EditorTools
                                                string.Join("\n- ", errors));
         }
 
-        private static List<string> CollectErrors()
+        internal static List<string> CollectErrors()
         {
             var errors = new List<string>();
             ValidatePayClientSettings(errors);
