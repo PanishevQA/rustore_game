@@ -375,6 +375,7 @@ namespace DontGetSidetracked.Presentation
                 ReleaseUiKit.Cyan,
                 true);
             _notificationPrompt = panel.gameObject;
+            _notificationPrompt.AddComponent<ReleasePanelMotion>();
 
             ReleaseUiKit.TextBlock(panel.transform, "Kicker", "DAILY CHALLENGE", 19,
                 TextAnchor.MiddleCenter, new Vector2(0.10f, 0.79f), new Vector2(0.90f, 0.90f),
@@ -428,6 +429,7 @@ namespace DontGetSidetracked.Presentation
             _updateBlocker = new GameObject("Blocker", typeof(RectTransform), typeof(Image));
             _updateBlocker.transform.SetParent(canvasGo.transform, false);
             ReleaseUiKit.Stretch(_updateBlocker.GetComponent<RectTransform>());
+            _updateBlocker.AddComponent<ReleasePanelMotion>();
             Image background = _updateBlocker.GetComponent<Image>();
             background.color = ReleaseUiKit.Background;
             background.raycastTarget = true;
