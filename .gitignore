@@ -48,3 +48,12 @@ server/data/
 .DS_Store
 .idea/
 .vscode/
+
+# Unity-generated Gradle templates
+# Generated from the pinned Unity editor by AndroidDependencyConfigurator.
+UnityProject/Assets/Plugins/Android/mainTemplate.gradle
+UnityProject/Assets/Plugins/Android/mainTemplate.gradle.meta
+UnityProject/Assets/Plugins/Android/gradleTemplate.properties
+UnityProject/Assets/Plugins/Android/gradleTemplate.properties.meta
+UnityProject/Assets/Plugins/Android/settingsTemplate.gradle
+UnityProject/Assets/Plugins/Android/settingsTemplate.gradle.meta
