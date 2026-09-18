@@ -139,6 +139,10 @@ for key in ("meta", "result", "share_card", "rewarded", "hint", "gameplay_hud", 
             errors.append(f"{FILES[key].name} contains a supplementary-plane glyph/emoji; keep release copy font-safe.")
             break
 
+result = texts["result"]
+if "group.interactable = visible;" not in result or "group.blocksRaycasts = visible;" not in result:
+    errors.append("Result release action sheet must restore legacy fallback controls after leaving Result.")
+
 # The share card should use the textual celebration label, not provider emoji/icon glyphs.
 if "Celebration?.Icon" in texts["share_card"]:
     errors.append("Share card must not render ScoreCelebration.Icon; use the font-safe celebration label only.")
