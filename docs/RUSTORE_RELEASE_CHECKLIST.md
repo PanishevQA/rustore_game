@@ -12,7 +12,7 @@
 - [ ] Выполнены PayClient `Patch Manifest` и `Verify Manifest`/эквивалентные проверки актуального SDK.
 - [ ] Цена в UI берётся только из каталога Pay SDK.
 - [ ] Старый Billing SDK/BillingClient integration отсутствует.
-- [ ] Старый `artifactory-external.vkpartner.ru` отсутствует; repository URL повторно сверены по актуальным Unity/GitFlic-страницам каждого SDK.
+- [ ] Scoped npm registry — `https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/`; Maven registry — `https://nexus-external.vkteam.ru/repository/maven-rustore-exposed`; старые `artifactory-external.vkpartner.ru` и `nexus-external.rustore.ru` отсутствуют.
 - [ ] `OptionalBackendBaseUrl` остаётся пустым: production MVP не требует собственного backend/DB.
 - [ ] Production preflight проходит без placeholder package name, пустого Remote Config App ID и demo ad IDs.
 - [ ] Release build — AAB, IL2CPP, ARM64, положительный versionCode.
@@ -21,7 +21,7 @@
 
 ## Install Referrer / Remote Config
 
-- [ ] В production Android integration установлен и реально компилируется официальный **Install Referrer Unity 10.6.1** (или более новая версия, повторно проверенная перед сборкой).
+- [ ] В production Android integration установлен и реально компилируется официальный **Install Referrer Unity 10.6.1** (или более новая версия, повторно проверенная перед сборкой); `ru.rustore.core` разрешается транзитивно, без отдельного direct pin.
 - [ ] После установки Install Referrer проверены Android package resolve, IL2CPP stripping и physical-device `GetInstallReferrer`.
 - [ ] `referrerId` сохраняется сразу после первого успешного чтения: RuStore выдаёт его одноразово и хранит ограниченное время.
 - [ ] RuStore install URL использует официальный формат `https://www.rustore.ru/catalog/app/<package>?referrerId=<value>`.
