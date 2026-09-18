@@ -135,13 +135,21 @@ namespace DontGetSidetracked.Presentation
 
             if (_mandatoryUpdate)
             {
-                ShowMandatoryUpdateBlocker("Для продолжения нужна новая версия игры.");
-                await TryRunUpdateAsync(true);
+                StartCoroutine(EnforceMandatoryUpdateWhenSafeHome());
             }
             else if (recommendedUpdate)
             {
                 await TryRunUpdateAsync(false);
             }
+        }
+
+        private IEnumerator EnforceMandatoryUpdateWhenSafeHome()
+        {
+            while (!IsSafeHome())
+                yield return new WaitForSecondsRealtime(0.20f);
+
+            ShowMandatoryUpdateBlocker("Для продолжения нужна новая версия игры.");
+            _ = TryRunUpdateAsync(true);
         }
 
         private async System.Threading.Tasks.Task TryRunUpdateAsync(bool mandatory)
@@ -386,7 +394,7 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.09f, 0.18f), new Vector2(0.91f, 0.31f),
                 ReleaseUiKit.Cyan, new Color(0.01f, 0.03f, 0.05f, 1f), 24, AcceptNotificationValuePrompt);
 
-            ReleaseUiKit.Button(panel.transform, "Decline", "НЕ СЕЙЧАС",
+            ReleaseUiKit.Button(panel.transform, "Decline", "БЕЗ НАПОМИНАНИЙ",
                 new Vector2(0.29f, 0.065f), new Vector2(0.71f, 0.145f),
                 new Color(0.075f, 0.095f, 0.145f, 0.98f), ReleaseUiKit.Muted, 20, DeclineNotificationValuePrompt);
 
