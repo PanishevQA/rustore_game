@@ -16,9 +16,10 @@ namespace DontGetSidetracked.Platform.RuStore
         // RuStore Push is intentionally not part of the MVP: Daily reminders are local notifications.
         // Do not add a Push version/package without a fresh Unity-specific compatibility check.
 
-        // Current project registry. Required RuStore runtime packages are pinned in Packages/manifest.json.
-        // RuStore documentation may contain transitional registry examples, so never change this URL without
-        // resolving the exact pinned packages in the project and running regression tests.
+        // Current project registry. Only RuStore packages verified to compile in the pinned Unity editor
+        // are present in Packages/manifest.json. Install Referrer and Remote Config keep their release
+        // targets here while their current UPM packages are quarantined; production preflight still
+        // requires the real SDK integrations before a release build can pass.
         public const string NpmRegistry = "https://nexus-external.rustore.ru/repository/npm-unity-rustore-exposed/";
         public const string MavenRepository = "https://nexus-external.rustore.ru/repository/maven-rustore-exposed";
     }
