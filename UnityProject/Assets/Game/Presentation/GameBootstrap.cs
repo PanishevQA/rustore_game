@@ -163,6 +163,21 @@ namespace DontGetSidetracked.Presentation
             ShowHome();
         }
 
+        internal void NotifyPendingReferralAvailable(string referralId)
+        {
+            if (string.IsNullOrWhiteSpace(referralId)) return;
+
+            _save = _saveRepository.Load();
+            if (!string.Equals(_save.PendingReferralId, referralId, StringComparison.OrdinalIgnoreCase)) return;
+
+            // A fresh external intent is explicit user intent, so a previous "later" choice
+            // must not suppress it. Never interrupt Tutorial/Showing/Drawing/Result; ShowHome
+            // will offer the pending challenge at the next safe transition.
+            _deferReferralForSession = false;
+            if (_mode == Mode.Home && _state == RoundState.Idle)
+                TryOfferPendingReferral();
+        }
+
         private void StartTutorial()
         {
             BeginNavigation();
