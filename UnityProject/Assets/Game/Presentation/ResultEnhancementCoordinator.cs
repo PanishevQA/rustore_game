@@ -382,8 +382,6 @@ namespace DontGetSidetracked.Presentation
             _flash.color = new Color(0.38f, 0.82f, 1f, 0f);
             _flash.raycastTarget = false;
 
-            ReleaseUiComponents.Backdrop(_canvas.transform, "ResultBackdrop");
-
             Image header = ReleaseUiComponents.GlassCard(_canvas.transform, "ResultHeader",
                 new Vector2(0.07f, 0.785f), new Vector2(0.93f, 0.950f),
                 ReleaseUiComponents.Cyan, true);
