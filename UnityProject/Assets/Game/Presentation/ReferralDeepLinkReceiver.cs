@@ -48,6 +48,9 @@ namespace DontGetSidetracked.Presentation
                     ["source"] = "deeplink"
                 });
             if (AnalyticsLifecycle.Service != null) _ = AnalyticsLifecycle.Service.FlushAsync();
+
+            GameBootstrap bootstrap = FindFirstObjectByType<GameBootstrap>();
+            bootstrap?.NotifyPendingReferralAvailable(normalized);
         }
     }
 }
