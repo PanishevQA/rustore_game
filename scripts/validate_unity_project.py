@@ -286,6 +286,20 @@ def validate_release_preflight_contract() -> None:
             fail(message)
 
 
+def validate_android_dependency_configurator() -> None:
+    text = read(UNITY / "Assets/Game/Editor/AndroidDependencyConfigurator.cs")
+    required = {
+        'FindType("GooglePlayServices.PlayServicesResolver")': "Android dependency configurator must locate EDM4U without a hard assembly dependency.",
+        '"ResolveSync"': "Android dependency configurator must use EDM4U synchronous resolution.",
+        'new[] { typeof(bool) }': "EDM4U ResolveSync(bool) signature must stay explicit.",
+        'new object[] { true }': "Production dependency resolution must be forced, not opportunistic.",
+        "EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android": "EDM4U resolution must reject non-Android active targets.",
+    }
+    for needle, message in required.items():
+        if needle not in text:
+            fail(message)
+
+
 def validate_editor_configuration_safety() -> None:
     text = read(UNITY / "Assets/Game/Editor/ProjectConfigurator.cs")
     required = (
@@ -328,6 +342,7 @@ def main() -> int:
     validate_required_runtime_files()
     validate_remote_config_runtime_contract()
     validate_release_preflight_contract()
+    validate_android_dependency_configurator()
     validate_editor_configuration_safety()
     validate_repository_hygiene()
     validate_source_hygiene()
