@@ -6,6 +6,14 @@
       "scopes": [
         "ru.rustore"
       ]
+    },
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.yandex",
+        "com.google"
+      ]
     }
   ],
   "dependencies": {
@@ -13,6 +21,7 @@
     "com.unity.test-framework": "1.6.0",
     "com.unity.mobile.notifications": "2.4.3",
     "com.google.external-dependency-manager": "https://github.com/googlesamples/unity-jar-resolver.git?path=/upm#v1.2.188",
+    "com.yandex.mobileads": "https://github.com/yandexmobile/yandex-ads-unity-plugin.git?path=/mobileads-sdk#8.4.0",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.audio": "1.0.0",
     "com.unity.modules.imageconversion": "1.0.0",
