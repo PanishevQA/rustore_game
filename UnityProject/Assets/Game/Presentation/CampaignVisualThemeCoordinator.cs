@@ -39,6 +39,9 @@ namespace DontGetSidetracked.Presentation
             if (canvas == null) return;
             if (_rounded == null) _rounded = CreateRoundedSprite(96, 22);
 
+            Transform releaseVisual = FindTransform(canvas.transform, "ReleaseVisual");
+            if (releaseVisual != null) return;
+
             Image panel = Find<Image>(canvas.transform, "CampaignPanel");
             if (panel != null)
             {
