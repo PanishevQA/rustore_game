@@ -211,8 +211,8 @@ namespace DontGetSidetracked.Monetization
 
         // Fill these with production block IDs from the Yandex Advertising Network console.
         // Never ship demo-* IDs in a production build.
-        public const string RewardedUnitId = "";
-        public const string InterstitialUnitId = "";
+        public const string RewardedUnitId = "R-M-20071218-1";
+        public const string InterstitialUnitId = "R-M-20071218-2";
 
         public static bool IsConfigured =>
             !string.IsNullOrWhiteSpace(RewardedUnitId) &&
