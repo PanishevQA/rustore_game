@@ -102,7 +102,7 @@ Production требует официальный Yandex Unity plugin, define `YA
 
 Проект зафиксирован на Unity `6000.3.24f1`, portrait, `UnityPlayerActivity`, IL2CPP/ARM64 release baseline.
 
-Последняя сверка RuStore targets — 2026-09-17:
+Последняя сверка RuStore targets — 2026-09-18:
 
 - Pay Unity `11.1.0`;
 - Install Referrer Unity `10.6.1`;
@@ -114,7 +114,7 @@ Production требует официальный Yandex Unity plugin, define `YA
 - target API baseline 34 / highest installed;
 - minSdk проекта 25, потому что Unity 6.3 уже не поддерживает API 24 как рабочий baseline.
 
-RuStore release targets зафиксированы в коде и документации, но локальный Unity Editor baseline временно не устанавливает RuStore UPM packages: текущий resolve вызвал compiler errors внутри `Library/PackageCache` на Unity `6000.3.24f1`. Gameplay/Save/Daily/Campaign остаются полностью локальными и компилируемыми; production preflight намеренно остаётся строгим и не позволит release без восстановления, UPM resolve/compile и physical-device smoke tests проверенного набора RuStore SDK с реальными Console параметрами.
+RuStore packages снова подключены как официальные npm-пакеты через актуальный registry `https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/`: Pay `11.1.0`, Install Referrer `10.6.1`, Remote Config `10.5.1`, Update `10.5.1`, Review `10.5.1`. `ru.rustore.core` не pin-ится напрямую и должен разрешаться транзитивно из feature packages, что исключает прежний конфликт версий. Перед production обязательны UPM resolve/Unity compile и physical-device smoke tests с реальными RuStore Console параметрами.
 
 ## Remote Config
 
@@ -148,7 +148,7 @@ Daily reminder планируется через `com.unity.mobile.notifications
 - Campaign/Daily статистика находится прямо в Meta UI;
 - Sound/Haptics имеют реальный feedback, а не декоративные toggles.
 
-UI проходит отдельный visual-polish этап. Home уже переведён на карточный dashboard с отдельным Daily CTA, campaign progress и быстрыми Training/Statistics/Store действиями; экран результата получил отдельную визуальную иерархию score. Остальные surfaces продолжают доводиться без изменения gameplay architecture.
+UI собран как единый release-style portrait layer: карточный Home dashboard, отдельный Daily CTA, campaign progress, high-fidelity Training selector, chapter/level browser, профиль/статистика/настройки/магазин, gameplay HUD, grid/glow игрового поля и отдельный result header со score/medal/share. Presentation остаётся отделён от gameplay architecture.
 
 ## QA в Unity Editor
 
