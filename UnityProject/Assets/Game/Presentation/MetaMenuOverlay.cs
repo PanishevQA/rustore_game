@@ -121,11 +121,11 @@ namespace DontGetSidetracked.Presentation
             RenderSettings();
         }
 
-        private void RenderSettings()
+        private void RenderSettings(string message = null)
         {
-            ShowPanel(
-                "НАСТРОЙКИ",
-                "Настрой игру под себя. Изменения применяются сразу и сохраняются локально.");
+            string body = "Настрой игру под себя. Изменения применяются сразу и сохраняются локально.";
+            if (!string.IsNullOrWhiteSpace(message)) body = message + "\n\n" + body;
+            ShowPanel("НАСТРОЙКИ", body);
 
             AddSettingToggleRow("♪", "ЗВУК", "Музыка и игровые эффекты", _settings.SoundEnabled, ToggleSound);
             AddSettingToggleRow("◆", "ВИБРООТКЛИК", "Тактильная обратная связь", _settings.HapticsEnabled, ToggleHaptics);
@@ -134,8 +134,31 @@ namespace DontGetSidetracked.Presentation
                 _save.NotificationPermissionGranted ? ReleaseUiComponents.Success : ReleaseUiComponents.Muted);
             AddInfoRow("✓", "ПРОГРЕСС", "ЛОКАЛЬНО", ReleaseUiComponents.Success);
             AddInfoRow("i", "ВЕРСИЯ", Application.version, ReleaseUiComponents.Blue);
-            AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases);
+            AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchasesFromSettings);
             AddAction("НАЗАД К СТАТИСТИКЕ", OpenStatistics);
+        }
+
+        private async void RestorePurchasesFromSettings()
+        {
+            int revision = _panelRevision;
+            RebuildLocalServices();
+            _panelBody.text = "Проверяем покупки RuStore…";
+            SetActionsInteractable(false);
+            try
+            {
+                int restored = await _store.RestoreAsync();
+                _save = _store.Save;
+                if (!IsCurrentPanel(revision)) return;
+                RenderSettings(restored > 0
+                    ? $"Восстановлено покупок: {restored}."
+                    : "Новых покупок для восстановления нет.");
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning($"Restore purchases from settings failed: {error.Message}");
+                if (IsCurrentPanel(revision))
+                    RenderSettings("Не удалось восстановить покупки. Попробуй позже.");
+            }
         }
 
         private void ToggleSound()
