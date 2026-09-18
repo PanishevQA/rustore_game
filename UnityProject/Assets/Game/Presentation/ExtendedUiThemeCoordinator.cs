@@ -80,6 +80,7 @@ namespace DontGetSidetracked.Presentation
         {
             GameObject canvas = GameObject.Find("RewardedCanvas");
             if (canvas == null) return;
+            if (Find(canvas.transform, "ReleaseVisual") != null) return;
             Button button = canvas.GetComponentInChildren<Button>(true);
             if (button == null) return;
             StyleButton(button, new Color(Cyan.r, Cyan.g, Cyan.b, 0.90f), new Color(0.02f, 0.05f, 0.08f, 1f));
