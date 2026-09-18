@@ -53,9 +53,10 @@
 
 ## Advertising
 
-- [ ] Импортирован официальный Yandex Mobile Ads Unity plugin **8.4.0** (повторно сверено 2026-09-18; перед production всё равно перепроверить актуальную официальную версию).
-- [ ] В Android Scripting Define Symbols есть `YANDEX_MOBILE_ADS`.
-- [ ] Включены `Custom Main Gradle Template` и `Custom Gradle Properties Template`; существуют `Assets/Plugins/Android/mainTemplate.gradle` и `gradleTemplate.properties`.
+- [ ] В `Packages/manifest.json` закреплён официальный Yandex Mobile Ads Unity plugin **8.4.0** через upstream Git tag `#8.4.0` (повторно сверено 2026-09-18; перед production всё равно перепроверить актуальную официальную версию).
+- [ ] `Game.Monetization.asmdef` ссылается на `YandexMobileAds` и автоматически включает `YANDEX_MOBILE_ADS` только для проверенной линии `[8.4.0,8.5.0)`; ручной глобальный define не требуется.
+- [ ] EDM4U закреплён на `v1.2.188`; после clean import выполнен **Assets → External Dependency Manager → Android Resolver → Force Resolve**.
+- [ ] Выполнено `Tools → НЕ СБЕЙСЯ! → Prepare Android Dependency Templates`; включены `Custom Main Gradle Template`, `Custom Gradle Properties Template` и `Custom Gradle Settings Template`; соответствующие файлы сгенерированы из текущего Unity Editor.
 - [ ] В `YandexMobileAdsSettings` указаны реальные rewarded/interstitial `R-M-...` IDs.
 - [ ] Demo IDs отсутствуют в production build.
 - [ ] Rewarded выдаёт +1 hint только после подтверждённого reward callback.
