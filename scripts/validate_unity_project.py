@@ -44,17 +44,13 @@ def validate_package_manifest() -> None:
         return
 
     dependencies = manifest.get("dependencies") or {}
+    # Local Unity Editor baseline intentionally contains no RuStore SDK packages.
+    # Production release validators keep the exact SDK contract strict.
     expected = {
         "com.unity.test-framework": "1.6.0",
         "com.unity.mobile.notifications": "2.4.3",
         "com.unity.modules.audio": "1.0.0",
         "com.unity.modules.imageconversion": "1.0.0",
-        "ru.rustore.core": "10.5.0",
-        "ru.rustore.pay": "11.1.0",
-        "ru.rustore.installreferrer": "10.6.1",
-        "ru.rustore.remoteconfig": "10.5.1",
-        "ru.rustore.update": "10.5.1",
-        "ru.rustore.review": "10.5.1",
     }
     for package, version in expected.items():
         actual = dependencies.get(package)
