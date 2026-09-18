@@ -129,6 +129,8 @@ for obsolete in (
     PRESENTATION / "HomeHeroCoordinator.cs",
     PRESENTATION / "HomePolishCoordinator.cs",
     PRESENTATION / "CampaignHomeLayoutCoordinator.cs",
+    PRESENTATION / "ExtendedUiThemeCoordinator.cs",
+    PRESENTATION / "CampaignVisualThemeCoordinator.cs",
 ):
     if obsolete.exists():
         errors.append(f"Superseded Home presentation layer returned: {obsolete.name}")
