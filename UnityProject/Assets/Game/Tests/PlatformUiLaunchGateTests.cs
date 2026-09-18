@@ -4,7 +4,6 @@ using NUnit.Framework;
 
 namespace DontGetSidetracked.Tests
 {
-    [NonParallelizable]
     public sealed class PlatformUiLaunchGateTests
     {
         [SetUp]
