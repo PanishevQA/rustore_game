@@ -32,6 +32,17 @@ namespace DontGetSidetracked.Presentation
         private Text _detailText;
         private CanvasGroup _legacyTitleGroup;
         private CanvasGroup _legacyStatusGroup;
+        private CanvasGroup _legacyPrimaryGroup;
+        private CanvasGroup _legacySecondaryGroup;
+        private CanvasGroup _legacyShareGroup;
+        private Button _legacyPrimary;
+        private Button _legacySecondary;
+        private Button _legacyShare;
+        private GameObject _actionPanel;
+        private Button _primaryAction;
+        private Button _secondaryAction;
+        private Text _primaryActionText;
+        private Text _secondaryActionText;
         private Button _cardButton;
         private Text _cardButtonText;
         private Image _flash;
@@ -68,6 +79,7 @@ namespace DontGetSidetracked.Presentation
                 {
                     _wasResult = false;
                     RestoreLegacyResultHeader();
+                    RestoreLegacyResultControls();
                     SetResultUiVisible(false);
                     if (_perfectRoutine != null)
                     {
@@ -80,7 +92,9 @@ namespace DontGetSidetracked.Presentation
             }
 
             SuppressLegacyResultHeader();
+            SuppressLegacyResultControls();
             RefreshResultDetail();
+            RefreshResultActions();
 
             if (_wasResult) return;
             _wasResult = true;
@@ -136,7 +150,12 @@ namespace DontGetSidetracked.Presentation
 
             bool shareable = campaign || string.Equals(mode, "Training", StringComparison.Ordinal) || aggregate;
             _cardButton.gameObject.SetActive(shareable);
-            _cardButtonText.text = campaign ? "КАРТОЧКА УРОВНЯ" : "ПОДЕЛИТЬСЯ КАРТОЧКОЙ";
+            _cardButtonText.text = campaign
+                ? "ПОДЕЛИТЬСЯ УРОВНЕМ"
+                : aggregate
+                    ? "БРОСИТЬ ВЫЗОВ"
+                    : "ПОДЕЛИТЬСЯ РЕЗУЛЬТАТОМ";
+            RefreshResultActions();
 
             if (!campaign && string.Equals(mode, "Duel", StringComparison.Ordinal) && snapshot.DailyCompleted)
                 ConfigureRematch(snapshot, score);
@@ -361,10 +380,96 @@ namespace DontGetSidetracked.Presentation
                 ReleaseUiKit.Muted, FontStyle.Bold);
             _detailText.lineSpacing = 1.05f;
 
-            _cardButton = ReleaseUiKit.Button(_canvas.transform, "ShareCard", "ПОДЕЛИТЬСЯ КАРТОЧКОЙ",
-                new Vector2(0.245f, 0.207f), new Vector2(0.755f, 0.252f),
-                ReleaseUiKit.Violet, ReleaseUiKit.Text, 22, ShareCard);
+            Image actions = ReleaseUiKit.Panel(_canvas.transform, "ResultActions",
+                new Vector2(0.075f, 0.055f), new Vector2(0.925f, 0.205f),
+                new Color(0.022f, 0.034f, 0.070f, 0.985f), ReleaseUiKit.Violet, true);
+            _actionPanel = actions.gameObject;
+
+            _primaryAction = ReleaseUiKit.Button(actions.transform, "PrimaryAction", "ЕЩЁ РАЗ",
+                new Vector2(0.04f, 0.52f), new Vector2(0.63f, 0.92f),
+                ReleaseUiKit.Cyan, new Color(0.02f, 0.05f, 0.08f, 1f), 22, InvokePrimary);
+            _primaryActionText = _primaryAction.GetComponentInChildren<Text>(true);
+
+            _secondaryAction = ReleaseUiKit.Button(actions.transform, "SecondaryAction", "ДОМОЙ",
+                new Vector2(0.66f, 0.52f), new Vector2(0.96f, 0.92f),
+                ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 20, InvokeSecondary);
+            _secondaryActionText = _secondaryAction.GetComponentInChildren<Text>(true);
+
+            _cardButton = ReleaseUiKit.Button(actions.transform, "ShareCard", "ПОДЕЛИТЬСЯ РЕЗУЛЬТАТОМ",
+                new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.43f),
+                ReleaseUiKit.Violet, ReleaseUiKit.Text, 19, ShareCard);
             _cardButtonText = _cardButton.GetComponentInChildren<Text>(true);
+        }
+
+        private void ResolveLegacyResultControls()
+        {
+            if (_bootstrap == null) return;
+
+            _legacyPrimary = GameBootstrapRuntimeBridge.PrimaryButton(_bootstrap);
+            _legacySecondary = GameBootstrapRuntimeBridge.SecondaryButton(_bootstrap);
+            _legacyShare = GameBootstrapRuntimeBridge.ShareButton(_bootstrap);
+
+            if (_legacyPrimary != null && _legacyPrimaryGroup == null)
+                _legacyPrimaryGroup = EnsureCanvasGroup(_legacyPrimary.gameObject);
+            if (_legacySecondary != null && _legacySecondaryGroup == null)
+                _legacySecondaryGroup = EnsureCanvasGroup(_legacySecondary.gameObject);
+            if (_legacyShare != null && _legacyShareGroup == null)
+                _legacyShareGroup = EnsureCanvasGroup(_legacyShare.gameObject);
+        }
+
+        private void SuppressLegacyResultControls()
+        {
+            ResolveLegacyResultControls();
+            SetLegacyControlGroup(_legacyPrimaryGroup, false);
+            SetLegacyControlGroup(_legacySecondaryGroup, false);
+            SetLegacyControlGroup(_legacyShareGroup, false);
+        }
+
+        private void RestoreLegacyResultControls()
+        {
+            SetLegacyControlGroup(_legacyPrimaryGroup, true);
+            SetLegacyControlGroup(_legacySecondaryGroup, true);
+            SetLegacyControlGroup(_legacyShareGroup, true);
+        }
+
+        private static void SetLegacyControlGroup(CanvasGroup group, bool visible)
+        {
+            if (group == null) return;
+            group.alpha = visible ? 1f : 0f;
+            group.interactable = false;
+            group.blocksRaycasts = false;
+        }
+
+        private void RefreshResultActions()
+        {
+            ResolveLegacyResultControls();
+            SyncProxyAction(_legacyPrimary, _primaryAction, _primaryActionText, "ПРОДОЛЖИТЬ");
+            SyncProxyAction(_legacySecondary, _secondaryAction, _secondaryActionText, "ДОМОЙ");
+        }
+
+        private static void SyncProxyAction(Button legacy, Button proxy, Text proxyText, string fallback)
+        {
+            if (proxy == null || proxyText == null) return;
+            bool visible = legacy != null && legacy.gameObject.activeSelf;
+            proxy.gameObject.SetActive(visible);
+            proxy.interactable = visible && legacy.interactable;
+
+            Text legacyText = legacy == null ? null : legacy.GetComponentInChildren<Text>(true);
+            proxyText.text = legacyText == null || string.IsNullOrWhiteSpace(legacyText.text)
+                ? fallback
+                : legacyText.text;
+        }
+
+        private void InvokePrimary()
+        {
+            if (_legacyPrimary != null && _legacyPrimary.interactable)
+                _legacyPrimary.onClick.Invoke();
+        }
+
+        private void InvokeSecondary()
+        {
+            if (_legacySecondary != null && _legacySecondary.interactable)
+                _legacySecondary.onClick.Invoke();
         }
 
         private void SuppressLegacyResultHeader()
