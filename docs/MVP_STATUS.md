@@ -129,7 +129,7 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 - UPM resolve/Unity compile официальных RuStore packages на release-машине;
 - Install Referrer 10.6.1 physical-device smoke test;
 - Remote Config 10.5.1 AppId и physical-device fallback test;
-- официальный Yandex Mobile Ads Unity plugin + реальные block IDs;
+- реальные Yandex `R-M-...` block IDs + EDM Force Resolve + signed-device ad smoke test (plugin 8.4.0 уже закреплён в manifest);
 - Pay success/cancel/error/restore через реальный RuStore;
 - deeplink + Install Referrer после реальной установки;
 - Review / Update на устройстве с RuStore;
