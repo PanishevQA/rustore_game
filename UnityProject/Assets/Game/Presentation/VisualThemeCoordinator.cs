@@ -98,8 +98,12 @@ namespace DontGetSidetracked.Presentation
             {
                 StylePanel(playArea, Surface, true);
                 RectTransform rt = playArea.rectTransform;
-                rt.anchorMin = new Vector2(0.07f, 0.245f);
-                rt.anchorMax = new Vector2(0.93f, 0.760f);
+                rt.anchorMin = resultState
+                    ? new Vector2(0.07f, 0.330f)
+                    : new Vector2(0.07f, 0.245f);
+                rt.anchorMax = resultState
+                    ? new Vector2(0.93f, 0.665f)
+                    : new Vector2(0.93f, 0.760f);
                 rt.offsetMin = Vector2.zero;
                 rt.offsetMax = Vector2.zero;
             }
