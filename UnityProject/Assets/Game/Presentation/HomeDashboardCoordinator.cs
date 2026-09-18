@@ -51,6 +51,7 @@ namespace DontGetSidetracked.Presentation
         private Text _streakValue;
         private Text _starsValue;
         private Text _coinsValue;
+        private Text _bestStatValue;
         private Text _dailyCountValue;
         private Text _dailyMeta;
         private Text _dailyBest;
@@ -236,9 +237,9 @@ namespace DontGetSidetracked.Presentation
 
             Image reward = ReleaseUiComponents.GlassCard(card, "DailyReward",
                 new Vector2(0.055f, 0.055f), new Vector2(0.45f, 0.245f), ReleaseUiComponents.Gold, false);
-            ReleaseUiKit.TextBlock(reward.transform, "RewardLabel", "НАГРАДА", 13, TextAnchor.MiddleLeft,
+            ReleaseUiKit.TextBlock(reward.transform, "RewardLabel", "DAILY", 13, TextAnchor.MiddleLeft,
                 new Vector2(0.08f, 0.54f), new Vector2(0.92f, 0.87f), ReleaseUiComponents.Muted, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(reward.transform, "RewardValue", "+50 МОНЕТ", 20, TextAnchor.MiddleLeft,
+            ReleaseUiKit.TextBlock(reward.transform, "RewardValue", "ОБЩИЙ ЧЕЛЛЕНДЖ", 18, TextAnchor.MiddleLeft,
                 new Vector2(0.08f, 0.12f), new Vector2(0.92f, 0.58f), ReleaseUiComponents.Gold, FontStyle.Bold);
         }
 
@@ -284,7 +285,7 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.07f, 0.330f), new Vector2(0.275f, 0.410f), ReleaseUiComponents.Gold);
             _streakValue = ReleaseUiComponents.StatTile(parent, "StreakStat", "◆", "0 ДН", "Текущая серия",
                 new Vector2(0.285f, 0.330f), new Vector2(0.49f, 0.410f), ReleaseUiComponents.Danger);
-            ReleaseUiComponents.StatTile(parent, "BestStat", "◎",
+            _bestStatValue = ReleaseUiComponents.StatTile(parent, "BestStat", "◎",
                 "—", "Лучший результат",
                 new Vector2(0.50f, 0.330f), new Vector2(0.705f, 0.410f), ReleaseUiComponents.Cyan);
             _dailyCountValue = ReleaseUiComponents.StatTile(parent, "DailyCountStat", "|||", "0",
@@ -358,6 +359,8 @@ namespace DontGetSidetracked.Presentation
             if (_streakValue != null) _streakValue.text = save.Streak + " ДН";
             if (_starsValue != null) _starsValue.text = totalStars.ToString();
             if (_coinsValue != null) _coinsValue.text = save.Coins.ToString();
+            if (_bestStatValue != null)
+                _bestStatValue.text = save.PersonalBest > 0.0 ? save.PersonalBest.ToString("0.0") + "%" : "—";
             if (_dailyCountValue != null) _dailyCountValue.text = save.CompletedDailyCount.ToString();
 
             if (_dailyMeta != null)
