@@ -51,6 +51,7 @@ namespace DontGetSidetracked.Presentation
         private Text _streakValue;
         private Text _starsValue;
         private Text _coinsValue;
+        private Text _dailyCountValue;
         private Text _dailyMeta;
         private Text _dailyBest;
         private Text _campaignMeta;
@@ -184,74 +185,68 @@ namespace DontGetSidetracked.Presentation
             _dashboardGroup = root.GetComponent<CanvasGroup>();
             _dashboardMotion = root.AddComponent<ReleasePanelMotion>();
 
-            Image topGlow = CreateImage(root.transform, "TopGlow",
-                new Color(Cyan.r, Cyan.g, Cyan.b, 0.055f),
-                new Vector2(0.57f, 0.865f), new Vector2(1.02f, 1.04f), _circle);
-            topGlow.raycastTarget = false;
+            ReleaseUiComponents.Backdrop(root.transform, "HomeBackdrop");
 
-            Text logo = CreateText(root.transform, "Logo", "НЕ СБЕЙСЯ!", 54, TextAnchor.MiddleLeft,
-                new Vector2(0.075f, 0.918f), new Vector2(0.70f, 0.968f), TextPrimary);
-            logo.fontStyle = FontStyle.Bold;
-            AddShadow(logo, 0.38f, new Vector2(0f, -2f));
+            Text logo = ReleaseUiKit.TextBlock(root.transform, "Logo", "НЕ СБЕЙСЯ!", 58, TextAnchor.MiddleLeft,
+                new Vector2(0.07f, 0.902f), new Vector2(0.61f, 0.968f), ReleaseUiComponents.Text, FontStyle.Bold);
+            ReleaseUiKit.AddTextShadow(logo, 0.55f, -3f);
 
-            Text edition = CreateText(root.transform, "Edition", "MEMORY TRACE", 15, TextAnchor.MiddleRight,
-                new Vector2(0.66f, 0.925f), new Vector2(0.925f, 0.958f), CyanBright);
-            edition.fontStyle = FontStyle.Bold;
+            Text tagline = ReleaseUiKit.TextBlock(root.transform, "Tagline", "Простой принцип. Сложно забыть.", 18,
+                TextAnchor.MiddleLeft, new Vector2(0.07f, 0.865f), new Vector2(0.56f, 0.905f), ReleaseUiComponents.Muted);
+            CreateAccentDash(root.transform, new Vector2(0.07f, 0.852f), new Vector2(0.31f, 0.859f));
 
-            Text tagline = CreateText(root.transform, "Tagline", "Запомни маршрут. Повтори одним движением.", 21, TextAnchor.MiddleLeft,
-                new Vector2(0.075f, 0.882f), new Vector2(0.88f, 0.918f), TextMuted);
-            tagline.fontStyle = FontStyle.Normal;
-
-            CreateAccentDash(root.transform, new Vector2(0.075f, 0.873f), new Vector2(0.245f, 0.878f));
-
-            _streakValue = CreateMetricChip(root.transform, "StreakChip", "СЕРИЯ", "0 ДН", Green,
-                new Vector2(0.075f, 0.812f), new Vector2(0.345f, 0.862f));
-            _starsValue = CreateMetricChip(root.transform, "StarsChip", "ЗВЁЗДЫ", "0", Gold,
-                new Vector2(0.365f, 0.812f), new Vector2(0.635f, 0.862f));
-            _coinsValue = CreateMetricChip(root.transform, "CoinsChip", "МОНЕТЫ", "0", CyanBright,
-                new Vector2(0.655f, 0.812f), new Vector2(0.925f, 0.862f));
+            _coinsValue = ReleaseUiComponents.CurrencyPill(root.transform, "CoinsPill", "●", "0",
+                new Vector2(0.69f, 0.900f), new Vector2(0.93f, 0.954f), ReleaseUiComponents.Gold,
+                () => InvokeLegacy(_legacyStore));
 
             BuildDailyCard(root.transform);
             BuildCampaignCard(root.transform);
+            BuildStatRow(root.transform);
             BuildQuickActions(root.transform);
 
-            Text footer = CreateText(root.transform, "Footer", "ПРОГРЕСС СОХРАНЯЕТСЯ ЛОКАЛЬНО", 14,
-                TextAnchor.MiddleCenter, new Vector2(0.18f, 0.050f), new Vector2(0.82f, 0.072f), TextMuted);
+            Text footer = ReleaseUiKit.TextBlock(root.transform, "Footer", "ЗАПОМИНАЙ  •  РИСУЙ  •  СОРЕВНУЙСЯ  •  ДЕЛИСЬ", 13,
+                TextAnchor.MiddleCenter, new Vector2(0.12f, 0.040f), new Vector2(0.88f, 0.062f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
             footer.alignment = TextAnchor.MiddleCenter;
         }
 
         private void BuildDailyCard(Transform parent)
         {
-            Transform card = CreateCard(parent, "DailyCard",
-                new Vector2(0.075f, 0.548f), new Vector2(0.925f, 0.792f),
-                new Color(0.035f, 0.075f, 0.130f, 0.99f), Cyan);
+            Transform card = ReleaseUiComponents.GlassCard(parent, "DailyCard",
+                new Vector2(0.07f, 0.600f), new Vector2(0.93f, 0.835f),
+                ReleaseUiComponents.Cyan, true).transform;
 
-            CreateText(card, "DailyKicker", "ИСПЫТАНИЕ ДНЯ", 20, TextAnchor.MiddleLeft,
-                new Vector2(0.055f, 0.82f), new Vector2(0.58f, 0.94f), CyanBright).fontStyle = FontStyle.Bold;
-            _dailyMeta = CreateText(card, "DailyMeta", "СЕГОДНЯ", 17, TextAnchor.MiddleRight,
-                new Vector2(0.58f, 0.82f), new Vector2(0.94f, 0.94f), TextMuted);
+            ReleaseUiKit.TextBlock(card, "DailyKicker", "ИСПЫТАНИЕ ДНЯ", 23, TextAnchor.MiddleLeft,
+                new Vector2(0.055f, 0.80f), new Vector2(0.60f, 0.94f), ReleaseUiComponents.Text, FontStyle.Bold);
+            _dailyMeta = ReleaseUiKit.TextBlock(card, "DailyMeta", "СЕГОДНЯ", 15, TextAnchor.MiddleRight,
+                new Vector2(0.58f, 0.81f), new Vector2(0.94f, 0.94f), ReleaseUiComponents.Muted, FontStyle.Bold);
 
-            Text headline = CreateText(card, "DailyHeadline", "СМОЖЕШЬ\nПОВТОРИТЬ ТОЧНЕЕ?", 34, TextAnchor.MiddleLeft,
-                new Vector2(0.055f, 0.43f), new Vector2(0.64f, 0.80f), TextPrimary);
+            Text headline = ReleaseUiKit.TextBlock(card, "DailyHeadline", "ОДИН МАРШРУТ.\nВСЕ ИГРОКИ. КТО ТОЧНЕЕ?", 28, TextAnchor.MiddleLeft,
+                new Vector2(0.055f, 0.42f), new Vector2(0.64f, 0.77f), ReleaseUiComponents.Text, FontStyle.Bold);
             headline.fontStyle = FontStyle.Bold;
             headline.lineSpacing = 0.90f;
 
             BuildRoutePreview(card);
 
-            _dailyBest = CreateText(card, "DailyBest", "ЛУЧШИЙ  —", 18, TextAnchor.MiddleLeft,
-                new Vector2(0.055f, 0.25f), new Vector2(0.55f, 0.39f), TextMuted);
+            _dailyBest = ReleaseUiKit.TextBlock(card, "DailyBest", "ЛУЧШИЙ  —", 16, TextAnchor.MiddleLeft,
+                new Vector2(0.055f, 0.23f), new Vector2(0.55f, 0.38f), ReleaseUiComponents.Gold, FontStyle.Bold);
 
-            Button play = CreateActionButton(card, "DailyPlay", "ИГРАТЬ DAILY", CyanBright,
-                new Color(0.02f, 0.05f, 0.08f, 1f),
-                new Vector2(0.055f, 0.065f), new Vector2(0.945f, 0.235f));
-            play.onClick.AddListener(StartDailyFromHome);
+            ReleaseUiComponents.PrimaryButton(card, "DailyPlay", "▶  ИГРАТЬ",
+                new Vector2(0.48f, 0.055f), new Vector2(0.945f, 0.245f), StartDailyFromHome, 26);
+
+            Image reward = ReleaseUiComponents.GlassCard(card, "DailyReward",
+                new Vector2(0.055f, 0.055f), new Vector2(0.45f, 0.245f), ReleaseUiComponents.Gold, false);
+            ReleaseUiKit.TextBlock(reward.transform, "RewardLabel", "НАГРАДА", 13, TextAnchor.MiddleLeft,
+                new Vector2(0.08f, 0.54f), new Vector2(0.92f, 0.87f), ReleaseUiComponents.Muted, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(reward.transform, "RewardValue", "+50 МОНЕТ", 20, TextAnchor.MiddleLeft,
+                new Vector2(0.08f, 0.12f), new Vector2(0.92f, 0.58f), ReleaseUiComponents.Gold, FontStyle.Bold);
         }
 
         private void BuildCampaignCard(Transform parent)
         {
-            Transform card = CreateCard(parent, "CampaignCard",
-                new Vector2(0.075f, 0.350f), new Vector2(0.925f, 0.520f),
-                Surface, Violet);
+            Transform card = ReleaseUiComponents.GlassCard(parent, "CampaignCard",
+                new Vector2(0.07f, 0.425f), new Vector2(0.93f, 0.585f),
+                ReleaseUiComponents.Violet, false).transform;
 
             CreateText(card, "CampaignKicker", "КАМПАНИЯ", 21, TextAnchor.MiddleLeft,
                 new Vector2(0.055f, 0.73f), new Vector2(0.45f, 0.92f), new Color(0.72f, 0.66f, 1f, 1f)).fontStyle = FontStyle.Bold;
@@ -279,23 +274,35 @@ namespace DontGetSidetracked.Presentation
             _campaignProgressFill.raycastTarget = false;
             _campaignProgressFill.rectTransform.anchorMax = new Vector2(0.02f, 1f);
 
-            Button levels = CreateActionButton(card, "LevelsButton", "УРОВНИ", Violet, TextPrimary,
-                new Vector2(0.70f, 0.14f), new Vector2(0.945f, 0.50f));
-            levels.onClick.AddListener(OpenCampaignFromHome);
+            ReleaseUiComponents.PrimaryButton(card, "LevelsButton", "ПРОДОЛЖИТЬ  ›",
+                new Vector2(0.66f, 0.12f), new Vector2(0.945f, 0.48f), OpenCampaignFromHome, 20);
+        }
+
+        private void BuildStatRow(Transform parent)
+        {
+            _starsValue = ReleaseUiComponents.StatTile(parent, "StarsStat", "★", "0", "Звёзды кампании",
+                new Vector2(0.07f, 0.330f), new Vector2(0.275f, 0.410f), ReleaseUiComponents.Gold);
+            _streakValue = ReleaseUiComponents.StatTile(parent, "StreakStat", "◆", "0 ДН", "Текущая серия",
+                new Vector2(0.285f, 0.330f), new Vector2(0.49f, 0.410f), ReleaseUiComponents.Danger);
+            ReleaseUiComponents.StatTile(parent, "BestStat", "◎",
+                "—", "Лучший результат",
+                new Vector2(0.50f, 0.330f), new Vector2(0.705f, 0.410f), ReleaseUiComponents.Cyan);
+            _dailyCountValue = ReleaseUiComponents.StatTile(parent, "DailyCountStat", "|||", "0",
+                "Daily пройдено", new Vector2(0.715f, 0.330f), new Vector2(0.93f, 0.410f), ReleaseUiComponents.Blue);
         }
 
         private void BuildQuickActions(Transform parent)
         {
-            CreateQuickAction(parent, "TrainingQuick", "ТРЕНИРОВКА", "Без ограничений", CyanBright,
-                new Vector2(0.075f, 0.170f), new Vector2(0.345f, 0.320f),
+            CreateQuickAction(parent, "TrainingQuick", "ТРЕНИРОВКА", "Бесконечные маршруты", ReleaseUiComponents.Success,
+                new Vector2(0.07f, 0.165f), new Vector2(0.345f, 0.315f),
                 OpenTrainingFromHome);
 
-            CreateQuickAction(parent, "StatsQuick", "СТАТИСТИКА", "Рекорды и серия", Gold,
-                new Vector2(0.365f, 0.170f), new Vector2(0.635f, 0.320f),
+            CreateQuickAction(parent, "StatsQuick", "СТАТИСТИКА", "Прогресс и рекорды", ReleaseUiComponents.Violet,
+                new Vector2(0.365f, 0.165f), new Vector2(0.635f, 0.315f),
                 () => InvokeLegacy(_legacyStats));
 
-            CreateQuickAction(parent, "StoreQuick", "МАГАЗИН", "Скины и подсказки", new Color(0.72f, 0.54f, 1f, 1f),
-                new Vector2(0.655f, 0.170f), new Vector2(0.925f, 0.320f),
+            CreateQuickAction(parent, "StoreQuick", "МАГАЗИН", "Скины и подсказки", ReleaseUiComponents.Cyan,
+                new Vector2(0.655f, 0.165f), new Vector2(0.93f, 0.315f),
                 () => InvokeLegacy(_legacyStore));
         }
 
@@ -309,7 +316,7 @@ namespace DontGetSidetracked.Presentation
             Vector2 max,
             UnityEngine.Events.UnityAction action)
         {
-            Transform card = CreateCard(parent, name, min, max, SurfaceRaised, accent);
+            Transform card = ReleaseUiComponents.GlassCard(parent, name, min, max, accent, false).transform;
 
             Image icon = CreateImage(card, "Icon", accent,
                 new Vector2(0.10f, 0.60f), new Vector2(0.30f, 0.86f), _circle);
@@ -351,6 +358,7 @@ namespace DontGetSidetracked.Presentation
             if (_streakValue != null) _streakValue.text = save.Streak + " ДН";
             if (_starsValue != null) _starsValue.text = totalStars.ToString();
             if (_coinsValue != null) _coinsValue.text = save.Coins.ToString();
+            if (_dailyCountValue != null) _dailyCountValue.text = save.CompletedDailyCount.ToString();
 
             if (_dailyMeta != null)
             {
@@ -407,7 +415,9 @@ namespace DontGetSidetracked.Presentation
         private void StartDailyFromHome()
         {
             if (_bootstrap == null || !GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap)) return;
-            GameBootstrapRuntimeBridge.StartDaily(_bootstrap);
+            DailyIntroCoordinator intro = FindFirstObjectByType<DailyIntroCoordinator>();
+            if (intro != null) intro.Open(_bootstrap);
+            else GameBootstrapRuntimeBridge.StartDaily(_bootstrap);
         }
 
         private void OpenCampaignFromHome()
