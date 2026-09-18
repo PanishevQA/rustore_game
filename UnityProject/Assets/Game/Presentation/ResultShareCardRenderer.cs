@@ -101,6 +101,12 @@ namespace DontGetSidetracked.Presentation
             RouteGraphic player = CreateRouteGraphic(routePanel.transform, "Player", ScoreColor(model.Score), 11f);
             player.SetPoints(ToPositions(model.PlayerPoints));
 
+            if (model.ReferencePoints != null && model.ReferencePoints.Count >= 2)
+            {
+                CreateMarker(routePanel.transform, "Start", model.ReferencePoints[0], ReleaseUiKit.Green);
+                CreateMarker(routePanel.transform, "End", model.ReferencePoints[model.ReferencePoints.Count - 1], ReleaseUiKit.Danger);
+            }
+
             string comparison = model.HasRivalScore
                 ? $"ДРУГ  {model.RivalScore:0.0}%     •     ТЫ  {model.Score:0.0}%"
                 : model.ChallengeLabel;
@@ -139,6 +145,39 @@ namespace DontGetSidetracked.Presentation
             UnityEngine.Object.Destroy(root);
             UnityEngine.Object.Destroy(cameraGo);
             return png;
+        }
+
+        private static void CreateMarker(Transform parent, string name, FixedPoint2 point, Color color)
+        {
+            float normalizedX = Mathf.Clamp01(point.X / (float)FixedPoint2.Scale);
+            float normalizedY = Mathf.Clamp01(point.Y / (float)FixedPoint2.Scale);
+            Vector2 anchor = new Vector2(
+                Mathf.Lerp(0.05f, 0.95f, normalizedX),
+                Mathf.Lerp(0.07f, 0.93f, normalizedY));
+
+            var glowGo = new GameObject(name + "Glow", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            glowGo.layer = UiLayer;
+            glowGo.transform.SetParent(parent, false);
+            RectTransform glowRect = glowGo.GetComponent<RectTransform>();
+            glowRect.anchorMin = anchor;
+            glowRect.anchorMax = anchor;
+            glowRect.sizeDelta = new Vector2(56f, 56f);
+            Image glow = glowGo.GetComponent<Image>();
+            glow.sprite = ReleaseUiKit.Circle;
+            glow.color = new Color(color.r, color.g, color.b, 0.20f);
+            glow.raycastTarget = false;
+
+            var dotGo = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            dotGo.layer = UiLayer;
+            dotGo.transform.SetParent(parent, false);
+            RectTransform dotRect = dotGo.GetComponent<RectTransform>();
+            dotRect.anchorMin = anchor;
+            dotRect.anchorMax = anchor;
+            dotRect.sizeDelta = new Vector2(30f, 30f);
+            Image dot = dotGo.GetComponent<Image>();
+            dot.sprite = ReleaseUiKit.Circle;
+            dot.color = color;
+            dot.raycastTarget = false;
         }
 
         private static RouteGraphic CreateRouteGraphic(Transform parent, string name, Color color, float thickness)
