@@ -36,6 +36,8 @@ jobs:
         run: python scripts/validate_remote_config_cache_recovery.py
       - name: Validate release placeholder contract
         run: python scripts/validate_release_placeholders.py
+      - name: Validate Yandex Mobile Ads release contract
+        run: python scripts/validate_yandex_ads_release.py
       - name: Validate async navigation invariants
         run: python scripts/validate_async_navigation.py
       - name: Validate platform and store async invariants

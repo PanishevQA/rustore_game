@@ -205,6 +205,9 @@ namespace DontGetSidetracked.Monetization
 
     public static class YandexMobileAdsSettings
     {
+        public const string VerifiedPluginVersion = "8.4.0";
+        public const string LastVerifiedUtc = "2026-09-18";
+
         // Fill these with production block IDs from the Yandex Advertising Network console.
         // Never ship demo-* IDs in a production build.
         public const string RewardedUnitId = "";
