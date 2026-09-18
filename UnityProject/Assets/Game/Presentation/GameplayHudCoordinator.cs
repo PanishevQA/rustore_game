@@ -98,20 +98,24 @@ namespace DontGetSidetracked.Presentation
             root.transform.SetAsLastSibling();
             _hudGroup = root.GetComponent<CanvasGroup>();
 
-            Image modeChip = ReleaseUiKit.Panel(root.transform, "ModeChip",
-                new Vector2(0.075f, 0.905f), new Vector2(0.925f, 0.957f),
-                new Color(0.040f, 0.060f, 0.105f, 0.92f), ReleaseUiKit.Cyan, false);
-            _mode = ReleaseUiKit.TextBlock(modeChip.transform, "Mode", "РЕЖИМ", 21,
+            Image header = ReleaseUiKit.Panel(root.transform, "GameplayHeader",
+                new Vector2(0.075f, 0.785f), new Vector2(0.925f, 0.955f),
+                new Color(0.024f, 0.042f, 0.082f, 0.985f), ReleaseUiKit.Cyan, true);
+
+            Image modeChip = ReleaseUiKit.Panel(header.transform, "ModeChip",
+                new Vector2(0.30f, 0.70f), new Vector2(0.70f, 0.93f),
+                new Color(0.045f, 0.075f, 0.120f, 0.96f), ReleaseUiKit.Cyan, false);
+            _mode = ReleaseUiKit.TextBlock(modeChip.transform, "Mode", "РЕЖИМ", 17,
                 TextAnchor.MiddleCenter, new Vector2(0.04f, 0.05f), new Vector2(0.96f, 0.95f),
                 ReleaseUiKit.Cyan, FontStyle.Bold);
 
-            _instruction = ReleaseUiKit.TextBlock(root.transform, "Instruction", "ЗАПОМНИ МАРШРУТ", 45,
-                TextAnchor.MiddleCenter, new Vector2(0.075f, 0.815f), new Vector2(0.925f, 0.900f),
+            _instruction = ReleaseUiKit.TextBlock(header.transform, "Instruction", "ЗАПОМНИ МАРШРУТ", 38,
+                TextAnchor.MiddleCenter, new Vector2(0.055f, 0.30f), new Vector2(0.945f, 0.70f),
                 ReleaseUiKit.Text, FontStyle.Bold);
-            ReleaseUiKit.AddTextShadow(_instruction, 0.45f, -3f);
+            ReleaseUiKit.AddTextShadow(_instruction, 0.40f, -2f);
 
-            _hint = ReleaseUiKit.TextBlock(root.transform, "Hint", "Через несколько секунд линия исчезнет", 21,
-                TextAnchor.MiddleCenter, new Vector2(0.075f, 0.770f), new Vector2(0.925f, 0.820f),
+            _hint = ReleaseUiKit.TextBlock(header.transform, "Hint", "Через несколько секунд линия исчезнет", 18,
+                TextAnchor.MiddleCenter, new Vector2(0.055f, 0.08f), new Vector2(0.945f, 0.31f),
                 ReleaseUiKit.Muted);
 
             _countdown = ReleaseUiKit.TextBlock(root.transform, "Countdown", string.Empty, 104,
