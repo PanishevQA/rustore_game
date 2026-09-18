@@ -319,7 +319,7 @@ namespace DontGetSidetracked.Presentation
         private bool IsSafeHome()
         {
             if (_bootstrap == null) ResolveBootstrap();
-            return _bootstrap != null && GameBootstrapRuntimeBridge.IsIdleHome(_bootstrap);
+            return _bootstrap != null && GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap);
         }
 
         private void ShowNotificationValuePrompt()
