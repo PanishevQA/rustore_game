@@ -22,6 +22,9 @@ namespace DontGetSidetracked.Presentation
         private readonly DailyBestService _dailyBest = new DailyBestService();
         private JsonFileSaveRepository _saveRepository;
         private GameObject _canvas;
+        private GameObject _resultHeader;
+        private Text _modeLabel;
+        private Text _scoreText;
         private Text _badge;
         private Text _recordLabel;
         private Button _cardButton;
@@ -91,9 +94,20 @@ namespace DontGetSidetracked.Presentation
             double score = aggregate ? snapshot.LastDailyScore : snapshot.LastResultScore;
             ScoreCelebration celebration = ScoreCelebrationPolicy.Evaluate(score);
 
-            _badge.text = string.IsNullOrWhiteSpace(celebration.Icon)
-                ? celebration.Label
-                : celebration.Icon + "  " + celebration.Label;
+            _scoreText.text = $"{score:0.0}%";
+            _scoreText.color = score >= 90.0
+                ? ReleaseUiKit.Green
+                : score >= 70.0
+                    ? ReleaseUiKit.Cyan
+                    : score >= 50.0
+                        ? ReleaseUiKit.Gold
+                        : ReleaseUiKit.Danger;
+
+            _modeLabel.text = campaign
+                ? $"КАМПАНИЯ  •  УРОВЕНЬ {CampaignRuntimeCoordinator.CurrentLevelNumber}"
+                : ModeLabel(mode);
+
+            _badge.text = celebration.Label;
             _badge.color = BadgeColor(celebration.Tier);
             _recordLabel.text = string.Empty;
             SetResultUiVisible(true);
@@ -112,7 +126,7 @@ namespace DontGetSidetracked.Presentation
 
             bool shareable = campaign || string.Equals(mode, "Training", StringComparison.Ordinal) || aggregate;
             _cardButton.gameObject.SetActive(shareable);
-            _cardButtonText.text = campaign ? "📸 КАРТОЧКА УРОВНЯ" : "📸 КАРТОЧКА";
+            _cardButtonText.text = campaign ? "КАРТОЧКА УРОВНЯ" : "ПОДЕЛИТЬСЯ КАРТОЧКОЙ";
 
             if (!campaign && string.Equals(mode, "Duel", StringComparison.Ordinal) && snapshot.DailyCompleted)
                 ConfigureRematch(snapshot, score);
@@ -253,8 +267,8 @@ namespace DontGetSidetracked.Presentation
                 if (_cardButton != null) _cardButton.interactable = true;
                 if (_cardButtonText != null)
                     _cardButtonText.text = CampaignRuntimeCoordinator.IsCampaignActive
-                        ? "📸 КАРТОЧКА УРОВНЯ"
-                        : "📸 КАРТОЧКА";
+                        ? "КАРТОЧКА УРОВНЯ"
+                        : "ПОДЕЛИТЬСЯ КАРТОЧКОЙ";
             }
         }
 
@@ -294,58 +308,53 @@ namespace DontGetSidetracked.Presentation
             scaler.referenceResolution = new Vector2(1080, 1920);
             scaler.matchWidthOrHeight = 0.5f;
 
+            var releaseVisual = new GameObject("ReleaseVisual", typeof(RectTransform));
+            releaseVisual.transform.SetParent(_canvas.transform, false);
+            ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
+
             var flashGo = new GameObject("PerfectFlash", typeof(RectTransform), typeof(Image));
             flashGo.transform.SetParent(_canvas.transform, false);
-            SetAnchors(flashGo.GetComponent<RectTransform>(), new Vector2(0.06f, 0.25f), new Vector2(0.94f, 0.74f));
+            ReleaseUiKit.SetAnchors(flashGo.GetComponent<RectTransform>(), new Vector2(0.06f, 0.25f), new Vector2(0.94f, 0.74f));
             _flash = flashGo.GetComponent<Image>();
             _flash.color = new Color(0.38f, 0.82f, 1f, 0f);
             _flash.raycastTarget = false;
 
-            _badge = CreateText(_canvas.transform, "Medal", 42, TextAnchor.MiddleCenter,
-                new Vector2(0.10f, 0.685f), new Vector2(0.90f, 0.735f));
-            _recordLabel = CreateText(_canvas.transform, "DailyRecord", 28, TextAnchor.MiddleCenter,
-                new Vector2(0.08f, 0.645f), new Vector2(0.92f, 0.685f));
+            Image header = ReleaseUiKit.Panel(_canvas.transform, "ResultHeader",
+                new Vector2(0.075f, 0.765f), new Vector2(0.925f, 0.935f),
+                new Color(0.025f, 0.045f, 0.085f, 0.985f), ReleaseUiKit.Cyan, true);
+            _resultHeader = header.gameObject;
 
-            _cardButton = CreateButton(_canvas.transform, "ShareCard", new Vector2(0.25f, 0.205f), new Vector2(0.75f, 0.245f));
-            _cardButtonText = _cardButton.GetComponentInChildren<Text>();
-            _cardButtonText.text = "📸 КАРТОЧКА";
-            _cardButton.onClick.AddListener(ShareCard);
+            _modeLabel = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЗУЛЬТАТ", 19,
+                TextAnchor.MiddleLeft, new Vector2(0.055f, 0.72f), new Vector2(0.58f, 0.91f),
+                ReleaseUiKit.Muted, FontStyle.Bold);
+
+            _scoreText = ReleaseUiKit.TextBlock(header.transform, "Score", "0.0%", 66,
+                TextAnchor.MiddleLeft, new Vector2(0.055f, 0.22f), new Vector2(0.52f, 0.72f),
+                ReleaseUiKit.Cyan, FontStyle.Bold);
+            ReleaseUiKit.AddTextShadow(_scoreText, 0.48f, -3f);
+
+            _badge = ReleaseUiKit.TextBlock(header.transform, "Medal", string.Empty, 29,
+                TextAnchor.MiddleRight, new Vector2(0.52f, 0.36f), new Vector2(0.945f, 0.76f),
+                ReleaseUiKit.Text, FontStyle.Bold);
+
+            _recordLabel = ReleaseUiKit.TextBlock(header.transform, "DailyRecord", string.Empty, 18,
+                TextAnchor.MiddleRight, new Vector2(0.48f, 0.10f), new Vector2(0.945f, 0.38f),
+                ReleaseUiKit.Gold, FontStyle.Bold);
+
+            _cardButton = ReleaseUiKit.Button(_canvas.transform, "ShareCard", "ПОДЕЛИТЬСЯ КАРТОЧКОЙ",
+                new Vector2(0.245f, 0.207f), new Vector2(0.755f, 0.252f),
+                ReleaseUiKit.Violet, ReleaseUiKit.Text, 22, ShareCard);
+            _cardButtonText = _cardButton.GetComponentInChildren<Text>(true);
         }
 
         private void SetResultUiVisible(bool visible)
         {
+            if (_resultHeader != null) _resultHeader.SetActive(visible);
+            if (_modeLabel != null) _modeLabel.gameObject.SetActive(visible);
+            if (_scoreText != null) _scoreText.gameObject.SetActive(visible);
             if (_badge != null) _badge.gameObject.SetActive(visible);
             if (_recordLabel != null) _recordLabel.gameObject.SetActive(visible && !string.IsNullOrWhiteSpace(_recordLabel.text));
             if (_cardButton != null) _cardButton.gameObject.SetActive(visible);
-        }
-
-        private static Button CreateButton(Transform parent, string name, Vector2 min, Vector2 max)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
-            go.transform.SetParent(parent, false);
-            SetAnchors(go.GetComponent<RectTransform>(), min, max);
-            go.GetComponent<Image>().color = new Color(0.14f, 0.20f, 0.34f, 0.96f);
-            Button button = go.GetComponent<Button>();
-            Text text = CreateText(go.transform, "Label", 25, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one);
-            text.raycastTarget = false;
-            return button;
-        }
-
-        private static Text CreateText(Transform parent, string name, int size, TextAnchor alignment, Vector2 min, Vector2 max)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Text));
-            go.transform.SetParent(parent, false);
-            SetAnchors(go.GetComponent<RectTransform>(), min, max);
-            Text text = go.GetComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = size;
-            text.alignment = alignment;
-            text.color = Color.white;
-            text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = 16;
-            text.resizeTextMaxSize = size;
-            text.raycastTarget = false;
-            return text;
         }
 
         private static void SetAnchors(RectTransform rect, Vector2 min, Vector2 max)
