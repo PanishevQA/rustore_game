@@ -203,7 +203,7 @@ def validate_required_runtime_files() -> None:
         "Assets/Game/Presentation/MobileUiCoordinator.cs",
         "Assets/Game/Presentation/HomeDashboardCoordinator.cs",
         "Assets/Game/Presentation/GameplayGridCoordinator.cs",
-        "Assets/Game/Presentation/NativeImageShare.cs",
+        "Assets/Game/Presentation/ReleaseUiKit.cs",\n        "Assets/Game/Presentation/GameplayHudCoordinator.cs",\n        "Assets/Game/Presentation/NativeImageShare.cs",
         "Assets/Game/Social/OfflineGameApi.cs",
         "Assets/Game/Platform/RuStore/RuStorePaymentService.cs",
         "Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs",
