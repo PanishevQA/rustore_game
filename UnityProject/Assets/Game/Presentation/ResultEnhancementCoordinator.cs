@@ -294,10 +294,18 @@ namespace DontGetSidetracked.Presentation
             {
                 _shareBusy = false;
                 if (_cardButton != null) _cardButton.interactable = true;
-                if (_cardButtonText != null)
-                    _cardButtonText.text = CampaignRuntimeCoordinator.IsCampaignActive
-                        ? "КАРТОЧКА УРОВНЯ"
-                        : "ПОДЕЛИТЬСЯ КАРТОЧКОЙ";
+                if (_cardButtonText != null && GameBootstrapRuntimeBridge.TryCaptureResult(_bootstrap, out GameBootstrapResultSnapshot current))
+                {
+                    bool campaignNow = CampaignRuntimeCoordinator.IsCampaignActive;
+                    bool aggregateNow = current.DailyCompleted &&
+                                        (string.Equals(current.ModeName, "Daily", StringComparison.Ordinal) ||
+                                         string.Equals(current.ModeName, "Duel", StringComparison.Ordinal));
+                    _cardButtonText.text = campaignNow
+                        ? "ПОДЕЛИТЬСЯ УРОВНЕМ"
+                        : aggregateNow
+                            ? "БРОСИТЬ ВЫЗОВ"
+                            : "ПОДЕЛИТЬСЯ РЕЗУЛЬТАТОМ";
+                }
             }
         }
 
@@ -553,7 +561,8 @@ namespace DontGetSidetracked.Presentation
             if (_badge != null) _badge.gameObject.SetActive(visible);
             if (_recordLabel != null) _recordLabel.gameObject.SetActive(visible && !string.IsNullOrWhiteSpace(_recordLabel.text));
             if (_detailCard != null) _detailCard.SetActive(visible && _detailText != null && !string.IsNullOrWhiteSpace(_detailText.text));
-            if (_cardButton != null) _cardButton.gameObject.SetActive(visible);
+            if (_actionPanel != null) _actionPanel.SetActive(visible);
+            if (!visible && _cardButton != null) _cardButton.gameObject.SetActive(false);
         }
 
         private static void SetAnchors(RectTransform rect, Vector2 min, Vector2 max)
