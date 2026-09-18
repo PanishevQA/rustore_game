@@ -112,6 +112,7 @@ namespace DontGetSidetracked.EditorTools
 
             ValidateRemoteConfig(errors);
             ValidateAds(errors);
+            ValidateBranding(errors);
 
             string allProjectText = ReadSmallTextFiles("Assets/Game/Platform/RuStore");
             if (allProjectText.IndexOf("billingclient", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -182,6 +183,31 @@ namespace DontGetSidetracked.EditorTools
                 }
             }
             return false;
+        }
+
+        private static void ValidateBranding(List<string> errors)
+        {
+            Texture2D[] icons = PlayerSettings.GetIcons(NamedBuildTarget.Android, IconKind.Application);
+            if (icons == null || icons.Length == 0)
+            {
+                errors.Add("Android launcher icon is missing. Run Tools → НЕ СБЕЙСЯ! → Generate Release Brand Assets.");
+            }
+            else
+            {
+                for (int i = 0; i < icons.Length; i++)
+                {
+                    if (icons[i] != null) continue;
+                    errors.Add("Every Android launcher icon slot must use the generated НЕ СБЕЙСЯ! brand icon.");
+                    break;
+                }
+            }
+
+            Color splash = PlayerSettings.SplashScreen.backgroundColor;
+            Color expected = new Color(0.010f, 0.016f, 0.040f, 1f);
+            if (Mathf.Abs(splash.r - expected.r) > 0.02f ||
+                Mathf.Abs(splash.g - expected.g) > 0.02f ||
+                Mathf.Abs(splash.b - expected.b) > 0.02f)
+                errors.Add("Splash background does not match the release brand palette. Re-run Generate Release Brand Assets.");
         }
 
         private static void ValidateForbiddenManifestPermissions(List<string> errors)
