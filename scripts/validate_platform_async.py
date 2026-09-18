@@ -26,10 +26,11 @@ for value in required_gate:
 required_runtime = [
     "PlatformUiLaunchGate.Configure(null)",
     "PlatformUiLaunchGate.Configure(CanLaunchPlatformUi)",
-    "GameBootstrapRuntimeBridge.IsHome(bootstrap)",
+    "GameBootstrapRuntimeBridge.IsPlainHome(bootstrap)",
     "meta.IsPanelOpen",
     "training.IsOpen",
     "campaign.IsOpen",
+    "referral.IsVisible",
     "platform.IsNotificationPromptOpen",
     'GameObject.Find("MandatoryUpdateCanvas")',
 ]
