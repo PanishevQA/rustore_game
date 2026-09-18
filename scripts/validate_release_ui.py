@@ -94,6 +94,7 @@ required = {
     ),
     "platform": (
         "НЕ ПРОПУСКАТЬ DAILY?",
+        "БЕЗ НАПОМИНАНИЙ",
         "НУЖНО ОБНОВЛЕНИЕ",
         "ReleaseUiKit.Panel",
         "ReleaseUiKit.Button",
