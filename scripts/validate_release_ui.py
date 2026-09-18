@@ -85,7 +85,8 @@ required = {
         "_legacyTitleGroup.alpha = 1f",
         "_legacyStatusGroup.alpha = 1f",
         "_scoreText",
-        "ПОДЕЛИТЬСЯ КАРТОЧКОЙ",
+        "ПОДЕЛИТЬСЯ РЕЗУЛЬТАТОМ",
+        "БРОСИТЬ ВЫЗОВ",
     ),
     "share_card": (
         "MEMORY TRACE",
