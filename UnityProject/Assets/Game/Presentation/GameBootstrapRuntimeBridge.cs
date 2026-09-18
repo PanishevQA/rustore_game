@@ -73,6 +73,20 @@ namespace DontGetSidetracked.Presentation
             return string.Equals(ReadEnumName(bootstrap, StateField), "Idle", StringComparison.Ordinal);
         }
 
+        public static bool IsPlainHome(GameBootstrap bootstrap)
+        {
+            if (!IsIdleHome(bootstrap)) return false;
+
+            Text title = Title(bootstrap);
+            Text status = Status(bootstrap);
+            if (title == null || !string.Equals(title.text, "НЕ СБЕЙСЯ!", StringComparison.Ordinal))
+                return false;
+
+            return status == null ||
+                   status.text == null ||
+                   status.text.IndexOf("ГОТОВИМ ВЫЗОВ", StringComparison.OrdinalIgnoreCase) < 0;
+        }
+
         public static bool IsResult(GameBootstrap bootstrap)
         {
             if (bootstrap == null || StateField == null)
