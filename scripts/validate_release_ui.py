@@ -45,10 +45,14 @@ required = {
         "BuildDailyCard",
         "BuildCampaignCard",
         "BuildQuickActions",
+        "GameBootstrapRuntimeBridge.IsPlainHome(_bootstrap)",
         "_dashboardMotion?.Cancel()",
+        "MEMORY TRACE",
     ),
     "gameplay_hud": (
         "ReleaseGameplayHud",
+        "GameplayHeader",
+        "GameBootstrapRuntimeBridge.IsActiveRound(_bootstrap)",
         "ЗАПОМНИ МАРШРУТ",
         "ТВОЯ ОЧЕРЕДЬ",
     ),
@@ -88,8 +92,9 @@ required = {
         'CreateMarker(routePanel.transform, "End"',
     ),
     "rewarded": (
-        "new Vector2(0.23f, 0.118f)",
-        "БЕСПЛАТНАЯ ПОДСКАЗКА",
+        "new Vector2(0.075f, 0.092f)",
+        "new Vector2(0.925f, 0.142f)",
+        "ПОДСКАЗКА ЗА РЕКЛАМУ",
         "ReleaseUiKit.Button",
     ),
     "hint": (
@@ -139,6 +144,13 @@ motion = (PRESENTATION / "ReleasePanelMotion.cs").read_text(encoding="utf-8")
 for marker in ("public void Cancel()", "_animating = false;"):
     if marker not in motion:
         errors.append(f"ReleasePanelMotion cancel contract is missing: {marker}")
+
+cancel_start = motion.find("public void Cancel()")
+cancel_end = motion.find("private void Update()", cancel_start)
+if cancel_start >= 0 and cancel_end > cancel_start:
+    cancel_body = motion[cancel_start:cancel_end]
+    if "_group.alpha = 1f" in cancel_body:
+        errors.append("ReleasePanelMotion.Cancel must not reveal a CanvasGroup that its owner is hiding.")
 
 # Superseded Home composition layers must stay removed so one surface has one visual owner.
 for obsolete in (
