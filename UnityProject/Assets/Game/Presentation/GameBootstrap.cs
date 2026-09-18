@@ -363,7 +363,8 @@ namespace DontGetSidetracked.Presentation
             _referenceGraphic.SetPoints(_route.ReferencePoints);
             _referenceGraphic.color = new Color(0.1f, 0.9f, 1f, 0.65f);
             _playerGraphic.color = result.Score >= 90 ? new Color(0.2f, 1f, 0.45f, 1f) : new Color(1f, 0.75f, 0.15f, 1f);
-            _status.text = $"ТОЧНОСТЬ {result.Score:0.0}%";
+            _title.text = "РЕЗУЛЬТАТ";
+            _status.text = $"{result.Score:0.0}%";
 
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.RoundComplete, Params(
                 "difficulty", _route.Difficulty.ToString(),
