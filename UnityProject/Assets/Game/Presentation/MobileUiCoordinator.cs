@@ -82,6 +82,9 @@ namespace DontGetSidetracked.Presentation
             MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
             if (TryCloseMetaPanel(meta)) return;
 
+            ReferralOfferCoordinator referral = FindFirstObjectByType<ReferralOfferCoordinator>();
+            if (referral != null && referral.Dismiss()) return;
+
             GameBootstrap bootstrap = FindFirstObjectByType<GameBootstrap>();
             if (bootstrap == null)
             {
