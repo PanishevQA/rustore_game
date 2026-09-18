@@ -6,6 +6,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEngine;
 
 namespace DontGetSidetracked.EditorTools
 {
@@ -294,6 +295,13 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Android production integration requires Assets/Plugins/Android/gradleTemplate.properties.");
             if (!File.Exists(GradleSettingsTemplatePath))
                 errors.Add("Android production integration requires Assets/Plugins/Android/settingsTemplate.gradle.");
+
+            if (File.Exists(MainGradleTemplatePath))
+            {
+                string mainGradle = File.ReadAllText(MainGradleTemplatePath);
+                if (!mainGradle.Contains("com.yandex.android:mobileads:8.4.0", StringComparison.Ordinal))
+                    errors.Add("Yandex Android dependency is not resolved into mainTemplate.gradle. Run EDM4U Android Resolver → Force Resolve.");
+            }
         }
 
         private static void ValidateFileContains(string path, List<string> errors, params (string Needle, string Error)[] checks)
