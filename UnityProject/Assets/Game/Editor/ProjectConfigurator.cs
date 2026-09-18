@@ -12,6 +12,7 @@ namespace DontGetSidetracked.EditorTools
     public static class ProjectConfigurator
     {
         public const string ProductionPackageName = "ru.release.nesbeisya";
+        public const string ProductionKeyAlias = "nesbeysya";
         public const string LegacyDevelopmentPackageName = "ru.panishedqa.nesbeisya.dev";
         public const string DevelopmentVersion = "0.1.0";
         private const string ScenePath = "Assets/Scenes/Main.unity";
@@ -47,6 +48,8 @@ namespace DontGetSidetracked.EditorTools
                 PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel34;
 
             PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.Activity;
+            if (string.IsNullOrWhiteSpace(PlayerSettings.Android.keyaliasName))
+                PlayerSettings.Android.keyaliasName = ProductionKeyAlias;
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
 
