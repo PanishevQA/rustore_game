@@ -4,9 +4,9 @@
 
 | SDK | Release target | Состояние проекта |
 |---|---:|---|
-| Pay Unity | 11.1.0 | установлен в `Packages/manifest.json`; старый Billing SDK/BillingClient integration запрещён; production дополнительно защищён `RuStorePayReleaseContractValidator` |
+| Pay Unity | 11.1.0 | release target сохранён; пакет временно исключён из локального Editor baseline вместе с остальными RuStore SDK; production защищён `RuStorePayReleaseContractValidator` |
 | Install Referrer Unity | 10.6.1 | release target сохранён, но UPM package временно исключён из Editor baseline из-за compile regression на Unity 6000.3.24f1; reflection-adapter остаётся offline-safe; production preflight требует вернуть и проверить SDK перед release |
-| Update Unity | 10.5.1 | установлен; adapter реализован |
+| Update Unity | 10.5.1 | release target сохранён; локальный adapter работает как безопасный no-op до восстановления SDK перед production |
 | Review Unity | 10.5.1 | установлен; запрос только после positive event |
 | GameCenter Unity | 10.5.2 | optional, не source of truth; package не нужен для базового gameplay |
 | Remote Config Unity | 10.5.1 | release target сохранён, но UPM package временно исключён из Editor baseline из-за compile regression на Unity 6000.3.24f1; adapter/cache/default работают с safe fallback; production требует восстановить SDK, задать AppId и пройти Android test |
@@ -26,7 +26,7 @@
 
 ## Репозитории и package integration
 
-Текущий Editor baseline использует scoped registry `https://nexus-external.rustore.ru/repository/npm-unity-rustore-exposed/`, scope `ru.rustore`, и Maven `https://nexus-external.rustore.ru/repository/maven-rustore-exposed` в release constants. В официальной документации отдельных SDK всё ещё встречаются переходные registry URL, поэтому адрес нельзя менять по одному примеру из одной страницы.
+Текущий Editor baseline сохраняет scoped registry `https://nexus-external.rustore.ru/repository/npm-unity-rustore-exposed/`, scope `ru.rustore`, но не устанавливает RuStore packages, чтобы локальная разработка и тестирование не блокировались package compile regression. Maven URL остаётся в release constants. В официальной документации отдельных SDK всё ещё встречаются переходные registry URL, поэтому адрес нельзя менять по одному примеру из одной страницы.
 
 Registry меняется только после проверки **конкретных pinned packages**, успешного package resolve в закреплённой версии Unity и полного regression-test. Старый `artifactory-external.vkpartner.ru` запрещён.
 
