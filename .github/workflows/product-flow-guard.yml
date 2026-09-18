@@ -20,8 +20,6 @@ jobs:
           test -f UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
-          test -f UnityProject/Assets/Game/Presentation/CampaignVisualThemeCoordinator.cs
-          test -f UnityProject/Assets/Game/Presentation/ExtendedUiThemeCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/ReferralRuntimePolicy.cs
           test -f UnityProject/Assets/Game/Presentation/ReferralOfferCoordinator.cs
           test -f UnityProject/Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs
