@@ -371,6 +371,7 @@ namespace DontGetSidetracked.Presentation
         {
             if (_dashboardGroup != null)
             {
+                if (!visible) _dashboardMotion?.Cancel();
                 _dashboardGroup.alpha = visible ? 1f : 0f;
                 _dashboardGroup.interactable = visible;
                 _dashboardGroup.blocksRaycasts = visible;
