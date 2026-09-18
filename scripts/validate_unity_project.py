@@ -44,26 +44,38 @@ def validate_package_manifest() -> None:
         return
 
     dependencies = manifest.get("dependencies") or {}
-    # Local Unity Editor baseline intentionally contains no RuStore SDK packages.
-    # Production release validators keep the exact SDK contract strict.
     expected = {
         "com.unity.test-framework": "1.6.0",
         "com.unity.mobile.notifications": "2.4.3",
         "com.unity.modules.audio": "1.0.0",
         "com.unity.modules.imageconversion": "1.0.0",
+        "ru.rustore.pay": "11.1.0",
+        "ru.rustore.installreferrer": "10.6.1",
+        "ru.rustore.remoteconfig": "10.5.1",
+        "ru.rustore.update": "10.5.1",
+        "ru.rustore.review": "10.5.1",
     }
     for package, version in expected.items():
         actual = dependencies.get(package)
         if actual != version:
             fail(f"{package} must be pinned to {version}; found {actual!r}.")
 
+    # RuStore documentation states that ru.rustore.core is installed transitively by each
+    # feature package. Do not pin a potentially incompatible core version directly.
+    if "ru.rustore.core" in dependencies:
+        fail("ru.rustore.core must resolve transitively; remove the direct core pin from Packages/manifest.json.")
+
     registries = manifest.get("scopedRegistries") or []
+    expected_registry = "https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/"
     if not any(
-        entry.get("url") == "https://nexus-external.rustore.ru/repository/npm-unity-rustore-exposed/"
-        and "ru.rustore" in (entry.get("scopes") or [])
+        entry.get("url") == expected_registry and "ru.rustore" in (entry.get("scopes") or [])
         for entry in registries
     ):
-        fail("The Editor baseline RuStore scoped npm registry is missing from Packages/manifest.json.")
+        fail("Current official RuStore scoped npm registry is missing from Packages/manifest.json.")
+
+    serialized = json.dumps(manifest, ensure_ascii=False)
+    if "nexus-external.rustore.ru" in serialized or "artifactory-external.vkpartner.ru" in serialized:
+        fail("Packages/manifest.json contains an obsolete RuStore repository address.")
 
 
 def validate_asmdefs() -> None:
@@ -203,12 +215,16 @@ def validate_required_runtime_files() -> None:
         "Assets/Game/Presentation/MobileUiCoordinator.cs",
         "Assets/Game/Presentation/HomeDashboardCoordinator.cs",
         "Assets/Game/Presentation/GameplayGridCoordinator.cs",
-        "Assets/Game/Presentation/ReleaseUiKit.cs",\n        "Assets/Game/Presentation/GameplayHudCoordinator.cs",\n        "Assets/Game/Presentation/NativeImageShare.cs",
+        "Assets/Game/Presentation/ReleaseUiKit.cs",
+        "Assets/Game/Presentation/GameplayHudCoordinator.cs",
+        "Assets/Game/Presentation/NativeImageShare.cs",
         "Assets/Game/Social/OfflineGameApi.cs",
         "Assets/Game/Platform/RuStore/RuStorePaymentService.cs",
         "Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs",
         "Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs",
         "Assets/Game/Platform/RuStore/RuStoreRemoteConfigRuntime.cs",
+        "Assets/Game/Platform/RuStore/RuStoreReviewService.cs",
+        "Assets/Game/Platform/RuStore/RuStoreUpdateService.cs",
         "Assets/Game/Platform/Android/LocalDailyNotificationScheduler.cs",
         "Assets/Game/Editor/ProjectConfigurator.cs",
         "Assets/Game/Editor/ProductionReleaseValidator.cs",
