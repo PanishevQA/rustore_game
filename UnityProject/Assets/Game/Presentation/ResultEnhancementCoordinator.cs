@@ -444,8 +444,8 @@ namespace DontGetSidetracked.Presentation
         {
             if (group == null) return;
             group.alpha = visible ? 1f : 0f;
-            group.interactable = false;
-            group.blocksRaycasts = false;
+            group.interactable = visible;
+            group.blocksRaycasts = visible;
         }
 
         private void RefreshResultActions()
