@@ -6,6 +6,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE = ROOT / "UnityProject/Assets/Game/Monetization/YandexMobileAdsService.cs"
 VALIDATOR = ROOT / "UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs"
+PLACEHOLDER_VALIDATOR = ROOT / "UnityProject/Assets/Game/Editor/ProductionPlaceholderValidator.cs"
 DOC = ROOT / "docs/ADS_INTEGRATION.md"
 CHECKLIST = ROOT / "docs/RUSTORE_RELEASE_CHECKLIST.md"
 
@@ -35,6 +36,7 @@ def const(text: str, name: str) -> str | None:
 def main() -> int:
     service = read(SERVICE)
     validator = read(VALIDATOR)
+    placeholder_validator = read(PLACEHOLDER_VALIDATOR)
     doc = read(DOC)
     checklist = read(CHECKLIST)
 
@@ -55,6 +57,7 @@ def main() -> int:
     require(validator, "Assets/Plugins/Android/mainTemplate.gradle", "Production preflight must require mainTemplate.gradle.")
     require(validator, "Assets/Plugins/Android/gradleTemplate.properties", "Production preflight must require gradleTemplate.properties.")
     require(validator, "YANDEX_MOBILE_ADS", "Production preflight must require the Yandex Android scripting symbol.")
+    require(placeholder_validator, 'value.StartsWith("R-M-"', "Production Yandex ad unit IDs must require the official R-M- prefix.")
 
     require(doc, f"Yandex Mobile Ads Unity {EXPECTED_VERSION}", "ADS_INTEGRATION.md must document the verified Yandex version.")
     require(doc, f"**{EXPECTED_VERIFIED_DATE}**", "ADS_INTEGRATION.md must document the Yandex verification date.")
