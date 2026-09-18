@@ -184,64 +184,73 @@ namespace DontGetSidetracked.Presentation
             _dashboardGroup = root.GetComponent<CanvasGroup>();
             _dashboardMotion = root.AddComponent<ReleasePanelMotion>();
 
-            Text logo = CreateText(root.transform, "Logo", "НЕ СБЕЙСЯ!", 68, TextAnchor.MiddleLeft,
-                new Vector2(0.075f, 0.900f), new Vector2(0.70f, 0.965f), TextPrimary);
-            logo.fontStyle = FontStyle.Bold;
-            AddShadow(logo, 0.42f, new Vector2(0f, -3f));
+            Image topGlow = CreateImage(root.transform, "TopGlow",
+                new Color(Cyan.r, Cyan.g, Cyan.b, 0.055f),
+                new Vector2(0.57f, 0.865f), new Vector2(1.02f, 1.04f), _circle);
+            topGlow.raycastTarget = false;
 
-            Text tagline = CreateText(root.transform, "Tagline", "Запомни. Проведи. Попади точно.", 25, TextAnchor.MiddleLeft,
-                new Vector2(0.075f, 0.858f), new Vector2(0.80f, 0.902f), TextMuted);
+            Text logo = CreateText(root.transform, "Logo", "НЕ СБЕЙСЯ!", 54, TextAnchor.MiddleLeft,
+                new Vector2(0.075f, 0.918f), new Vector2(0.70f, 0.968f), TextPrimary);
+            logo.fontStyle = FontStyle.Bold;
+            AddShadow(logo, 0.38f, new Vector2(0f, -2f));
+
+            Text edition = CreateText(root.transform, "Edition", "MEMORY TRACE", 15, TextAnchor.MiddleRight,
+                new Vector2(0.66f, 0.925f), new Vector2(0.925f, 0.958f), CyanBright);
+            edition.fontStyle = FontStyle.Bold;
+
+            Text tagline = CreateText(root.transform, "Tagline", "Запомни маршрут. Повтори одним движением.", 21, TextAnchor.MiddleLeft,
+                new Vector2(0.075f, 0.882f), new Vector2(0.88f, 0.918f), TextMuted);
             tagline.fontStyle = FontStyle.Normal;
 
-            CreateAccentDash(root.transform, new Vector2(0.075f, 0.852f), new Vector2(0.29f, 0.858f));
+            CreateAccentDash(root.transform, new Vector2(0.075f, 0.873f), new Vector2(0.245f, 0.878f));
 
             _streakValue = CreateMetricChip(root.transform, "StreakChip", "СЕРИЯ", "0 ДН", Green,
-                new Vector2(0.075f, 0.785f), new Vector2(0.345f, 0.842f));
+                new Vector2(0.075f, 0.812f), new Vector2(0.345f, 0.862f));
             _starsValue = CreateMetricChip(root.transform, "StarsChip", "ЗВЁЗДЫ", "0", Gold,
-                new Vector2(0.365f, 0.785f), new Vector2(0.635f, 0.842f));
+                new Vector2(0.365f, 0.812f), new Vector2(0.635f, 0.862f));
             _coinsValue = CreateMetricChip(root.transform, "CoinsChip", "МОНЕТЫ", "0", CyanBright,
-                new Vector2(0.655f, 0.785f), new Vector2(0.925f, 0.842f));
+                new Vector2(0.655f, 0.812f), new Vector2(0.925f, 0.862f));
 
             BuildDailyCard(root.transform);
             BuildCampaignCard(root.transform);
             BuildQuickActions(root.transform);
 
-            Text footer = CreateText(root.transform, "Footer", "Короткие сессии  •  одной рукой  •  прогресс хранится локально", 20,
-                TextAnchor.MiddleCenter, new Vector2(0.075f, 0.075f), new Vector2(0.925f, 0.112f), TextMuted);
+            Text footer = CreateText(root.transform, "Footer", "ПРОГРЕСС СОХРАНЯЕТСЯ ЛОКАЛЬНО", 14,
+                TextAnchor.MiddleCenter, new Vector2(0.18f, 0.050f), new Vector2(0.82f, 0.072f), TextMuted);
             footer.alignment = TextAnchor.MiddleCenter;
         }
 
         private void BuildDailyCard(Transform parent)
         {
             Transform card = CreateCard(parent, "DailyCard",
-                new Vector2(0.075f, 0.545f), new Vector2(0.925f, 0.755f),
+                new Vector2(0.075f, 0.548f), new Vector2(0.925f, 0.792f),
                 new Color(0.035f, 0.075f, 0.130f, 0.99f), Cyan);
 
-            CreateText(card, "DailyKicker", "ИСПЫТАНИЕ ДНЯ", 24, TextAnchor.MiddleLeft,
-                new Vector2(0.055f, 0.79f), new Vector2(0.58f, 0.94f), CyanBright).fontStyle = FontStyle.Bold;
-            _dailyMeta = CreateText(card, "DailyMeta", "СЕГОДНЯ", 21, TextAnchor.MiddleRight,
-                new Vector2(0.58f, 0.79f), new Vector2(0.94f, 0.94f), TextMuted);
+            CreateText(card, "DailyKicker", "ИСПЫТАНИЕ ДНЯ", 20, TextAnchor.MiddleLeft,
+                new Vector2(0.055f, 0.82f), new Vector2(0.58f, 0.94f), CyanBright).fontStyle = FontStyle.Bold;
+            _dailyMeta = CreateText(card, "DailyMeta", "СЕГОДНЯ", 17, TextAnchor.MiddleRight,
+                new Vector2(0.58f, 0.82f), new Vector2(0.94f, 0.94f), TextMuted);
 
-            Text headline = CreateText(card, "DailyHeadline", "ИСПЫТАНИЕ ДНЯ.\nСМОЖЕШЬ ТОЧНЕЕ?", 38, TextAnchor.MiddleLeft,
-                new Vector2(0.055f, 0.42f), new Vector2(0.64f, 0.79f), TextPrimary);
+            Text headline = CreateText(card, "DailyHeadline", "СМОЖЕШЬ\nПОВТОРИТЬ ТОЧНЕЕ?", 34, TextAnchor.MiddleLeft,
+                new Vector2(0.055f, 0.43f), new Vector2(0.64f, 0.80f), TextPrimary);
             headline.fontStyle = FontStyle.Bold;
             headline.lineSpacing = 0.90f;
 
             BuildRoutePreview(card);
 
-            _dailyBest = CreateText(card, "DailyBest", "ЛУЧШИЙ  —", 20, TextAnchor.MiddleLeft,
-                new Vector2(0.055f, 0.25f), new Vector2(0.55f, 0.40f), TextMuted);
+            _dailyBest = CreateText(card, "DailyBest", "ЛУЧШИЙ  —", 18, TextAnchor.MiddleLeft,
+                new Vector2(0.055f, 0.25f), new Vector2(0.55f, 0.39f), TextMuted);
 
             Button play = CreateActionButton(card, "DailyPlay", "ИГРАТЬ DAILY", CyanBright,
                 new Color(0.02f, 0.05f, 0.08f, 1f),
-                new Vector2(0.055f, 0.07f), new Vector2(0.945f, 0.25f));
+                new Vector2(0.055f, 0.065f), new Vector2(0.945f, 0.235f));
             play.onClick.AddListener(() => InvokeLegacy(_legacyShare));
         }
 
         private void BuildCampaignCard(Transform parent)
         {
             Transform card = CreateCard(parent, "CampaignCard",
-                new Vector2(0.075f, 0.345f), new Vector2(0.925f, 0.515f),
+                new Vector2(0.075f, 0.350f), new Vector2(0.925f, 0.520f),
                 Surface, Violet);
 
             CreateText(card, "CampaignKicker", "КАМПАНИЯ", 21, TextAnchor.MiddleLeft,
@@ -278,15 +287,15 @@ namespace DontGetSidetracked.Presentation
         private void BuildQuickActions(Transform parent)
         {
             CreateQuickAction(parent, "TrainingQuick", "ТРЕНИРОВКА", "Без ограничений", CyanBright,
-                new Vector2(0.075f, 0.165f), new Vector2(0.345f, 0.315f),
+                new Vector2(0.075f, 0.170f), new Vector2(0.345f, 0.320f),
                 () => InvokeLegacy(_legacySecondary));
 
             CreateQuickAction(parent, "StatsQuick", "СТАТИСТИКА", "Рекорды и серия", Gold,
-                new Vector2(0.365f, 0.165f), new Vector2(0.635f, 0.315f),
+                new Vector2(0.365f, 0.170f), new Vector2(0.635f, 0.320f),
                 () => InvokeLegacy(_legacyStats));
 
             CreateQuickAction(parent, "StoreQuick", "МАГАЗИН", "Скины и подсказки", new Color(0.72f, 0.54f, 1f, 1f),
-                new Vector2(0.655f, 0.165f), new Vector2(0.925f, 0.315f),
+                new Vector2(0.655f, 0.170f), new Vector2(0.925f, 0.320f),
                 () => InvokeLegacy(_legacyStore));
         }
 
@@ -310,11 +319,11 @@ namespace DontGetSidetracked.Presentation
                 Vector2.zero, Vector2.one, new Color(0.02f, 0.04f, 0.07f, 1f));
             glyph.fontStyle = FontStyle.Bold;
 
-            Text heading = CreateText(card, "Title", title, 22, TextAnchor.MiddleLeft,
+            Text heading = CreateText(card, "Title", title, 20, TextAnchor.MiddleLeft,
                 new Vector2(0.10f, 0.34f), new Vector2(0.92f, 0.58f), TextPrimary);
             heading.fontStyle = FontStyle.Bold;
 
-            CreateText(card, "Subtitle", subtitle, 17, TextAnchor.UpperLeft,
+            CreateText(card, "Subtitle", subtitle, 15, TextAnchor.UpperLeft,
                 new Vector2(0.10f, 0.10f), new Vector2(0.92f, 0.34f), TextMuted);
 
             Button button = card.gameObject.AddComponent<Button>();
@@ -490,8 +499,8 @@ namespace DontGetSidetracked.Presentation
             var host = new GameObject("DailyRoutePreview", typeof(RectTransform));
             host.transform.SetParent(card, false);
             RectTransform rect = host.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.66f, 0.37f);
-            rect.anchorMax = new Vector2(0.94f, 0.78f);
+            rect.anchorMin = new Vector2(0.64f, 0.39f);
+            rect.anchorMax = new Vector2(0.95f, 0.79f);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
 
