@@ -112,6 +112,7 @@ namespace DontGetSidetracked.Presentation
                 bool unlocked = _progress.IsUnlocked(level);
                 LevelProgressData record = _progress.GetProgress(level);
                 if (record != null && record.Stars > 0) chapterCompleted++;
+                CreatePathConnector(_gridRoot, level - first, unlocked, record);
                 CreateLevelButton(_gridRoot, level - first, level, unlocked, record, () => SelectLevel(capturedLevel));
             }
 
@@ -302,6 +303,37 @@ namespace DontGetSidetracked.Presentation
                 TextAnchor.MiddleCenter, new Vector2(0.07f, 0.025f), new Vector2(0.93f, 0.065f),
                 ReleaseUiKit.Muted);
             hint.raycastTarget = false;
+        }
+
+        private static void CreatePathConnector(
+            Transform parent,
+            int slot,
+            bool unlocked,
+            LevelProgressData record)
+        {
+            bool completed = record != null && record.Stars > 0;
+            Color accent = !unlocked
+                ? new Color(0.30f, 0.38f, 0.50f, 0.40f)
+                : completed
+                    ? new Color(ReleaseUiComponents.Success.r, ReleaseUiComponents.Success.g, ReleaseUiComponents.Success.b, 0.52f)
+                    : new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.72f);
+
+            float y = 0.915f - slot * 0.093f;
+            bool left = slot % 2 == 0;
+            float x0 = left ? 0.465f : 0.500f;
+            float x1 = left ? 0.500f : 0.535f;
+
+            Transform connector = ReleaseUiKit.Rect(parent, "PathConnector",
+                new Vector2(x0, y - 0.0035f), new Vector2(x1, y + 0.0035f));
+            Image line = connector.gameObject.AddComponent<Image>();
+            line.sprite = ReleaseUiKit.Rounded;
+            line.type = Image.Type.Sliced;
+            line.color = accent;
+            line.raycastTarget = false;
+
+            ReleaseUiKit.Dot(parent, "PathNode", accent,
+                new Vector2(0.488f, y - 0.012f),
+                new Vector2(0.512f, y + 0.012f)).raycastTarget = false;
         }
 
         private static Button CreateLevelButton(
