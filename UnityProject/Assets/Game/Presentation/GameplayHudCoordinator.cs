@@ -23,7 +23,6 @@ namespace DontGetSidetracked.Presentation
         private Text _instruction;
         private Text _hint;
         private Text _countdown;
-        private bool _hudVisible;
         private float _nextResolve;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -108,7 +107,7 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.055f, 0.845f), new Vector2(0.945f, 0.955f),
                 ReleaseUiComponents.Cyan, true);
 
-            _mode = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЖИМ", 19,
+            _mode = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЖИМ", 22,
                 TextAnchor.MiddleCenter, new Vector2(0.08f, 0.72f), new Vector2(0.92f, 0.94f),
                 ReleaseUiComponents.Cyan, FontStyle.Bold);
 
@@ -119,13 +118,13 @@ namespace DontGetSidetracked.Presentation
 
             Transform metrics = ReleaseUiKit.Rect(header.transform, "GameplayMetrics",
                 new Vector2(0.06f, 0.055f), new Vector2(0.94f, 0.30f));
-            ReleaseUiKit.TextBlock(metrics, "Memory", "ПАМЯТЬ", 16,
+            ReleaseUiKit.TextBlock(metrics, "Memory", "ЗАПОМНИ", 20,
                 TextAnchor.MiddleLeft, new Vector2(0.00f, 0f), new Vector2(0.30f, 1f),
                 ReleaseUiComponents.Cyan, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(metrics, "Gesture", "1 ДВИЖЕНИЕ", 16,
+            ReleaseUiKit.TextBlock(metrics, "Gesture", "1 ДВИЖЕНИЕ", 20,
                 TextAnchor.MiddleCenter, new Vector2(0.30f, 0f), new Vector2(0.70f, 1f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(metrics, "Rule", "БЕЗ ПОДСКАЗКИ", 16,
+            ReleaseUiKit.TextBlock(metrics, "Rule", "НЕ ОТРЫВАЙ", 20,
                 TextAnchor.MiddleRight, new Vector2(0.70f, 0f), new Vector2(1.00f, 1f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
 
@@ -133,9 +132,8 @@ namespace DontGetSidetracked.Presentation
             Image hintCard = ReleaseUiComponents.GlassCard(root.transform, "GameplayInstruction",
                 new Vector2(0.055f, 0.050f), new Vector2(0.945f, 0.135f),
                 ReleaseUiComponents.Blue, false);
-            ReleaseUiKit.TextBlock(hintCard.transform, "Eye", "◎", 34, TextAnchor.MiddleCenter,
-                new Vector2(0.035f, 0.12f), new Vector2(0.16f, 0.88f),
-                ReleaseUiComponents.Blue, FontStyle.Bold);
+            ReleaseUiComponents.Icon(hintCard.transform, "Eye", GeneratedUiAssets.EyeIcon,
+                new Vector2(0.035f, 0.22f), new Vector2(0.14f, 0.78f));
             _hint = ReleaseUiKit.TextBlock(hintCard.transform, "Hint", "Запомни форму и повороты маршрута", 23,
                 TextAnchor.MiddleLeft, new Vector2(0.17f, 0.08f), new Vector2(0.95f, 0.92f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
@@ -183,7 +181,7 @@ namespace DontGetSidetracked.Presentation
                 _countdown.text = compact;
                 _countdown.gameObject.SetActive(true);
                 _instruction.text = "МАРШРУТ ИСЧЕЗАЕТ";
-                _hint.text = "Маршрут исчезнет. Приготовься рисовать по памяти.";
+                _hint.text = "Приготовься. Начинай с голубой точки.";
                 return;
             }
 
@@ -193,14 +191,28 @@ namespace DontGetSidetracked.Presentation
             if (compact.IndexOf("ЗАПОМНИ", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 _instruction.text = "ЗАПОМНИ МАРШРУТ";
-                _hint.text = "Смотри внимательно. Запомни форму, повороты и конечную точку.";
+                _hint.text = "Запомни повороты и путь к золотой точке.";
                 return;
             }
 
             if (compact.IndexOf("ПОВТОРИ", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 _instruction.text = "ТВОЯ ОЧЕРЕДЬ";
-                _hint.text = "Проведи маршрут одним непрерывным движением от старта до звезды.";
+                _hint.text = "От голубой точки к золотой. Не отрывай палец.";
+                return;
+            }
+
+            if (compact.IndexOf("ВЕДИ", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                _instruction.text = "ВЕДИ ПО ПАМЯТИ";
+                _hint.text = "Продолжай одним движением к золотой точке.";
+                return;
+            }
+
+            if (compact.IndexOf("НАЧНИ", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                _instruction.text = "НАЧНИ С ГОЛУБОЙ ТОЧКИ";
+                _hint.text = "Коснись голубого маркера и веди к золотому.";
                 return;
             }
 
@@ -224,7 +236,6 @@ namespace DontGetSidetracked.Presentation
         private void SetHudVisible(bool visible)
         {
             if (_hudGroup == null) return;
-            _hudVisible = visible;
             _hudGroup.alpha = visible ? 1f : 0f;
             _hudGroup.interactable = false;
             _hudGroup.blocksRaycasts = false;

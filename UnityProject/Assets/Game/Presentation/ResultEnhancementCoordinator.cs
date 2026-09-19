@@ -27,13 +27,19 @@ namespace DontGetSidetracked.Presentation
         private Text _modeLabel;
         private Text _scoreText;
         private Text _badge;
+        private Image _medalIcon;
+        private Text _bestLabel;
         private Text _recordLabel;
         private Text _meanValue;
         private Text _endValue;
         private Text _completionValue;
         private Text _timeValue;
         private GameObject _detailCard;
+        private GameObject _metricsPanel;
         private Text _detailText;
+        private Text _playerLegend;
+        private Text _comparisonLabel;
+        private Text _shareFeedback;
         private CanvasGroup _legacyTitleGroup;
         private CanvasGroup _legacyStatusGroup;
         private CanvasGroup _legacyPrimaryGroup;
@@ -49,6 +55,12 @@ namespace DontGetSidetracked.Presentation
         private Text _secondaryActionText;
         private Button _cardButton;
         private Text _cardButtonText;
+        private Button _imageButton;
+        private Image _cardIcon;
+        private bool _canChallenge;
+        private bool _shareable;
+        private double _trainingSessionBest;
+        private string _lastDetailStatus;
         private Image _flash;
         private bool _wasResult;
         private bool _shareBusy;
@@ -138,7 +150,21 @@ namespace DontGetSidetracked.Presentation
 
             _badge.text = celebration.Label;
             _badge.color = BadgeColor(celebration.Tier);
+            string medalAsset = MedalAsset(celebration.Tier);
+            if (_medalIcon != null)
+            {
+                _medalIcon.gameObject.SetActive(!string.IsNullOrEmpty(medalAsset));
+                if (!string.IsNullOrEmpty(medalAsset))
+                    GeneratedUiAssets.TryApply(_medalIcon, medalAsset);
+            }
             _recordLabel.text = string.Empty;
+            _shareFeedback.text = string.Empty;
+            RefreshBest(snapshot, campaign, score);
+            _comparisonLabel.text = aggregate ? "ПОСЛЕДНИЙ МАРШРУТ" : "СРАВНЕНИЕ МАРШРУТОВ";
+            // The bootstrap chooses this colour for the player's result trajectory.
+            _playerLegend.color = snapshot.LastResultScore >= 90.0
+                ? new Color(0.2f, 1f, 0.45f, 1f)
+                : new Color(1f, 0.75f, 0.15f, 1f);
             SetResultUiVisible(true);
 
             string analyticsMode = campaign ? "Campaign" : mode;
@@ -153,13 +179,20 @@ namespace DontGetSidetracked.Presentation
             if (!campaign && string.Equals(mode, "Daily", StringComparison.Ordinal) && snapshot.DailyCompleted)
                 ApplyDailyRecord(snapshot, score);
 
-            bool shareable = campaign || string.Equals(mode, "Training", StringComparison.Ordinal) || aggregate;
-            _cardButton.gameObject.SetActive(shareable);
+            _shareable = campaign || string.Equals(mode, "Training", StringComparison.Ordinal) || aggregate;
+            _canChallenge = !campaign && aggregate;
+            _cardButton.gameObject.SetActive(_shareable);
+            _imageButton.gameObject.SetActive(_canChallenge);
+            ReleaseUiKit.SetAnchors(_cardButton.GetComponent<RectTransform>(),
+                new Vector2(_canChallenge ? 0.51f : 0.04f, 0.09f), new Vector2(0.96f, 0.41f));
+            GeneratedUiAssets.TryApply(_cardIcon, _canChallenge ? GeneratedUiAssets.ChallengeIcon : GeneratedUiAssets.ShareIcon);
             _cardButtonText.text = campaign
                 ? "ПОДЕЛИТЬСЯ УРОВНЕМ"
                 : aggregate
                     ? "БРОСИТЬ ВЫЗОВ"
                     : "ПОДЕЛИТЬСЯ РЕЗУЛЬТАТОМ";
+            _cardButtonText.fontSize = _canChallenge ? 22 : 25;
+            _cardButtonText.resizeTextMaxSize = _cardButtonText.fontSize;
             RefreshResultActions();
 
             if (!campaign && string.Equals(mode, "Duel", StringComparison.Ordinal) && snapshot.DailyCompleted)
@@ -203,6 +236,8 @@ namespace DontGetSidetracked.Presentation
             _saveRepository.Save(save);
             GameBootstrapRuntimeBridge.ReplaceSave(_bootstrap, save);
 
+            _bestLabel.text = $"ЛУЧШИЙ СЕГОДНЯ  {update.BestScore:0.0}%";
+
             if (!update.IsNewRecord) return;
             _recordLabel.text = update.PreviousBest > 0.0
                 ? $"НОВЫЙ РЕКОРД  {update.PreviousBest:0.0}% → {update.BestScore:0.0}%"
@@ -212,6 +247,38 @@ namespace DontGetSidetracked.Presentation
                 "challenge_id", daily.ChallengeId,
                 "previous", update.PreviousBest,
                 "score", update.BestScore));
+        }
+
+        private void RefreshBest(GameBootstrapResultSnapshot snapshot, bool campaign, double score)
+        {
+            SaveData save = snapshot.Save;
+            if (campaign)
+            {
+                double best = score;
+                if (save?.LevelProgress != null)
+                    foreach (LevelProgressData level in save.LevelProgress)
+                        if (level != null && level.LevelNumber == CampaignRuntimeCoordinator.CurrentLevelNumber)
+                            best = Math.Max(best, level.BestScore);
+                _bestLabel.text = $"ЛУЧШИЙ НА УРОВНЕ  {best:0.0}%";
+                return;
+            }
+
+            if (string.Equals(snapshot.ModeName, "Training", StringComparison.Ordinal))
+            {
+                _trainingSessionBest = Math.Max(_trainingSessionBest, score);
+                _bestLabel.text = $"ЛУЧШИЙ В СЕССИИ  {_trainingSessionBest:0.0}%";
+                return;
+            }
+
+            if (string.Equals(snapshot.ModeName, "Tutorial", StringComparison.Ordinal))
+            {
+                _bestLabel.text = "ПЕРВЫЙ ШАГ К ТОЧНОСТИ";
+                return;
+            }
+
+            _bestLabel.text = save != null && save.PersonalBest > 0
+                ? $"ЛУЧШИЙ DAILY  {save.PersonalBest:0.0}%"
+                : "КАЖДЫЙ МАРШРУТ ДЕЛАЕТ ТЕБЯ ТОЧНЕЕ";
         }
 
         private static void ConfigureRematch(GameBootstrapResultSnapshot snapshot, double score)
@@ -228,7 +295,11 @@ namespace DontGetSidetracked.Presentation
                 Params("referrer_id", referralId, "previous_score", score, "rival_score", rivalScore)));
         }
 
-        private async void ShareCard()
+        private void ShareCard() => ShareResultCard(_canChallenge);
+
+        private void ShareImageCard() => ShareResultCard(false);
+
+        private async void ShareResultCard(bool createChallenge)
         {
             if (_shareBusy || _bootstrap == null) return;
             if (!GameBootstrapRuntimeBridge.TryCaptureResult(_bootstrap, out GameBootstrapResultSnapshot snapshot)) return;
@@ -240,7 +311,9 @@ namespace DontGetSidetracked.Presentation
 
             _shareBusy = true;
             _cardButton.interactable = false;
+            _imageButton.interactable = false;
             _cardButtonText.text = "ГОТОВИМ КАРТОЧКУ…";
+            _shareFeedback.text = string.Empty;
 
             try
             {
@@ -259,10 +332,18 @@ namespace DontGetSidetracked.Presentation
                     throw new InvalidOperationException("Campaign result identity is not available for the share card.");
 
                 string challengeUrl = string.Empty;
-                if (!campaign && aggregate && daily != null && snapshot.Api != null)
+                if (createChallenge && !campaign && aggregate && daily != null && snapshot.Api != null)
                 {
                     SaveData save = snapshot.Save ?? _saveRepository.Load();
-                    challengeUrl = await snapshot.Api.CreateChallengeAsync(save.AnonymousPlayerId, daily.ChallengeId, score);
+                    try
+                    {
+                        challengeUrl = await snapshot.Api.CreateChallengeAsync(save.AnonymousPlayerId, daily.ChallengeId, score);
+                    }
+                    catch (Exception error)
+                    {
+                        // Sharing a local card must work even when link creation is offline.
+                        Debug.Log($"Challenge link unavailable; sharing local result card: {error.Message}");
+                    }
 
                     if (!GameBootstrapRuntimeBridge.IsCurrentNavigation(_bootstrap, revision) ||
                         !GameBootstrapRuntimeBridge.IsResult(_bootstrap))
@@ -300,6 +381,10 @@ namespace DontGetSidetracked.Presentation
                 if (!string.IsNullOrWhiteSpace(challengeUrl)) text += "\n" + challengeUrl;
 
                 bool imageShared = NativeImageShare.Share(png, text);
+                if (_shareFeedback != null)
+                    _shareFeedback.text = createChallenge && string.IsNullOrWhiteSpace(challengeUrl)
+                        ? "Карточка готова. Ссылка на вызов сейчас недоступна."
+                        : "Карточка результата готова";
                 Dictionary<string, object> analytics = Params(
                     "mode", campaign ? "Campaign" : mode,
                     "score", score,
@@ -315,11 +400,14 @@ namespace DontGetSidetracked.Presentation
             catch (Exception error)
             {
                 Debug.LogWarning($"Result card unavailable: {error.Message}");
+                if (GameBootstrapRuntimeBridge.IsCurrentNavigation(_bootstrap, revision) && _shareFeedback != null)
+                    _shareFeedback.text = "Не удалось создать карточку. Попробуй ещё раз.";
             }
             finally
             {
                 _shareBusy = false;
                 if (_cardButton != null) _cardButton.interactable = true;
+                if (_imageButton != null) _imageButton.interactable = true;
                 if (_cardButtonText != null && GameBootstrapRuntimeBridge.TryCaptureResult(_bootstrap, out GameBootstrapResultSnapshot current))
                 {
                     bool campaignNow = CampaignRuntimeCoordinator.IsCampaignActive;
@@ -388,66 +476,95 @@ namespace DontGetSidetracked.Presentation
             _resultHeader = header.gameObject;
             _resultHeader.AddComponent<ReleasePanelMotion>();
 
-            _modeLabel = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЗУЛЬТАТ", 22,
-                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.72f), new Vector2(0.92f, 0.92f),
+            _modeLabel = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЗУЛЬТАТ", 24,
+                TextAnchor.MiddleCenter, new Vector2(0.06f, 0.78f), new Vector2(0.94f, 0.96f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
 
-            _scoreText = ReleaseUiKit.TextBlock(header.transform, "Score", "0.0%", 92,
-                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.18f), new Vector2(0.92f, 0.72f),
+            _medalIcon = ReleaseUiComponents.Icon(header.transform, "MedalIcon", GeneratedUiAssets.MedalGold,
+                new Vector2(0.07f, 0.28f), new Vector2(0.26f, 0.74f));
+
+            _scoreText = ReleaseUiKit.TextBlock(header.transform, "Score", "0.0%", 96,
+                TextAnchor.MiddleCenter, new Vector2(0.27f, 0.28f), new Vector2(0.91f, 0.80f),
                 ReleaseUiComponents.Success, FontStyle.Bold);
             ReleaseUiKit.AddTextShadow(_scoreText, 0.58f, -4f);
 
-            _badge = ReleaseUiKit.TextBlock(header.transform, "Medal", string.Empty, 31,
-                TextAnchor.MiddleCenter, new Vector2(0.14f, 0.02f), new Vector2(0.86f, 0.26f),
+            _badge = ReleaseUiKit.TextBlock(header.transform, "Medal", string.Empty, 28,
+                TextAnchor.MiddleCenter, new Vector2(0.14f, 0.16f), new Vector2(0.86f, 0.32f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
 
-            _recordLabel = ReleaseUiKit.TextBlock(_canvas.transform, "DailyRecord", string.Empty, 20,
-                TextAnchor.MiddleCenter, new Vector2(0.22f, 0.735f), new Vector2(0.78f, 0.780f),
+            _bestLabel = ReleaseUiKit.TextBlock(header.transform, "BestScore", string.Empty, 22,
+                TextAnchor.MiddleCenter, new Vector2(0.06f, 0.025f), new Vector2(0.94f, 0.16f),
+                ReleaseUiComponents.Muted);
+
+            _recordLabel = ReleaseUiKit.TextBlock(_canvas.transform, "DailyRecord", string.Empty, 24,
+                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.750f), new Vector2(0.92f, 0.781f),
                 ReleaseUiComponents.Gold, FontStyle.Bold);
 
             Image detail = ReleaseUiComponents.GlassCard(_canvas.transform, "ResultDetail",
-                new Vector2(0.07f, 0.675f), new Vector2(0.93f, 0.730f),
+                new Vector2(0.07f, 0.675f), new Vector2(0.93f, 0.744f),
                 ReleaseUiComponents.Violet, false);
             _detailCard = detail.gameObject;
             _detailText = ReleaseUiKit.TextBlock(detail.transform, "Detail", string.Empty, 23,
-                TextAnchor.MiddleCenter, new Vector2(0.035f, 0.08f), new Vector2(0.965f, 0.92f),
+                TextAnchor.MiddleCenter, new Vector2(0.035f, 0.45f), new Vector2(0.965f, 0.98f),
                 ReleaseUiKit.Muted, FontStyle.Bold);
             _detailText.lineSpacing = 1.05f;
 
-            Text routeLegend = ReleaseUiKit.TextBlock(_canvas.transform, "RouteComparisonLegend",
-                "ЭТАЛОН  /  ТВОЯ ЛИНИЯ", 18, TextAnchor.MiddleCenter,
-                new Vector2(0.23f, 0.330f), new Vector2(0.77f, 0.362f),
-                ReleaseUiComponents.Muted, FontStyle.Bold);
-            routeLegend.raycastTarget = false;
+            _comparisonLabel = ReleaseUiKit.TextBlock(detail.transform, "ComparisonScope", "СРАВНЕНИЕ МАРШРУТОВ", 18,
+                TextAnchor.MiddleLeft, new Vector2(0.035f, 0.05f), new Vector2(0.50f, 0.40f), ReleaseUiComponents.Muted);
+            ReleaseUiKit.TextBlock(detail.transform, "ReferenceLegend", "ЭТАЛОН", 21,
+                TextAnchor.MiddleCenter, new Vector2(0.52f, 0.05f), new Vector2(0.72f, 0.40f), ReleaseUiComponents.Cyan, FontStyle.Bold);
+            _playerLegend = ReleaseUiKit.TextBlock(detail.transform, "PlayerLegend", "ТВОЯ ЛИНИЯ", 21,
+                TextAnchor.MiddleCenter, new Vector2(0.73f, 0.05f), new Vector2(0.97f, 0.40f), ReleaseUiComponents.Gold, FontStyle.Bold);
 
-            _meanValue = ReleaseUiComponents.StatTile(_canvas.transform, "MeanDeviation", "◎", "0%", "Среднее\nотклонение",
-                new Vector2(0.07f, 0.212f), new Vector2(0.275f, 0.322f), ReleaseUiComponents.Blue);
-            _endValue = ReleaseUiComponents.StatTile(_canvas.transform, "EndAccuracy", "★", "0%", "Попадание\nв цель",
-                new Vector2(0.285f, 0.212f), new Vector2(0.49f, 0.322f), ReleaseUiComponents.Success);
-            _completionValue = ReleaseUiComponents.StatTile(_canvas.transform, "Completion", "✓", "0%", "Завершённость",
-                new Vector2(0.50f, 0.212f), new Vector2(0.705f, 0.322f), ReleaseUiComponents.Violet);
-            _timeValue = ReleaseUiComponents.StatTile(_canvas.transform, "GestureTime", "◷", "0.0 c", "Время",
-                new Vector2(0.715f, 0.212f), new Vector2(0.93f, 0.322f), ReleaseUiComponents.Cyan);
+            Image metrics = ReleaseUiComponents.GlassCard(_canvas.transform, "ResultMetrics",
+                new Vector2(0.07f, 0.215f), new Vector2(0.93f, 0.315f), ReleaseUiComponents.Blue);
+            _metricsPanel = metrics.gameObject;
+            _meanValue = Metric(metrics.transform, "MeanDeviation", "Среднее\nотклонение", new Vector2(0f, 0.50f), new Vector2(0.50f, 1f));
+            _endValue = Metric(metrics.transform, "EndAccuracy", "Точность\nфиниша", new Vector2(0.50f, 0.50f), new Vector2(1f, 1f));
+            _completionValue = Metric(metrics.transform, "Completion", "Завершено", new Vector2(0f, 0f), new Vector2(0.50f, 0.50f));
+            _timeValue = Metric(metrics.transform, "GestureTime", "Время жеста", new Vector2(0.50f, 0f), new Vector2(1f, 0.50f));
 
             Image actions = ReleaseUiComponents.GlassCard(_canvas.transform, "ResultActions",
-                new Vector2(0.07f, 0.040f), new Vector2(0.93f, 0.198f),
+                new Vector2(0.07f, 0.045f), new Vector2(0.93f, 0.195f),
                 ReleaseUiComponents.Violet, true);
             _actionPanel = actions.gameObject;
 
             _primaryAction = ReleaseUiComponents.PrimaryButton(actions.transform, "PrimaryAction", "ЕЩЁ РАЗ",
-                new Vector2(0.34f, 0.52f), new Vector2(0.96f, 0.92f),
+                new Vector2(0.37f, 0.51f), new Vector2(0.96f, 0.93f),
                 InvokePrimary, 27);
             _primaryActionText = _primaryAction.GetComponentInChildren<Text>(true);
 
             _secondaryAction = ReleaseUiComponents.SecondaryButton(actions.transform, "SecondaryAction", "ДОМОЙ",
-                new Vector2(0.04f, 0.52f), new Vector2(0.31f, 0.92f),
-                InvokeSecondary, 22);
+                new Vector2(0.04f, 0.51f), new Vector2(0.34f, 0.93f),
+                InvokeSecondary, 23);
             _secondaryActionText = _secondaryAction.GetComponentInChildren<Text>(true);
 
             _cardButton = ReleaseUiComponents.SecondaryButton(actions.transform, "ShareCard", "БРОСИТЬ ВЫЗОВ",
                 new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.43f),
-                ShareCard, 21);
+                ShareCard, 19);
             _cardButtonText = _cardButton.GetComponentInChildren<Text>(true);
+            ReleaseUiKit.SetAnchors(_cardButtonText.rectTransform, new Vector2(0.17f, 0.05f), new Vector2(0.96f, 0.95f));
+            _cardIcon = ReleaseUiComponents.Icon(_cardButton.transform, "ShareActionIcon", GeneratedUiAssets.ChallengeIcon,
+                new Vector2(0.035f, 0.20f), new Vector2(0.15f, 0.80f));
+
+            _imageButton = ReleaseUiComponents.SecondaryButton(actions.transform, "ShareImage", "ПОДЕЛИТЬСЯ",
+                new Vector2(0.04f, 0.09f), new Vector2(0.48f, 0.41f), ShareImageCard, 22);
+            Text imageText = _imageButton.GetComponentInChildren<Text>(true);
+            ReleaseUiKit.SetAnchors(imageText.rectTransform, new Vector2(0.19f, 0.05f), new Vector2(0.96f, 0.95f));
+            ReleaseUiComponents.Icon(_imageButton.transform, "ShareIcon", GeneratedUiAssets.ShareIcon,
+                new Vector2(0.04f, 0.20f), new Vector2(0.16f, 0.80f));
+
+            _shareFeedback = ReleaseUiKit.TextBlock(_canvas.transform, "ShareFeedback", string.Empty, 20,
+                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.011f), new Vector2(0.92f, 0.041f), ReleaseUiComponents.Muted);
+        }
+
+        private static Text Metric(Transform parent, string name, string label, Vector2 min, Vector2 max)
+        {
+            Transform cell = ReleaseUiKit.Rect(parent, name, min, max);
+            ReleaseUiKit.TextBlock(cell, "Caption", label, 23, TextAnchor.MiddleLeft,
+                new Vector2(0.065f, 0.10f), new Vector2(0.61f, 0.90f), ReleaseUiComponents.Muted);
+            return ReleaseUiKit.TextBlock(cell, "Value", "0.0%", 30, TextAnchor.MiddleRight,
+                new Vector2(0.62f, 0.10f), new Vector2(0.94f, 0.90f), ReleaseUiComponents.Text, FontStyle.Bold);
         }
 
         private void ResolveLegacyResultControls()
@@ -612,7 +729,13 @@ namespace DontGetSidetracked.Presentation
             SetStatTileVisible(_timeValue, visible);
 
             if (_actionPanel != null) _actionPanel.SetActive(visible);
+            if (_shareFeedback != null)
+            {
+                if (!visible) _shareFeedback.text = string.Empty;
+                _shareFeedback.gameObject.SetActive(visible);
+            }
             if (!visible && _cardButton != null) _cardButton.gameObject.SetActive(false);
+            if (!visible && _imageButton != null) _imageButton.gameObject.SetActive(false);
         }
 
         private static void SetStatTileVisible(Text valueText, bool visible)
@@ -627,6 +750,22 @@ namespace DontGetSidetracked.Presentation
             rect.anchorMax = max;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
+        }
+
+        private static string MedalAsset(ScoreMedalTier tier)
+        {
+            switch (tier)
+            {
+                case ScoreMedalTier.Perfect:
+                case ScoreMedalTier.Gold:
+                    return GeneratedUiAssets.MedalGold;
+                case ScoreMedalTier.Silver:
+                    return GeneratedUiAssets.MedalSilver;
+                case ScoreMedalTier.Bronze:
+                    return GeneratedUiAssets.MedalBronze;
+                default:
+                    return null;
+            }
         }
 
         private static Color BadgeColor(ScoreMedalTier tier)

@@ -1,5 +1,8 @@
 using System;
 using DontGetSidetracked.Core;
+using DontGetSidetracked.Daily;
+using DontGetSidetracked.Gameplay;
+using DontGetSidetracked.Social;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,6 +23,7 @@ namespace DontGetSidetracked.Presentation
         private Text _streak;
         private Text _best;
         private Text _coins;
+        private Text _routeCount;
 
         public bool IsOpen => _canvas != null && _canvas.activeSelf;
 
@@ -77,10 +81,12 @@ namespace DontGetSidetracked.Presentation
             DateTime today = DateTime.UtcNow;
             if (_date != null) _date.text = today.ToString("dd MMMM", new System.Globalization.CultureInfo("ru-RU"));
             if (_streak != null) _streak.text = save == null ? "0 ДНЕЙ" : save.Streak + " ДН.";
-            if (_best != null) _best.text = save != null && save.PersonalBest > 0
-                ? save.PersonalBest.ToString("0.0") + "%"
+            double dailyBest = new DailyBestService().GetBest(save, OfflineDaily.ChallengeId(today));
+            if (_best != null) _best.text = dailyBest > 0
+                ? dailyBest.ToString("0.0") + "%"
                 : "—";
             if (_coins != null) _coins.text = save == null ? "0" : save.Coins.ToString();
+            if (_routeCount != null) _routeCount.text = RouteRuntimeTuning.DailyRouteCount.ToString();
         }
 
         private void BuildUi()
@@ -104,13 +110,11 @@ namespace DontGetSidetracked.Presentation
             releaseVisual.transform.SetParent(_canvas.transform, false);
             ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
 
-            Button back = ReleaseUiComponents.SecondaryButton(_canvas.transform, "Back", "‹",
-                new Vector2(0.06f, 0.865f), new Vector2(0.18f, 0.925f), Close, 40);
+            ReleaseUiComponents.SecondaryButton(_canvas.transform, "Back", "НАЗАД",
+                new Vector2(0.06f, 0.880f), new Vector2(0.25f, 0.935f), Close, 24);
 
-            Image calendar = ReleaseUiComponents.GlassCard(_canvas.transform, "DailyIcon",
-                new Vector2(0.42f, 0.855f), new Vector2(0.58f, 0.935f), ReleaseUiComponents.Violet, true);
-            ReleaseUiKit.TextBlock(calendar.transform, "Glyph", "★", 38, TextAnchor.MiddleCenter,
-                Vector2.zero, Vector2.one, ReleaseUiComponents.Text, FontStyle.Bold);
+            ReleaseUiComponents.Icon(_canvas.transform, "DailyIcon", GeneratedUiAssets.DailyIcon,
+                new Vector2(0.42f, 0.855f), new Vector2(0.58f, 0.945f));
 
             Text title = ReleaseUiKit.TextBlock(_canvas.transform, "Title", "ИСПЫТАНИЕ ДНЯ", 49,
                 TextAnchor.MiddleCenter, new Vector2(0.10f, 0.790f), new Vector2(0.90f, 0.855f),
@@ -125,41 +129,55 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.07f, 0.470f), new Vector2(0.93f, 0.735f), ReleaseUiComponents.Cyan, true);
             hero.gameObject.AddComponent<ReleasePanelMotion>();
 
-            ReleaseUiKit.TextBlock(hero.transform, "Headline", "ОДИН ЧЕЛЛЕНДЖ.\nВСЕ ИГРОКИ.\nКТО ТОЧНЕЕ?", 35,
-                TextAnchor.MiddleLeft, new Vector2(0.055f, 0.49f), new Vector2(0.68f, 0.91f),
+            ReleaseUiKit.TextBlock(hero.transform, "Headline", "НОВЫЙ ДЕНЬ.\nНОВЫЙ МАРШРУТ.", 42,
+                TextAnchor.MiddleLeft, new Vector2(0.055f, 0.55f), new Vector2(0.945f, 0.91f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(hero.transform, "Description", "Одно испытание для всех. Превзойди свой рекорд.", 24,
+                TextAnchor.MiddleLeft, new Vector2(0.055f, 0.41f), new Vector2(0.945f, 0.55f),
+                ReleaseUiComponents.Muted);
+            _streak = CreateMetric(hero.transform, "Streak", "0 ДН.", "Серия дней", GeneratedUiAssets.StarFilled,
+                new Vector2(0.055f, 0.08f), new Vector2(0.335f, 0.36f));
+            _best = CreateMetric(hero.transform, "Best", "—", "Лучший за день", GeneratedUiAssets.CampaignIcon,
+                new Vector2(0.365f, 0.08f), new Vector2(0.665f, 0.36f));
+            _routeCount = CreateMetric(hero.transform, "Routes", "3", "Маршрутов", GeneratedUiAssets.DailyIcon,
+                new Vector2(0.695f, 0.08f), new Vector2(0.945f, 0.36f));
 
-            _streak = ReleaseUiComponents.StatTile(hero.transform, "Streak", "★", "0 ДН.", "Текущая серия",
-                new Vector2(0.055f, 0.08f), new Vector2(0.345f, 0.39f), ReleaseUiComponents.Gold);
-            _best = ReleaseUiComponents.StatTile(hero.transform, "Best", "◆", "—", "Лучший результат",
-                new Vector2(0.355f, 0.08f), new Vector2(0.645f, 0.39f), ReleaseUiComponents.Cyan);
-            ReleaseUiComponents.StatTile(hero.transform, "Global", "|||", "=", "Одинаковое задание",
-                new Vector2(0.655f, 0.08f), new Vector2(0.945f, 0.39f), ReleaseUiComponents.Violet);
-
-            ReleaseUiComponents.SectionHeader(_canvas.transform, "ВАША ЦЕЛЬ",
+            ReleaseUiComponents.SectionHeader(_canvas.transform, "КАК ИГРАТЬ",
                 new Vector2(0.07f, 0.418f), new Vector2(0.60f, 0.455f));
 
             Image goal = ReleaseUiComponents.GlassCard(_canvas.transform, "Goal",
                 new Vector2(0.07f, 0.300f), new Vector2(0.93f, 0.410f), ReleaseUiComponents.Gold, false);
-            ReleaseUiKit.TextBlock(goal.transform, "Star", "★", 52, TextAnchor.MiddleCenter,
-                new Vector2(0.04f, 0.10f), new Vector2(0.24f, 0.90f), ReleaseUiComponents.Gold, FontStyle.Bold);
+            ReleaseUiComponents.Icon(goal.transform, "Eye", GeneratedUiAssets.EyeIcon,
+                new Vector2(0.04f, 0.15f), new Vector2(0.20f, 0.85f));
             ReleaseUiKit.TextBlock(goal.transform, "GoalCopy",
-                "Запомните маршрут и повторите его по памяти.\nЧем точнее — тем выше результат!", 23,
-                TextAnchor.MiddleLeft, new Vector2(0.27f, 0.13f), new Vector2(0.94f, 0.88f),
+                "Запомни линию. Повтори одним движением.\nОт голубой точки до золотой — без отрыва.", 26,
+                TextAnchor.MiddleLeft, new Vector2(0.24f, 0.13f), new Vector2(0.94f, 0.88f),
                 ReleaseUiComponents.Text);
 
-            ReleaseUiComponents.PrimaryButton(_canvas.transform, "Play", "▶  ИГРАТЬ",
+            ReleaseUiComponents.PrimaryButton(_canvas.transform, "Play", "ИГРАТЬ",
                 new Vector2(0.07f, 0.200f), new Vector2(0.93f, 0.275f), Play, 32);
 
             Image reward = ReleaseUiComponents.GlassCard(_canvas.transform, "RewardInfo",
                 new Vector2(0.07f, 0.105f), new Vector2(0.93f, 0.175f), ReleaseUiComponents.Violet, false);
-            ReleaseUiKit.TextBlock(reward.transform, "Copy", "ЕЖЕДНЕВНЫЙ РЕЗУЛЬТАТ  •  ОБЩИЙ ЧЕЛЛЕНДЖ  •  SHARE", 16,
+            ReleaseUiKit.TextBlock(reward.transform, "Copy", "Сравни точность и брось вызов другу после игры", 23,
                 TextAnchor.MiddleCenter, new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.92f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
 
-            _coins = ReleaseUiComponents.CurrencyPill(_canvas.transform, "Coins", "●", "0",
+            _coins = ReleaseUiComponents.CurrencyPill(_canvas.transform, "Coins", string.Empty, "0",
                 new Vector2(0.74f, 0.895f), new Vector2(0.94f, 0.94f), ReleaseUiComponents.Gold);
 
+        }
+
+        private static Text CreateMetric(Transform parent, string name, string value, string caption,
+            string asset, Vector2 min, Vector2 max)
+        {
+            Transform root = ReleaseUiKit.Rect(parent, name, min, max);
+            ReleaseUiComponents.Icon(root, "Icon", asset, new Vector2(0f, 0.40f), new Vector2(0.26f, 0.97f));
+            Text metric = ReleaseUiKit.TextBlock(root, "Value", value, 32, TextAnchor.MiddleLeft,
+                new Vector2(0.30f, 0.40f), new Vector2(1f, 0.97f), ReleaseUiComponents.Text, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(root, "Caption", caption, 21, TextAnchor.MiddleLeft,
+                new Vector2(0f, 0.02f), new Vector2(1f, 0.37f), ReleaseUiComponents.Muted);
+            return metric;
         }
     }
 }

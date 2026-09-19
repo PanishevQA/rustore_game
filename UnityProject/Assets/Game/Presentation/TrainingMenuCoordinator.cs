@@ -1,4 +1,5 @@
 using System;
+using DontGetSidetracked.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,6 +21,9 @@ namespace DontGetSidetracked.Presentation
         private bool _wired;
         private int _selectedDifficulty;
         private readonly Image[] _difficultyCards = new Image[3];
+        private readonly Text[] _difficultyTimings = new Text[3];
+        private readonly Text[] _difficultyStates = new Text[3];
+        private Text _selectionSummary;
 
         public bool IsOpen => _panel != null && _panel.activeSelf;
 
@@ -163,19 +167,11 @@ namespace DontGetSidetracked.Presentation
             releaseVisual.transform.SetParent(_panel.transform, false);
             ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
 
-            ReleaseUiComponents.SecondaryButton(_panel.transform, "Close", "‹",
-                new Vector2(0.055f, 0.875f), new Vector2(0.16f, 0.935f), Close, 40);
+            ReleaseUiComponents.SecondaryButton(_panel.transform, "Close", "НАЗАД",
+                new Vector2(0.055f, 0.875f), new Vector2(0.255f, 0.935f), Close, 24);
 
-            Transform trainingIconRoot = ReleaseUiKit.Rect(_panel.transform, "GeneratedTrainingIcon",
+            ReleaseUiComponents.Icon(_panel.transform, "GeneratedTrainingIcon", GeneratedUiAssets.TrainingIcon,
                 new Vector2(0.43f, 0.855f), new Vector2(0.57f, 0.935f));
-            Image trainingIcon = trainingIconRoot.gameObject.AddComponent<Image>();
-            if (!GeneratedUiAssets.TryApply(trainingIcon, GeneratedUiAssets.TrainingIcon))
-            {
-                trainingIconRoot.gameObject.SetActive(false);
-                ReleaseUiKit.TextBlock(_panel.transform, "Infinity", "∞", 70, TextAnchor.MiddleCenter,
-                    new Vector2(0.37f, 0.855f), new Vector2(0.63f, 0.935f),
-                    ReleaseUiComponents.Violet, FontStyle.Bold);
-            }
 
             Text title = ReleaseUiKit.TextBlock(_panel.transform, "Title", "ТРЕНИРОВКА", 50,
                 TextAnchor.MiddleCenter, new Vector2(0.16f, 0.795f), new Vector2(0.84f, 0.855f),
@@ -183,36 +179,36 @@ namespace DontGetSidetracked.Presentation
             ReleaseUiKit.AddTextShadow(title, 0.50f, -3f);
 
             ReleaseUiKit.TextBlock(_panel.transform, "Subtitle",
-                "Бесконечные маршруты для твоего прогресса", 21,
+                "Новые маршруты. Столько попыток, сколько нужно.", 25,
                 TextAnchor.MiddleCenter, new Vector2(0.13f, 0.755f), new Vector2(0.87f, 0.800f),
                 ReleaseUiComponents.Muted);
 
-            ReleaseUiComponents.StatTile(_panel.transform, "MemoryBenefit", "|||", "ПАМЯТЬ", "Развивай\nпамять",
-                new Vector2(0.07f, 0.665f), new Vector2(0.34f, 0.745f), ReleaseUiComponents.Violet);
-            ReleaseUiComponents.StatTile(_panel.transform, "FocusBenefit", "◆", "ФОКУС", "Тренируй\nвнимание",
-                new Vector2(0.365f, 0.665f), new Vector2(0.635f, 0.745f), ReleaseUiComponents.Cyan);
-            ReleaseUiComponents.StatTile(_panel.transform, "AccuracyBenefit", "◎", "ТОЧНОСТЬ", "Становись\nточнее",
-                new Vector2(0.66f, 0.665f), new Vector2(0.93f, 0.745f), ReleaseUiComponents.Blue);
+            Image guidance = ReleaseUiComponents.GlassCard(_panel.transform, "TrainingGuidance",
+                new Vector2(0.07f, 0.665f), new Vector2(0.93f, 0.745f), ReleaseUiComponents.Cyan);
+            ReleaseUiComponents.Icon(guidance.transform, "MemoryIcon", GeneratedUiAssets.EyeIcon,
+                new Vector2(0.04f, 0.18f), new Vector2(0.16f, 0.82f));
+            ReleaseUiKit.TextBlock(guidance.transform, "Copy", "Запомни форму и повороты.\nПовтори линию одним движением.", 25,
+                TextAnchor.MiddleLeft, new Vector2(0.20f, 0.14f), new Vector2(0.94f, 0.86f), ReleaseUiComponents.Text);
 
             ReleaseUiComponents.SectionHeader(_panel.transform, "ВЫБЕРИ СЛОЖНОСТЬ",
                 new Vector2(0.07f, 0.615f), new Vector2(0.62f, 0.650f));
 
-            CreateDifficultyCard(0, "EasyCard", "ЛЁГКАЯ", "ПОКАЗ 3.5 С", "Короткие и простые маршруты",
+            CreateDifficultyCard(0, "EasyCard", "ЛЁГКАЯ", "Короткие плавные маршруты",
                 ReleaseUiComponents.Success, new Vector2(0.07f, 0.505f), new Vector2(0.93f, 0.605f));
 
-            CreateDifficultyCard(1, "MediumCard", "СРЕДНЯЯ", "ПОКАЗ 3.0 С", "Больше поворотов и меньше времени",
+            CreateDifficultyCard(1, "MediumCard", "СРЕДНЯЯ", "Больше поворотов и изгибов",
                 ReleaseUiComponents.Cyan, new Vector2(0.07f, 0.390f), new Vector2(0.93f, 0.490f));
 
-            CreateDifficultyCard(2, "HardCard", "СЛОЖНАЯ", "ПОКАЗ 2.5 С", "Для настоящих мастеров памяти",
+            CreateDifficultyCard(2, "HardCard", "СЛОЖНАЯ", "Сложная форма, узкий коридор",
                 ReleaseUiComponents.Violet, new Vector2(0.07f, 0.275f), new Vector2(0.93f, 0.375f));
 
             Image progress = ReleaseUiComponents.GlassCard(_panel.transform, "TrainingProgress",
                 new Vector2(0.07f, 0.185f), new Vector2(0.93f, 0.255f), ReleaseUiComponents.Blue, false);
-            ReleaseUiKit.TextBlock(progress.transform, "ProgressCopy", "ТВОЙ ПРОГРЕСС  •  ТОЧНОСТЬ ВАЖНЕЕ СКОРОСТИ", 17,
+            _selectionSummary = ReleaseUiKit.TextBlock(progress.transform, "ProgressCopy", string.Empty, 25,
                 TextAnchor.MiddleCenter, new Vector2(0.05f, 0.10f), new Vector2(0.95f, 0.90f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
 
-            ReleaseUiComponents.PrimaryButton(_panel.transform, "StartTraining", "▶  НАЧАТЬ ТРЕНИРОВКУ",
+            ReleaseUiComponents.PrimaryButton(_panel.transform, "StartTraining", "НАЧАТЬ ТРЕНИРОВКУ",
                 new Vector2(0.07f, 0.085f), new Vector2(0.93f, 0.165f), StartSelected, 28);
 
             RefreshDifficultySelection();
@@ -222,7 +218,6 @@ namespace DontGetSidetracked.Presentation
             int difficulty,
             string name,
             string title,
-            string timing,
             string description,
             Color accent,
             Vector2 min,
@@ -235,28 +230,36 @@ namespace DontGetSidetracked.Presentation
             button.targetGraphic = card;
             button.transition = Selectable.Transition.ColorTint;
             ColorBlock colors = button.colors;
-            colors.normalColor = card.color;
-            colors.highlightedColor = ReleaseUiKit.Lighten(card.color, 0.04f);
-            colors.pressedColor = ReleaseUiKit.Darken(card.color, 0.05f);
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.10f, 1.10f, 1.10f, 1f);
+            colors.selectedColor = Color.white;
+            colors.pressedColor = new Color(0.64f, 0.76f, 0.84f, 1f);
+            colors.disabledColor = new Color(0.60f, 0.64f, 0.72f, 1f);
             colors.fadeDuration = 0.08f;
             button.colors = colors;
             button.onClick.AddListener(() => SelectDifficulty(difficulty));
 
-            ReleaseUiKit.TextBlock(card.transform, "Glyph", difficulty == 0 ? "◆" : difficulty == 1 ? "◆◆" : "◆◆◆", 24,
-                TextAnchor.MiddleCenter, new Vector2(0.04f, 0.18f), new Vector2(0.19f, 0.82f),
-                accent, FontStyle.Bold);
+            for (int i = 0; i < 3; i++)
+            {
+                Image bar = ReleaseUiKit.Panel(card.transform, "DifficultyBar" + i,
+                    new Vector2(0.045f + i * 0.035f, 0.26f), new Vector2(0.07f + i * 0.035f, 0.46f + i * 0.12f),
+                    i <= difficulty ? accent : new Color(0.19f, 0.25f, 0.34f, 1f), accent, false);
+                bar.raycastTarget = false;
+            }
 
-            ReleaseUiKit.TextBlock(card.transform, "Label", title, 27,
-                TextAnchor.MiddleLeft, new Vector2(0.21f, 0.48f), new Vector2(0.62f, 0.88f),
+            ReleaseUiKit.TextBlock(card.transform, "Label", title, 31,
+                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.50f), new Vector2(0.65f, 0.88f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
 
-            ReleaseUiKit.TextBlock(card.transform, "Description", description, 17,
-                TextAnchor.MiddleLeft, new Vector2(0.21f, 0.10f), new Vector2(0.75f, 0.50f),
+            ReleaseUiKit.TextBlock(card.transform, "Description", description, 22,
+                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.08f), new Vector2(0.71f, 0.48f),
                 ReleaseUiComponents.Muted);
 
-            ReleaseUiKit.TextBlock(card.transform, "Timing", timing, 16,
-                TextAnchor.MiddleRight, new Vector2(0.72f, 0.18f), new Vector2(0.93f, 0.82f),
+            _difficultyTimings[difficulty] = ReleaseUiKit.TextBlock(card.transform, "Timing", string.Empty, 22,
+                TextAnchor.MiddleRight, new Vector2(0.66f, 0.54f), new Vector2(0.94f, 0.87f),
                 accent, FontStyle.Bold);
+            _difficultyStates[difficulty] = ReleaseUiKit.TextBlock(card.transform, "SelectionState", string.Empty, 20,
+                TextAnchor.MiddleRight, new Vector2(0.73f, 0.10f), new Vector2(0.94f, 0.43f), accent, FontStyle.Bold);
         }
 
         private void RefreshDifficultySelection()
@@ -276,7 +279,11 @@ namespace DontGetSidetracked.Presentation
                 card.color = selected
                     ? new Color(0.035f, 0.110f, 0.145f, 0.995f)
                     : new Color(0.020f, 0.055f, 0.100f, 0.955f);
+                _difficultyTimings[i].text = "ПОКАЗ " + (RouteRuntimeTuning.GetDisplayTimeMs((RouteDifficulty)i) / 1000f).ToString("0.0") + " С";
+                _difficultyStates[i].text = selected ? "ВЫБРАНО" : string.Empty;
             }
+            string selectedName = _selectedDifficulty == 0 ? "ЛЁГКАЯ" : _selectedDifficulty == 1 ? "СРЕДНЯЯ" : "СЛОЖНАЯ";
+            if (_selectionSummary != null) _selectionSummary.text = selectedName + "  •  ТОЧНОСТЬ ВАЖНЕЕ СКОРОСТИ";
         }
 
         private static void SetAnchors(RectTransform rect, Vector2 min, Vector2 max)

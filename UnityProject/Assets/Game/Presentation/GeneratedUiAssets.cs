@@ -20,27 +20,31 @@ namespace DontGetSidetracked.Presentation
         public const string CoinIcon = "coin";
         public const string StartMarker = "marker_start_glow";
         public const string EndMarker = "marker_end_glow";
+        public const string DailyIcon = "icon_daily";
+        public const string CampaignIcon = "icon_campaign";
+        public const string HintIcon = "icon_hint";
+        public const string EyeIcon = "icon_eye";
+        public const string ReplayIcon = "icon_replay";
+        public const string ShareIcon = "icon_share";
+        public const string ChallengeIcon = "icon_challenge";
+        public const string AdIcon = "icon_ad";
+        public const string SettingsIcon = "icon_settings";
+        public const string CheckIcon = "icon_check";
+        public const string LockIcon = "icon_lock";
+        public const string NoAdsIcon = "item_no_ads";
+        public const string CosmeticIcon = "item_cosmetic";
+        public const string MedalBronze = "medal_bronze";
+        public const string MedalSilver = "medal_silver";
+        public const string MedalGold = "medal_gold";
+        public const string StarFilled = "star_filled";
+        public const string StarEmpty = "star_empty";
 
         public static Sprite Get(string assetName)
         {
             if (string.IsNullOrWhiteSpace(assetName)) return null;
             if (Cache.TryGetValue(assetName, out Sprite cached)) return cached;
 
-            Texture2D texture = Resources.Load<Texture2D>(Root + assetName);
-            if (texture == null)
-            {
-                Cache[assetName] = null;
-                return null;
-            }
-
-            var sprite = Sprite.Create(
-                texture,
-                new Rect(0f, 0f, texture.width, texture.height),
-                new Vector2(0.5f, 0.5f),
-                100f,
-                0,
-                SpriteMeshType.FullRect);
-            sprite.name = "Generated_" + assetName;
+            Sprite sprite = Resources.Load<Sprite>(Root + assetName);
             Cache[assetName] = sprite;
             return sprite;
         }

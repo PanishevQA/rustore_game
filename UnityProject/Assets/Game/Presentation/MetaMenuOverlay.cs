@@ -23,6 +23,7 @@ namespace DontGetSidetracked.Presentation
         private Image _panelTitleIcon;
         private Text _panelBody;
         private Transform _actionsRoot;
+        private ScrollRect _scroll;
         private GameBootstrap _bootstrap;
         private JsonFileSaveRepository _saveRepository;
         private SaveData _save;
@@ -30,6 +31,8 @@ namespace DontGetSidetracked.Presentation
         private CosmeticSelectionService _cosmetics;
         private GameSettingsService _settings;
         private IReadOnlyList<StoreProduct> _lastStoreProducts;
+        private bool _storeBusy;
+        private bool _catalogLoading;
         private bool _panelOpen;
         private int _panelRevision;
         private float _nextVisibilityCheck;
@@ -94,7 +97,7 @@ namespace DontGetSidetracked.Presentation
         {
             BeginPanelNavigation();
             RebuildLocalServices();
-            ShowPanel("МОЯ СТАТИСТИКА", "Твой путь, твой прогресс. Все данные хранятся локально.");
+            ShowPanel("МОЯ СТАТИСТИКА", "Каждый маршрут делает тебя точнее.");
             RenderStatisticsRows();
         }
 
@@ -103,13 +106,20 @@ namespace DontGetSidetracked.Presentation
             var progress = new CampaignProgressService(_saveRepository, _save);
             string best = _save.PersonalBest > 0 ? _save.PersonalBest.ToString("0.0") + "%" : "—";
 
-            AddInfoRow("★", "ЛУЧШИЙ РЕЗУЛЬТАТ", best, ReleaseUiComponents.Gold);
-            AddInfoRow("◆", "ТЕКУЩАЯ СЕРИЯ", _save.Streak + " ДН.", ReleaseUiComponents.Danger);
-            AddInfoRow("|||", "КАМПАНИЯ",
-                progress.CompletedLevels() + "/" + CampaignLevelCatalog.TotalLevels + "  •  ★ " + progress.TotalStars(),
-                ReleaseUiComponents.Violet);
-            AddInfoRow("◎", "DAILY ЗАВЕРШЕНО", _save.CompletedDailyCount.ToString(), ReleaseUiComponents.Cyan);
-            AddInfoRow("●", "МОНЕТЫ / ПОДСКАЗКИ", _save.Coins + " / " + _save.Hints, ReleaseUiComponents.Gold);
+            Transform hero = AddLayoutCard("BestScoreHero", 224, ReleaseUiComponents.Gold, true);
+            ReleaseUiComponents.Icon(hero, "BestIcon", GeneratedUiAssets.StarFilled,
+                new Vector2(0.06f, 0.28f), new Vector2(0.24f, 0.83f));
+            ReleaseUiKit.TextBlock(hero, "Caption", "ЛУЧШИЙ РЕЗУЛЬТАТ", 28, TextAnchor.MiddleLeft,
+                new Vector2(0.29f, 0.61f), new Vector2(0.94f, 0.87f), ReleaseUiComponents.Muted, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(hero, "BestScore", best, 76, TextAnchor.MiddleLeft,
+                new Vector2(0.28f, 0.12f), new Vector2(0.94f, 0.62f), ReleaseUiComponents.Text, FontStyle.Bold);
+
+            AddMetricPair("DAILY ЗАВЕРШЕНО", _save.CompletedDailyCount.ToString(), "СЕРИЯ ДНЕЙ", _save.Streak.ToString());
+            AddMetricPair("МОНЕТЫ", _save.Coins.ToString(), "ПОДСКАЗКИ", _save.Hints.ToString());
+            AddInfoRow(GeneratedUiAssets.CampaignIcon, "ПРОЙДЕНО УРОВНЕЙ",
+                progress.CompletedLevels() + " / " + CampaignLevelCatalog.TotalLevels, ReleaseUiComponents.Violet);
+            AddInfoRow(GeneratedUiAssets.StarFilled, "ЗВЁЗДЫ КАМПАНИИ", progress.TotalStars().ToString(), ReleaseUiComponents.Gold);
+            AddStoreSectionLabel("Статистика хранится локально на этом устройстве.", ReleaseUiComponents.Muted);
             AddAction("НАСТРОЙКИ", OpenSettings);
             AddAction("КОСМЕТИКА", OpenCosmetics);
         }
@@ -124,31 +134,34 @@ namespace DontGetSidetracked.Presentation
 
         private void RenderSettings(string message = null)
         {
-            string body = "Настрой игру под себя. Изменения применяются сразу и сохраняются локально.";
-            if (!string.IsNullOrWhiteSpace(message)) body = message + "\n\n" + body;
+            string body = string.IsNullOrWhiteSpace(message) ? "Изменения сохраняются сразу на устройстве." : message;
             ShowPanel("НАСТРОЙКИ", body);
 
-            AddSettingToggleRow("♪", "ЗВУК", "Музыка и игровые эффекты", _settings.SoundEnabled, ToggleSound);
-            AddSettingToggleRow("◆", "ВИБРООТКЛИК", "Тактильная обратная связь", _settings.HapticsEnabled, ToggleHaptics);
-            AddInfoRow("◷", "DAILY НАПОМИНАНИЯ",
+            AddSettingToggleRow(GeneratedUiAssets.SettingsIcon, "ЗВУК", "Игровые эффекты", _settings.SoundEnabled, ToggleSound);
+            AddSettingToggleRow(GeneratedUiAssets.SettingsIcon, "ВИБРООТКЛИК", "Отклик на касания", _settings.HapticsEnabled, ToggleHaptics);
+            AddInfoRow(GeneratedUiAssets.DailyIcon, "DAILY НАПОМИНАНИЯ",
                 _save.NotificationPermissionGranted ? "ВКЛ" : "ПОКА ВЫКЛ",
                 _save.NotificationPermissionGranted ? ReleaseUiComponents.Success : ReleaseUiComponents.Muted);
-            AddInfoRow("✓", "ПРОГРЕСС", "ЛОКАЛЬНО", ReleaseUiComponents.Success);
-            AddInfoRow("i", "ВЕРСИЯ", Application.version, ReleaseUiComponents.Blue);
-            AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchasesFromSettings);
+            AddInfoRow(GeneratedUiAssets.CheckIcon, "ПРОГРЕСС", "СОХРАНЁН", ReleaseUiComponents.Success);
+            AddInfoRow(GeneratedUiAssets.SettingsIcon, "ВЕРСИЯ ИГРЫ", Application.version, ReleaseUiComponents.Blue);
+            AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchasesFromSettings, !_storeBusy);
             AddAction("НАЗАД К СТАТИСТИКЕ", OpenStatistics);
         }
 
         private async void RestorePurchasesFromSettings()
         {
+            if (_storeBusy) return;
             int revision = _panelRevision;
             RebuildLocalServices();
+            StoreService store = _store;
+            _storeBusy = true;
             _panelBody.text = "Проверяем покупки RuStore…";
             SetActionsInteractable(false);
             try
             {
-                int restored = await _store.RestoreAsync();
-                _save = _store.Save;
+                int restored = await store.RestoreAsync();
+                _storeBusy = false;
+                _save = store.Save;
                 if (!IsCurrentPanel(revision)) return;
                 RenderSettings(restored > 0
                     ? $"Восстановлено покупок: {restored}."
@@ -156,6 +169,7 @@ namespace DontGetSidetracked.Presentation
             }
             catch (Exception error)
             {
+                _storeBusy = false;
                 Debug.LogWarning($"Restore purchases from settings failed: {error.Message}");
                 if (IsCurrentPanel(revision))
                     RenderSettings("Не удалось восстановить покупки. Попробуй позже.");
@@ -212,11 +226,20 @@ namespace DontGetSidetracked.Presentation
             {
                 string skinId = available[i];
                 bool active = string.Equals(selected, skinId, StringComparison.Ordinal);
-                string label = active
-                    ? $"ВЫБРАНО • {CosmeticLabel(skinId)}"
-                    : CosmeticLabel(skinId);
                 string captured = skinId;
-                AddAction(label, () => SelectCosmetic(captured), !active);
+                Transform card = AddLayoutCard("CosmeticChoice", 152,
+                    active ? ReleaseUiComponents.Cyan : ReleaseUiComponents.Violet, active);
+                ReleaseUiComponents.Icon(card, "CosmeticIcon", GeneratedUiAssets.CosmeticIcon,
+                    new Vector2(0.04f, 0.19f), new Vector2(0.18f, 0.81f));
+                ReleaseUiKit.TextBlock(card, "SkinName", CosmeticLabel(skinId), 32, TextAnchor.MiddleLeft,
+                    new Vector2(0.22f, 0.43f), new Vector2(0.86f, 0.83f), ReleaseUiComponents.Text, FontStyle.Bold);
+                ReleaseUiKit.TextBlock(card, "Selection", active ? "ВЫБРАН" : "ВЫБРАТЬ", 26, TextAnchor.MiddleLeft,
+                    new Vector2(0.22f, 0.12f), new Vector2(0.86f, 0.43f),
+                    active ? ReleaseUiComponents.Success : ReleaseUiComponents.Muted);
+                Button choice = card.gameObject.AddComponent<Button>();
+                ConfigureCardButton(choice, card.GetComponent<Image>(), !active, () => SelectCosmetic(captured));
+                if (active) ReleaseUiComponents.Icon(card, "Selected", GeneratedUiAssets.CheckIcon,
+                    new Vector2(0.87f, 0.30f), new Vector2(0.96f, 0.70f));
             }
 
             AddAction("В МАГАЗИН", OpenStore);
@@ -246,14 +269,19 @@ namespace DontGetSidetracked.Presentation
         private async void OpenStore()
         {
             int revision = BeginPanelNavigation();
-            ShowPanel("МАГАЗИН", "Загружаем каталог RuStore…");
+            RebuildLocalServices();
+            _lastStoreProducts = null;
+            _catalogLoading = true;
+            ShowPanel("МАГАЗИН", "Загружаем цены…");
+            RenderStore(null);
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.StoreOpen, Params("surface", "home"));
+            StoreService store = _store;
 
             try
             {
-                RebuildLocalServices();
-                IReadOnlyList<StoreProduct> products = await _store.LoadCatalogAsync();
+                IReadOnlyList<StoreProduct> products = await store.LoadCatalogAsync();
                 if (!IsCurrentPanel(revision)) return;
+                _catalogLoading = false;
                 _lastStoreProducts = products;
                 RenderStore(products);
             }
@@ -261,115 +289,81 @@ namespace DontGetSidetracked.Presentation
             {
                 Debug.LogWarning($"Store unavailable: {error.Message}");
                 if (!IsCurrentPanel(revision)) return;
-                _panelBody.text = "Магазин сейчас недоступен. Игра продолжает работать полностью локально.";
-                ClearActions();
-                AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases);
-                AddAction("КОСМЕТИКА", OpenCosmetics);
+                _catalogLoading = false;
+                RenderStore(null, "Покупки пока недоступны. Твои скины и подсказки остаются с тобой.");
             }
         }
 
         private void RenderStore(IReadOnlyList<StoreProduct> products, string message = null)
         {
             ClearActions();
-            string prefix = string.IsNullOrWhiteSpace(message) ? string.Empty : message + "\n\n";
-            _panelBody.text = prefix + $"ПОДСКАЗКИ: {_store.Save.Hints}\nЦены и статус покупки приходят напрямую из RuStore Pay.";
+            bool available = products != null && products.Count > 0;
+            _panelBody.text = !string.IsNullOrWhiteSpace(message) ? message
+                : _catalogLoading ? "Загружаем цены…"
+                : !available ? "Для покупки подключись к RuStore. Играть можно без сети."
+                : $"Монеты: {_store.Save.Coins}    /    Подсказки: {_store.Save.Hints}";
 
-            if (products == null || products.Count == 0)
-            {
-                _panelBody.text += "\n\nКаталог RuStore сейчас недоступен.";
-                AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases);
-                AddAction("КОСМЕТИКА", OpenCosmetics);
-                return;
-            }
-
-            StoreProduct hero = FindProduct(products, ProductIds.StarterPack) ??
-                                FindProduct(products, ProductIds.RemoveAds);
-            if (hero != null) AddStoreHeroProduct(hero, IsOwned(hero.Id));
-
+            AddStoreSectionLabel("БЕЗ ПАУЗ НА РЕКЛАМУ", ReleaseUiComponents.Cyan);
+            StoreProduct premium = ProductOrUnavailable(products, ProductIds.RemoveAds);
+            AddStoreHeroProduct(premium, IsOwned(premium.Id));
             AddStoreSectionLabel("СКИНЫ ЛИНИИ", ReleaseUiComponents.Violet);
             AddStoreProductIfPresent(products, ProductIds.SkinNeon);
             AddStoreProductIfPresent(products, ProductIds.SkinRetro);
-
+            AddStoreProductIfPresent(products, ProductIds.StarterPack);
             AddStoreSectionLabel("ПОДСКАЗКИ", ReleaseUiComponents.Gold);
             AddStoreProductIfPresent(products, ProductIds.Hints10);
-
-            string alternatePremium = hero != null && string.Equals(hero.Id, ProductIds.StarterPack, StringComparison.Ordinal)
-                ? ProductIds.RemoveAds
-                : ProductIds.StarterPack;
-            StoreProduct alternate = FindProduct(products, alternatePremium);
-            if (alternate != null)
-            {
-                AddStoreSectionLabel("ПРЕМИУМ", ReleaseUiComponents.Cyan);
-                AddStoreProductAction(alternate, IsOwned(alternate.Id));
-            }
-
-            AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases);
+            if (!available && !_catalogLoading) AddAction("ОБНОВИТЬ КАТАЛОГ", OpenStore, !_storeBusy);
+            AddAction("ВОССТАНОВИТЬ ПОКУПКИ", RestorePurchases, !_storeBusy && !_catalogLoading);
             AddAction("МОИ СКИНЫ", OpenCosmetics);
         }
 
-        private void AddStoreHeroProduct(StoreProduct product, bool owned)
+        private void AddStoreHeroProduct(StoreProduct product, bool owned) =>
+            AddStoreProductCard(product, owned, true);
+
+        private void AddStoreProductAction(StoreProduct product, bool owned) =>
+            AddStoreProductCard(product, owned, false);
+
+        private void AddStoreProductCard(StoreProduct product, bool owned, bool hero)
         {
             string productId = product.Id;
-            string title = string.IsNullOrWhiteSpace(product.Title) ? ProductLabel(productId) : product.Title;
-            string price = string.IsNullOrWhiteSpace(product.PriceLabel) ? "—" : product.PriceLabel;
-            bool interactable = !owned || product.IsConsumable;
+            // A missing SDK price is unavailable, never a made-up production offer.
+            bool hasPrice = !string.IsNullOrWhiteSpace(product.PriceLabel);
+            bool interactable = !_storeBusy && !_catalogLoading && hasPrice && !owned;
+            Color accent = owned ? ReleaseUiComponents.Success
+                : hero ? ReleaseUiComponents.Cyan : ReleaseUiComponents.Violet;
+            Transform card = AddLayoutCard(hero ? "PremiumOffer" : "StoreProduct", hero ? 192 : 176, accent, hero);
+            Button button = card.gameObject.AddComponent<Button>();
+            ConfigureCardButton(button, card.GetComponent<Image>(), interactable, () => Purchase(productId));
 
-            var go = new GameObject("PremiumOffer", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
-            go.transform.SetParent(_actionsRoot, false);
-            Image image = go.GetComponent<Image>();
-            image.sprite = ReleaseUiKit.Rounded;
-            image.type = Image.Type.Sliced;
-            image.color = new Color(0.090f, 0.045f, 0.175f, 0.99f);
-
-            Outline outline = go.AddComponent<Outline>();
-            outline.effectColor = new Color(ReleaseUiComponents.Violet.r, ReleaseUiComponents.Violet.g, ReleaseUiComponents.Violet.b, 0.55f);
-            outline.effectDistance = new Vector2(3f, -3f);
-
-            Shadow glow = go.AddComponent<Shadow>();
-            glow.effectColor = new Color(ReleaseUiComponents.Violet.r, ReleaseUiComponents.Violet.g, ReleaseUiComponents.Violet.b, 0.25f);
-            glow.effectDistance = new Vector2(0f, -6f);
-
-            LayoutElement element = go.GetComponent<LayoutElement>();
-            element.preferredHeight = 122;
-            element.minHeight = 112;
-
-            Button button = go.GetComponent<Button>();
-            button.targetGraphic = image;
-            button.interactable = interactable;
-            if (interactable) button.onClick.AddListener(() => Purchase(productId));
-
-            ReleaseUiKit.TextBlock(go.transform, "Crown", "★", 44, TextAnchor.MiddleCenter,
-                new Vector2(0.035f, 0.22f), new Vector2(0.19f, 0.84f),
-                ReleaseUiComponents.Gold, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(go.transform, "Title", title, 27, TextAnchor.MiddleLeft,
-                new Vector2(0.20f, 0.55f), new Vector2(0.70f, 0.88f),
-                ReleaseUiComponents.Text, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(go.transform, "Benefits",
-                ProductSubtitle(productId) + "\nБольше свободы от рекламы", 15, TextAnchor.UpperLeft,
-                new Vector2(0.20f, 0.13f), new Vector2(0.70f, 0.56f),
-                ReleaseUiComponents.Muted);
-            ReleaseUiKit.TextBlock(go.transform, "Price",
-                owned && !product.IsConsumable ? "КУПЛЕНО" : price, 23, TextAnchor.MiddleCenter,
-                new Vector2(0.72f, 0.24f), new Vector2(0.95f, 0.76f),
-                owned ? ReleaseUiComponents.Success : ReleaseUiComponents.Gold, FontStyle.Bold);
+            ReleaseUiComponents.Icon(card, "ProductIcon", ProductIcon(productId),
+                new Vector2(0.035f, 0.27f), new Vector2(0.16f, 0.78f));
+            ReleaseUiKit.TextBlock(card, "ProductTitle", ProductLabel(productId), 32, TextAnchor.MiddleLeft,
+                new Vector2(0.20f, 0.57f), new Vector2(0.72f, 0.89f), ReleaseUiComponents.Text, FontStyle.Bold);
+            Text description = ReleaseUiKit.TextBlock(card, "ProductSubtitle", ProductSubtitle(productId), 25, TextAnchor.UpperLeft,
+                new Vector2(0.20f, 0.12f), new Vector2(0.70f, 0.55f), ReleaseUiComponents.Muted);
+            description.horizontalOverflow = HorizontalWrapMode.Wrap;
+            string price = owned ? "КУПЛЕНО" : _catalogLoading ? "Загрузка…" : !hasPrice ? "Недоступно" : product.PriceLabel;
+            ReleaseUiKit.TextBlock(card, "ProductPrice", price, owned || !hasPrice ? 24 : 30, TextAnchor.MiddleCenter,
+                new Vector2(0.73f, 0.29f), new Vector2(0.97f, 0.75f),
+                owned ? ReleaseUiComponents.Success : hasPrice ? ReleaseUiComponents.Gold : ReleaseUiComponents.Muted,
+                FontStyle.Bold);
         }
 
         private void AddStoreSectionLabel(string label, Color accent)
         {
-            var go = new GameObject("StoreSection", typeof(RectTransform), typeof(LayoutElement));
-            go.transform.SetParent(_actionsRoot, false);
-            LayoutElement element = go.GetComponent<LayoutElement>();
-            element.preferredHeight = 36;
-            element.minHeight = 32;
-            ReleaseUiKit.TextBlock(go.transform, "Label", label, 17, TextAnchor.MiddleLeft,
-                new Vector2(0.02f, 0.05f), new Vector2(0.98f, 0.95f), accent, FontStyle.Bold);
+            Transform root = AddLayoutRoot("StoreSection", 48);
+            ReleaseUiKit.TextBlock(root, "Label", label, 26, TextAnchor.MiddleLeft,
+                new Vector2(0.02f, 0.02f), new Vector2(0.98f, 0.98f), accent, FontStyle.Bold);
         }
 
         private void AddStoreProductIfPresent(IReadOnlyList<StoreProduct> products, string productId)
         {
-            StoreProduct product = FindProduct(products, productId);
-            if (product != null) AddStoreProductAction(product, IsOwned(product.Id));
+            StoreProduct product = ProductOrUnavailable(products, productId);
+            AddStoreProductAction(product, IsOwned(product.Id));
         }
+
+        private static StoreProduct ProductOrUnavailable(IReadOnlyList<StoreProduct> products, string productId) =>
+            FindProduct(products, productId) ?? new StoreProduct { Id = productId };
 
         private static StoreProduct FindProduct(IReadOnlyList<StoreProduct> products, string productId)
         {
@@ -377,156 +371,110 @@ namespace DontGetSidetracked.Presentation
             for (int i = 0; i < products.Count; i++)
             {
                 StoreProduct product = products[i];
-                if (product != null && string.Equals(product.Id, productId, StringComparison.Ordinal))
-                    return product;
+                if (product != null && string.Equals(product.Id, productId, StringComparison.Ordinal)) return product;
             }
             return null;
         }
 
-        private void AddStoreProductAction(StoreProduct product, bool owned)
+        private static string ProductIcon(string productId)
         {
-            string productId = product.Id;
-            string title = string.IsNullOrWhiteSpace(product.Title) ? ProductLabel(productId) : product.Title;
-            string description = string.IsNullOrWhiteSpace(product.Description)
-                ? ProductSubtitle(productId)
-                : product.Description;
-            string price = string.IsNullOrWhiteSpace(product.PriceLabel) ? "—" : product.PriceLabel;
-            bool interactable = !owned || product.IsConsumable;
-
-            var go = new GameObject("StoreProduct", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
-            go.transform.SetParent(_actionsRoot, false);
-
-            Image image = go.GetComponent<Image>();
-            image.sprite = ReleaseUiKit.Rounded;
-            image.type = Image.Type.Sliced;
-            image.color = new Color(0.045f, 0.065f, 0.115f, 0.985f);
-
-            Outline outline = go.AddComponent<Outline>();
-            Color accent = owned && !product.IsConsumable ? ReleaseUiKit.Green : ReleaseUiKit.Cyan;
-            outline.effectColor = new Color(accent.r, accent.g, accent.b, 0.16f);
-            outline.effectDistance = new Vector2(2f, -2f);
-
-            LayoutElement element = go.GetComponent<LayoutElement>();
-            element.preferredHeight = 76;
-            element.minHeight = 70;
-
-            Button button = go.GetComponent<Button>();
-            button.targetGraphic = image;
-            button.interactable = interactable;
-            if (interactable) button.onClick.AddListener(() => Purchase(productId));
-            ColorBlock colors = button.colors;
-            colors.normalColor = image.color;
-            colors.highlightedColor = ReleaseUiKit.Lighten(image.color, 0.045f);
-            colors.pressedColor = ReleaseUiKit.Darken(image.color, 0.07f);
-            colors.disabledColor = new Color(image.color.r, image.color.g, image.color.b, 0.76f);
-            colors.fadeDuration = 0.08f;
-            button.colors = colors;
-
-            Text titleText = ReleaseUiKit.TextBlock(go.transform, "ProductTitle", title, 20,
-                TextAnchor.MiddleLeft, new Vector2(0.055f, 0.46f), new Vector2(0.69f, 0.90f),
-                ReleaseUiKit.Text, FontStyle.Bold);
-            titleText.raycastTarget = false;
-
-            Text subtitle = ReleaseUiKit.TextBlock(go.transform, "ProductSubtitle", description, 13,
-                TextAnchor.MiddleLeft, new Vector2(0.055f, 0.10f), new Vector2(0.69f, 0.48f),
-                ReleaseUiKit.Muted);
-            subtitle.raycastTarget = false;
-
-            Text priceText = ReleaseUiKit.TextBlock(go.transform, "ProductPrice",
-                owned && !product.IsConsumable ? "КУПЛЕНО" : price, 18,
-                TextAnchor.MiddleRight, new Vector2(0.70f, 0.18f), new Vector2(0.945f, 0.82f),
-                accent, FontStyle.Bold);
-            priceText.raycastTarget = false;
+            switch (productId)
+            {
+                case ProductIds.RemoveAds: return GeneratedUiAssets.NoAdsIcon;
+                case ProductIds.Hints10: return GeneratedUiAssets.HintIcon;
+                default: return GeneratedUiAssets.CosmeticIcon;
+            }
         }
 
         private static string ProductSubtitle(string id)
         {
             switch (id)
             {
-                case ProductIds.RemoveAds: return "Убирает межраундовую рекламу";
-                case ProductIds.StarterPack: return "Набор для быстрого старта";
-                case ProductIds.SkinNeon: return "Косметический неоновый след";
-                case ProductIds.SkinRetro: return "Косметический ретро-след";
-                case ProductIds.Hints10: return "10 дополнительных подсказок";
+                case ProductIds.RemoveAds: return "Без рекламы между раундами. Видео за награду — по желанию.";
+                case ProductIds.StarterPack: return "Три скина и отключение рекламы между раундами";
+                case ProductIds.SkinNeon: return "Яркий цвет твоего маршрута";
+                case ProductIds.SkinRetro: return "Новый цвет для каждого касания";
+                case ProductIds.Hints10: return "Ещё 10 показов маршрута";
                 default: return "Покупка через RuStore";
             }
         }
 
         private async void Purchase(string productId)
         {
+            StoreProduct product = FindProduct(_lastStoreProducts, productId);
+            if (_storeBusy || product == null || string.IsNullOrWhiteSpace(product.PriceLabel) || IsOwned(productId)) return;
             int revision = _panelRevision;
+            StoreService store = _store;
+            _storeBusy = true;
+            string feedback = "Не удалось завершить покупку. Попробуй ещё раз.";
             AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseStart, Params("product_id", productId));
-            _panelBody.text = $"Покупка {ProductLabel(productId)}…";
+            _panelBody.text = $"Открываем покупку: {ProductLabel(productId)}…";
             SetActionsInteractable(false);
 
             try
             {
-                StorePurchaseResult result = await _store.PurchaseAsync(productId);
-                _save = _store.Save;
-                if (!IsCurrentPanel(revision)) return;
-
+                StorePurchaseResult result = await store.PurchaseAsync(productId);
                 if (result?.Payment?.Outcome == PurchaseOutcome.Completed && result.Verified)
                 {
                     AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseSuccess, Params("product_id", productId));
-                    string message = result.GrantApplied
-                        ? "Покупка подтверждена RuStore и применена на этом устройстве."
-                        : "Покупка уже была применена ранее.";
-                    RenderStore(_lastStoreProducts, message);
+                    feedback = result.GrantApplied ? "Готово! Покупка доступна на этом устройстве." : "Эта покупка уже добавлена.";
                 }
                 else if (result?.Payment?.Outcome == PurchaseOutcome.Cancelled)
                 {
                     AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseCancel, Params("product_id", productId));
-                    _panelBody.text = "Покупка отменена.";
+                    feedback = "Покупка отменена. Можно выбрать что-нибудь позже.";
                 }
                 else
                 {
                     AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseError, Params(
-                        "product_id", productId,
-                        "error", result?.Verification?.ErrorMessage ?? result?.Payment?.ErrorMessage ?? "unknown"));
-
-                    _panelBody.text = result?.Payment?.Outcome == PurchaseOutcome.Completed
-                        ? "RuStore принял покупку, но товар ещё не появился среди подтверждённых. Нажмите «Восстановить покупки»."
-                        : "Покупка не завершена. Товар не выдан.";
+                        "product_id", productId, "error", result?.Verification?.ErrorMessage ?? result?.Payment?.ErrorMessage ?? "unknown"));
+                    feedback = result?.Payment?.Outcome == PurchaseOutcome.Completed
+                        ? "Покупка обрабатывается. Если товар не появился, восстанови покупки."
+                        : "Покупка не завершена. Попробуй позже.";
                 }
             }
             catch (Exception error)
             {
-                AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseError, Params(
-                    "product_id", productId,
-                    "error", error.Message));
-                if (IsCurrentPanel(revision))
-                    _panelBody.text = "Ошибка покупки. Товар не выдан.";
+                AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.PurchaseError, Params("product_id", productId, "error", error.Message));
             }
             finally
             {
-                if (IsCurrentPanel(revision)) SetActionsInteractable(true);
+                _storeBusy = false;
+                if (IsCurrentPanel(revision))
+                {
+                    _save = store.Save;
+                    // Rebuild the cards so owned/unavailable products remain disabled after an async operation.
+                    RenderStore(_lastStoreProducts, feedback);
+                }
             }
         }
 
         private async void RestorePurchases()
         {
+            if (_storeBusy) return;
             int revision = _panelRevision;
-            _panelBody.text = "Восстанавливаем подтверждённые покупки RuStore…";
+            StoreService store = _store;
+            _storeBusy = true;
+            string feedback = "Не удалось восстановить покупки. Попробуй позже.";
+            _panelBody.text = "Проверяем покупки RuStore…";
             SetActionsInteractable(false);
             try
             {
-                int restored = await _store.RestoreAsync();
-                _save = _store.Save;
-                if (!IsCurrentPanel(revision)) return;
-                string message = restored > 0
-                    ? $"Восстановлено: {restored}."
-                    : "Новых покупок для восстановления нет.";
-                RenderStore(_lastStoreProducts, message);
+                int restored = await store.RestoreAsync();
+                feedback = restored > 0 ? $"Готово! Восстановлено покупок: {restored}." : "Все доступные покупки уже восстановлены.";
             }
             catch (Exception error)
             {
                 Debug.LogWarning($"Restore purchases failed: {error.Message}");
-                if (IsCurrentPanel(revision))
-                    _panelBody.text = "Не удалось восстановить покупки. Попробуйте позже.";
             }
             finally
             {
-                if (IsCurrentPanel(revision)) SetActionsInteractable(true);
+                _storeBusy = false;
+                if (IsCurrentPanel(revision))
+                {
+                    _save = store.Save;
+                    RenderStore(_lastStoreProducts, feedback);
+                }
             }
         }
 
@@ -692,8 +640,8 @@ namespace DontGetSidetracked.Presentation
             colors.fadeDuration = 0.08f;
             button.colors = colors;
 
-            ReleaseUiKit.TextBlock(go.transform, "Glyph", glyph, 24, TextAnchor.MiddleCenter,
-                new Vector2(0.04f, 0.10f), new Vector2(0.16f, 0.90f), accent, FontStyle.Bold);
+            ReleaseUiComponents.Icon(go.transform, "SettingIcon", glyph,
+                new Vector2(0.045f, 0.18f), new Vector2(0.155f, 0.82f));
             ReleaseUiKit.TextBlock(go.transform, "Label", label, 18, TextAnchor.MiddleLeft,
                 new Vector2(0.18f, 0.50f), new Vector2(0.67f, 0.88f), ReleaseUiComponents.Text, FontStyle.Bold);
             ReleaseUiKit.TextBlock(go.transform, "Description", description, 14, TextAnchor.MiddleLeft,
@@ -728,8 +676,8 @@ namespace DontGetSidetracked.Presentation
             element.preferredHeight = 72;
             element.minHeight = 66;
 
-            ReleaseUiKit.TextBlock(go.transform, "Glyph", glyph, 24, TextAnchor.MiddleCenter,
-                new Vector2(0.04f, 0.10f), new Vector2(0.16f, 0.90f), accent, FontStyle.Bold);
+            ReleaseUiComponents.Icon(go.transform, "InfoIcon", glyph,
+                new Vector2(0.045f, 0.18f), new Vector2(0.155f, 0.82f));
             ReleaseUiKit.TextBlock(go.transform, "Label", label, 16, TextAnchor.MiddleLeft,
                 new Vector2(0.18f, 0.50f), new Vector2(0.72f, 0.88f), ReleaseUiComponents.Muted, FontStyle.Bold);
             ReleaseUiKit.TextBlock(go.transform, "Value", value, 22, TextAnchor.MiddleRight,
@@ -740,6 +688,65 @@ namespace DontGetSidetracked.Presentation
         {
             Button button = CreateLayoutButton(_actionsRoot, label, action);
             button.interactable = interactable;
+        }
+
+        private Transform AddLayoutRoot(string name, float preferredHeight)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(LayoutElement));
+            go.transform.SetParent(_actionsRoot, false);
+            LayoutElement element = go.GetComponent<LayoutElement>();
+            element.preferredHeight = preferredHeight;
+            element.minHeight = Mathf.Max(48f, preferredHeight - 12f);
+            return go.transform;
+        }
+
+        private Transform AddLayoutCard(string name, float preferredHeight, Color accent, bool strong)
+        {
+            Transform root = AddLayoutRoot(name, preferredHeight);
+            Image image = root.gameObject.AddComponent<Image>();
+            image.sprite = ReleaseUiKit.Rounded;
+            image.type = Image.Type.Sliced;
+            image.color = strong
+                ? new Color(0.035f, 0.085f, 0.145f, 0.99f)
+                : new Color(0.020f, 0.055f, 0.100f, 0.97f);
+
+            Outline outline = root.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(accent.r, accent.g, accent.b, strong ? 0.42f : 0.22f);
+            outline.effectDistance = strong ? new Vector2(3f, -3f) : new Vector2(2f, -2f);
+            return root;
+        }
+
+        private void AddMetricPair(string leftLabel, string leftValue, string rightLabel, string rightValue)
+        {
+            Transform card = AddLayoutCard("MetricPair", 126f, ReleaseUiComponents.Cyan, false);
+            ReleaseUiKit.TextBlock(card, "LeftLabel", leftLabel, 17, TextAnchor.MiddleLeft,
+                new Vector2(0.055f, 0.54f), new Vector2(0.47f, 0.86f), ReleaseUiComponents.Muted, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(card, "LeftValue", leftValue, 30, TextAnchor.MiddleLeft,
+                new Vector2(0.055f, 0.13f), new Vector2(0.47f, 0.56f), ReleaseUiComponents.Text, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(card, "RightLabel", rightLabel, 17, TextAnchor.MiddleRight,
+                new Vector2(0.53f, 0.54f), new Vector2(0.945f, 0.86f), ReleaseUiComponents.Muted, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(card, "RightValue", rightValue, 30, TextAnchor.MiddleRight,
+                new Vector2(0.53f, 0.13f), new Vector2(0.945f, 0.56f), ReleaseUiComponents.Text, FontStyle.Bold);
+        }
+
+        private static void ConfigureCardButton(
+            Button button,
+            Image image,
+            bool interactable,
+            UnityEngine.Events.UnityAction action)
+        {
+            if (button == null || image == null) return;
+            button.targetGraphic = image;
+            button.interactable = interactable;
+            if (interactable && action != null) button.onClick.AddListener(action);
+
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.08f, 1.08f, 1.08f, 1f);
+            colors.pressedColor = new Color(0.72f, 0.82f, 0.95f, 1f);
+            colors.disabledColor = new Color(0.60f, 0.65f, 0.75f, 0.72f);
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
         }
 
         private void SetActionsInteractable(bool value)
