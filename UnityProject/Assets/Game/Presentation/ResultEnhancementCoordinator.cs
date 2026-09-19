@@ -596,8 +596,23 @@ namespace DontGetSidetracked.Presentation
             if (_badge != null) _badge.gameObject.SetActive(visible);
             if (_recordLabel != null) _recordLabel.gameObject.SetActive(visible && !string.IsNullOrWhiteSpace(_recordLabel.text));
             if (_detailCard != null) _detailCard.SetActive(visible && _detailText != null && !string.IsNullOrWhiteSpace(_detailText.text));
+
+            // StatTile returns its value Text, while the visible card is its parent.
+            // Keep result-only metrics completely out of Showing/Drawing/Home. Previously
+            // these four cards stayed active from Awake and covered the lower play field.
+            SetStatTileVisible(_meanValue, visible);
+            SetStatTileVisible(_endValue, visible);
+            SetStatTileVisible(_completionValue, visible);
+            SetStatTileVisible(_timeValue, visible);
+
             if (_actionPanel != null) _actionPanel.SetActive(visible);
             if (!visible && _cardButton != null) _cardButton.gameObject.SetActive(false);
+        }
+
+        private static void SetStatTileVisible(Text valueText, bool visible)
+        {
+            if (valueText == null || valueText.transform.parent == null) return;
+            valueText.transform.parent.gameObject.SetActive(visible);
         }
 
         private static void SetAnchors(RectTransform rect, Vector2 min, Vector2 max)
