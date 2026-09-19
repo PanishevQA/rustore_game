@@ -253,17 +253,17 @@ namespace DontGetSidetracked.Presentation
             ReleaseUiComponents.SecondaryButton(_panel.transform, "Back", "‹",
                 new Vector2(0.055f, 0.885f), new Vector2(0.16f, 0.945f), GoHome, 40);
 
-            Text kicker = ReleaseUiKit.TextBlock(_panel.transform, "Kicker", "КАМПАНИЯ", 18,
+            Text kicker = ReleaseUiKit.TextBlock(_panel.transform, "Kicker", "КАМПАНИЯ", 20,
                 TextAnchor.MiddleCenter, new Vector2(0.30f, 0.925f), new Vector2(0.70f, 0.962f),
                 ReleaseUiComponents.Cyan, FontStyle.Bold);
 
-            _title = ReleaseUiKit.TextBlock(_panel.transform, "Title", string.Empty, 46,
+            _title = ReleaseUiKit.TextBlock(_panel.transform, "Title", string.Empty, 48,
                 TextAnchor.MiddleCenter, new Vector2(0.17f, 0.835f), new Vector2(0.83f, 0.925f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
-            _title.lineSpacing = 0.88f;
+            _title.lineSpacing = 0.92f;
             ReleaseUiKit.AddTextShadow(_title, 0.42f, -3f);
 
-            _summary = ReleaseUiKit.TextBlock(_panel.transform, "Summary", string.Empty, 20,
+            _summary = ReleaseUiKit.TextBlock(_panel.transform, "Summary", string.Empty, 22,
                 TextAnchor.MiddleCenter, new Vector2(0.11f, 0.775f), new Vector2(0.89f, 0.835f),
                 ReleaseUiComponents.Muted);
 
@@ -272,13 +272,13 @@ namespace DontGetSidetracked.Presentation
                 new Color(0.09f, 0.11f, 0.18f, 0.95f), ReleaseUiKit.Violet, false);
             _chapterProgressFill = ReleaseUiKit.Panel(progressTrack.transform, "ChapterProgressFill",
                 Vector2.zero, new Vector2(0.02f, 1f), ReleaseUiKit.Violet, ReleaseUiKit.Violet, false);
-            _chapterProgressText = ReleaseUiKit.TextBlock(_panel.transform, "ChapterProgressText", "ПРОГРЕСС ГЛАВЫ  0/10", 20,
+            _chapterProgressText = ReleaseUiKit.TextBlock(_panel.transform, "ChapterProgressText", "ПРОГРЕСС ГЛАВЫ  0/10", 22,
                 TextAnchor.MiddleRight, new Vector2(0.57f, 0.748f), new Vector2(0.935f, 0.775f),
                 new Color(0.72f, 0.66f, 1f, 1f), FontStyle.Bold);
 
             Image pathSurface = ReleaseUiKit.Panel(_panel.transform, "PathSurface",
                 new Vector2(0.045f, 0.220f), new Vector2(0.955f, 0.720f),
-                new Color(0.004f, 0.012f, 0.030f, 0.74f), ReleaseUiComponents.Cyan, false);
+                new Color(0.006f, 0.018f, 0.038f, 0.82f), ReleaseUiComponents.Cyan, false);
             pathSurface.raycastTarget = false;
 
             var grid = new GameObject("LevelPath", typeof(RectTransform));
@@ -289,22 +289,22 @@ namespace DontGetSidetracked.Presentation
 
             _coinHint = ReleaseUiComponents.SecondaryButton(_panel.transform, "CoinHint", "30 МОНЕТ  →  +1 ПОДСКАЗКА",
                 new Vector2(0.20f, 0.170f), new Vector2(0.80f, 0.220f),
-                BuyHintWithCoins, 22);
+                BuyHintWithCoins, 24);
 
             _previous = ReleaseUiKit.Button(_panel.transform, "PreviousChapter", "← ГЛАВА",
                 new Vector2(0.055f, 0.085f), new Vector2(0.295f, 0.150f),
-                ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 25, PreviousChapter);
+                ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 27, PreviousChapter);
 
             ReleaseUiComponents.PrimaryButton(_panel.transform, "Home", "▶  ИГРАТЬ ТЕКУЩИЙ",
                 new Vector2(0.32f, 0.080f), new Vector2(0.68f, 0.155f),
-                StartHighestUnlocked, 23);
+                StartHighestUnlocked, 25);
 
             _next = ReleaseUiKit.Button(_panel.transform, "NextChapter", "ГЛАВА →",
                 new Vector2(0.705f, 0.085f), new Vector2(0.945f, 0.150f),
-                ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 25, NextChapter);
+                ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 27, NextChapter);
 
             Text hint = ReleaseUiKit.TextBlock(_panel.transform, "Hint",
-                "Новые звёзды дают монеты  •  финал главы даёт +1 подсказку", 20,
+                "Новые звёзды дают монеты  •  финал главы даёт +1 подсказку", 22,
                 TextAnchor.MiddleCenter, new Vector2(0.07f, 0.025f), new Vector2(0.93f, 0.065f),
                 ReleaseUiKit.Muted);
             hint.raycastTarget = false;
@@ -325,7 +325,7 @@ namespace DontGetSidetracked.Presentation
                     ? new Color(ReleaseUiComponents.Success.r, ReleaseUiComponents.Success.g, ReleaseUiComponents.Success.b, 0.72f)
                     : new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.78f);
 
-            CreatePathSegment(parent, "PathProgress", LevelCenter(slot), LevelCenter(slot + 1), accent, 0.010f);
+            CreatePathSegment(parent, "PathProgress", LevelCenter(slot), LevelCenter(slot + 1), accent, 0.012f);
         }
 
         private static Button CreateLevelButton(
@@ -339,7 +339,7 @@ namespace DontGetSidetracked.Presentation
             bool completed = record != null && record.Stars > 0;
             bool current = unlocked && !completed;
             Color accent = !unlocked
-                ? new Color(0.30f, 0.38f, 0.50f, 0.82f)
+                ? new Color(0.38f, 0.47f, 0.60f, 0.88f)
                 : completed
                     ? ReleaseUiComponents.Success
                     : ReleaseUiComponents.Cyan;
@@ -348,8 +348,8 @@ namespace DontGetSidetracked.Presentation
             var go = new GameObject("LevelNode", typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(parent, false);
             RectTransform rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(center.x - 0.205f, center.y - 0.066f);
-            rect.anchorMax = new Vector2(center.x + 0.205f, center.y + 0.066f);
+            rect.anchorMin = new Vector2(center.x - 0.205f, center.y - 0.070f);
+            rect.anchorMax = new Vector2(center.x + 0.205f, center.y + 0.070f);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
 
@@ -357,7 +357,7 @@ namespace DontGetSidetracked.Presentation
             image.sprite = ReleaseUiKit.Rounded;
             image.type = Image.Type.Sliced;
             image.color = !unlocked
-                ? new Color(0.016f, 0.027f, 0.050f, 0.93f)
+                ? new Color(0.025f, 0.038f, 0.068f, 0.96f)
                 : current
                     ? new Color(0.020f, 0.110f, 0.170f, 0.995f)
                     : new Color(0.022f, 0.070f, 0.115f, 0.985f);
@@ -387,20 +387,20 @@ namespace DontGetSidetracked.Presentation
             block.fadeDuration = 0.08f;
             button.colors = block;
 
-            ReleaseUiKit.TextBlock(go.transform, "LevelNumber", levelNumber.ToString(), 40,
+            ReleaseUiKit.TextBlock(go.transform, "LevelNumber", levelNumber.ToString(), 44,
                 TextAnchor.MiddleCenter, new Vector2(0.035f, 0.12f), new Vector2(0.28f, 0.88f),
-                unlocked ? ReleaseUiComponents.Text : new Color(0.45f, 0.50f, 0.60f, 0.88f), FontStyle.Bold);
+                unlocked ? ReleaseUiComponents.Text : new Color(0.58f, 0.64f, 0.74f, 0.95f), FontStyle.Bold);
 
             string stars = !unlocked ? "ЗАКРЫТ" : current ? "ТЕКУЩИЙ" : Stars(record.Stars);
-            ReleaseUiKit.TextBlock(go.transform, "State", stars, 20,
+            ReleaseUiKit.TextBlock(go.transform, "State", stars, 22,
                 TextAnchor.MiddleLeft, new Vector2(0.31f, 0.50f), new Vector2(0.95f, 0.88f),
                 accent, FontStyle.Bold);
 
             string best = !unlocked ? "Нужен предыдущий уровень" :
                 current ? "Твой следующий маршрут" : $"ЛУЧШИЙ  {record.BestScore:0.0}%";
-            ReleaseUiKit.TextBlock(go.transform, "Best", best, 17,
+            ReleaseUiKit.TextBlock(go.transform, "Best", best, 19,
                 TextAnchor.MiddleLeft, new Vector2(0.31f, 0.11f), new Vector2(0.95f, 0.50f),
-                unlocked ? ReleaseUiComponents.Muted : new Color(0.40f, 0.45f, 0.54f, 0.88f));
+                unlocked ? ReleaseUiComponents.Muted : new Color(0.50f, 0.56f, 0.66f, 0.95f));
 
             return button;
         }
