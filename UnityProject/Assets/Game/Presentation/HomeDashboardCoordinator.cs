@@ -188,11 +188,11 @@ namespace DontGetSidetracked.Presentation
 
             ReleaseUiComponents.Backdrop(root.transform, "HomeBackdrop");
 
-            Text logo = ReleaseUiKit.TextBlock(root.transform, "Logo", "НЕ СБЕЙСЯ!", 58, TextAnchor.MiddleLeft,
+            Text logo = ReleaseUiKit.TextBlock(root.transform, "Logo", "НЕ СБЕЙСЯ!", 64, TextAnchor.MiddleLeft,
                 new Vector2(0.07f, 0.902f), new Vector2(0.61f, 0.968f), ReleaseUiComponents.Text, FontStyle.Bold);
             ReleaseUiKit.AddTextShadow(logo, 0.55f, -3f);
 
-            Text tagline = ReleaseUiKit.TextBlock(root.transform, "Tagline", "Простой принцип. Сложно забыть.", 18,
+            Text tagline = ReleaseUiKit.TextBlock(root.transform, "Tagline", "Простой принцип. Сложно забыть.", 20,
                 TextAnchor.MiddleLeft, new Vector2(0.07f, 0.865f), new Vector2(0.56f, 0.905f), ReleaseUiComponents.Muted);
             CreateAccentDash(root.transform, new Vector2(0.07f, 0.852f), new Vector2(0.31f, 0.859f));
 
@@ -205,7 +205,7 @@ namespace DontGetSidetracked.Presentation
             BuildStatRow(root.transform);
             BuildQuickActions(root.transform);
 
-            Text footer = ReleaseUiKit.TextBlock(root.transform, "Footer", "ЗАПОМИНАЙ  •  РИСУЙ  •  СОРЕВНУЙСЯ  •  ДЕЛИСЬ", 13,
+            Text footer = ReleaseUiKit.TextBlock(root.transform, "Footer", "ЗАПОМИНАЙ  •  РИСУЙ  •  СОРЕВНУЙСЯ  •  ДЕЛИСЬ", 14,
                 TextAnchor.MiddleCenter, new Vector2(0.12f, 0.040f), new Vector2(0.88f, 0.062f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
             footer.alignment = TextAnchor.MiddleCenter;
@@ -217,29 +217,29 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.07f, 0.600f), new Vector2(0.93f, 0.835f),
                 ReleaseUiComponents.Cyan, true).transform;
 
-            ReleaseUiKit.TextBlock(card, "DailyKicker", "ИСПЫТАНИЕ ДНЯ", 23, TextAnchor.MiddleLeft,
+            ReleaseUiKit.TextBlock(card, "DailyKicker", "ИСПЫТАНИЕ ДНЯ", 26, TextAnchor.MiddleLeft,
                 new Vector2(0.055f, 0.80f), new Vector2(0.60f, 0.94f), ReleaseUiComponents.Text, FontStyle.Bold);
-            _dailyMeta = ReleaseUiKit.TextBlock(card, "DailyMeta", "СЕГОДНЯ", 15, TextAnchor.MiddleRight,
+            _dailyMeta = ReleaseUiKit.TextBlock(card, "DailyMeta", "СЕГОДНЯ", 17, TextAnchor.MiddleRight,
                 new Vector2(0.58f, 0.81f), new Vector2(0.94f, 0.94f), ReleaseUiComponents.Muted, FontStyle.Bold);
 
-            Text headline = ReleaseUiKit.TextBlock(card, "DailyHeadline", "ОДИН ЧЕЛЛЕНДЖ.\nВСЕ ИГРОКИ. КТО ТОЧНЕЕ?", 28, TextAnchor.MiddleLeft,
+            Text headline = ReleaseUiKit.TextBlock(card, "DailyHeadline", "ОДИН ЧЕЛЛЕНДЖ.\nВСЕ ИГРОКИ. КТО ТОЧНЕЕ?", 31, TextAnchor.MiddleLeft,
                 new Vector2(0.055f, 0.42f), new Vector2(0.64f, 0.77f), ReleaseUiComponents.Text, FontStyle.Bold);
             headline.fontStyle = FontStyle.Bold;
             headline.lineSpacing = 0.90f;
 
             BuildRoutePreview(card);
 
-            _dailyBest = ReleaseUiKit.TextBlock(card, "DailyBest", "ЛУЧШИЙ  —", 16, TextAnchor.MiddleLeft,
+            _dailyBest = ReleaseUiKit.TextBlock(card, "DailyBest", "ЛУЧШИЙ  —", 18, TextAnchor.MiddleLeft,
                 new Vector2(0.055f, 0.23f), new Vector2(0.55f, 0.38f), ReleaseUiComponents.Gold, FontStyle.Bold);
 
             ReleaseUiComponents.PrimaryButton(card, "DailyPlay", "▶  ИГРАТЬ",
-                new Vector2(0.48f, 0.055f), new Vector2(0.945f, 0.245f), StartDailyFromHome, 26);
+                new Vector2(0.48f, 0.055f), new Vector2(0.945f, 0.245f), StartDailyFromHome, 29);
 
             Image reward = ReleaseUiComponents.GlassCard(card, "DailyReward",
                 new Vector2(0.055f, 0.055f), new Vector2(0.45f, 0.245f), ReleaseUiComponents.Gold, false);
-            ReleaseUiKit.TextBlock(reward.transform, "RewardLabel", "DAILY", 13, TextAnchor.MiddleLeft,
+            ReleaseUiKit.TextBlock(reward.transform, "RewardLabel", "DAILY", 15, TextAnchor.MiddleLeft,
                 new Vector2(0.08f, 0.54f), new Vector2(0.92f, 0.87f), ReleaseUiComponents.Muted, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(reward.transform, "RewardValue", "ОБЩИЙ ЧЕЛЛЕНДЖ", 18, TextAnchor.MiddleLeft,
+            ReleaseUiKit.TextBlock(reward.transform, "RewardValue", "ОБЩИЙ ЧЕЛЛЕНДЖ", 20, TextAnchor.MiddleLeft,
                 new Vector2(0.08f, 0.12f), new Vector2(0.92f, 0.58f), ReleaseUiComponents.Gold, FontStyle.Bold);
         }
 
@@ -249,14 +249,14 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.07f, 0.425f), new Vector2(0.93f, 0.585f),
                 ReleaseUiComponents.Violet, false).transform;
 
-            CreateText(card, "CampaignKicker", "КАМПАНИЯ", 21, TextAnchor.MiddleLeft,
+            CreateText(card, "CampaignKicker", "КАМПАНИЯ", 23, TextAnchor.MiddleLeft,
                 new Vector2(0.055f, 0.73f), new Vector2(0.45f, 0.92f), new Color(0.72f, 0.66f, 1f, 1f)).fontStyle = FontStyle.Bold;
 
-            Text title = CreateText(card, "CampaignTitle", "60 УРОВНЕЙ  •  6 ГЛАВ", 31, TextAnchor.MiddleLeft,
+            Text title = CreateText(card, "CampaignTitle", "60 УРОВНЕЙ  •  6 ГЛАВ", 34, TextAnchor.MiddleLeft,
                 new Vector2(0.055f, 0.45f), new Vector2(0.72f, 0.74f), TextPrimary);
             title.fontStyle = FontStyle.Bold;
 
-            _campaignMeta = CreateText(card, "CampaignMeta", "0/60  •  ★ 0", 20, TextAnchor.MiddleLeft,
+            _campaignMeta = CreateText(card, "CampaignMeta", "0/60  •  ★ 0", 22, TextAnchor.MiddleLeft,
                 new Vector2(0.055f, 0.27f), new Vector2(0.65f, 0.45f), TextMuted);
 
             Transform progress = CreateRect(parent: card, name: "ProgressTrack",
@@ -276,7 +276,7 @@ namespace DontGetSidetracked.Presentation
             _campaignProgressFill.rectTransform.anchorMax = new Vector2(0.02f, 1f);
 
             ReleaseUiComponents.PrimaryButton(card, "LevelsButton", "ПРОДОЛЖИТЬ  ›",
-                new Vector2(0.66f, 0.12f), new Vector2(0.945f, 0.48f), OpenCampaignFromHome, 20);
+                new Vector2(0.66f, 0.12f), new Vector2(0.945f, 0.48f), OpenCampaignFromHome, 22);
         }
 
         private void BuildStatRow(Transform parent)
@@ -311,9 +311,9 @@ namespace DontGetSidetracked.Presentation
             Vector2 max)
         {
             Transform slot = CreateRect(parent, name, min, max);
-            ReleaseUiKit.TextBlock(slot, "Label", label, 14, TextAnchor.MiddleCenter,
+            ReleaseUiKit.TextBlock(slot, "Label", label, 16, TextAnchor.MiddleCenter,
                 new Vector2(0.05f, 0.58f), new Vector2(0.95f, 0.88f), accent, FontStyle.Bold);
-            return ReleaseUiKit.TextBlock(slot, "Value", value, 29, TextAnchor.MiddleCenter,
+            return ReleaseUiKit.TextBlock(slot, "Value", value, 31, TextAnchor.MiddleCenter,
                 new Vector2(0.05f, 0.12f), new Vector2(0.95f, 0.61f), TextPrimary, FontStyle.Bold);
         }
 
@@ -368,11 +368,11 @@ namespace DontGetSidetracked.Presentation
                 Vector2.zero, Vector2.one, new Color(0.02f, 0.04f, 0.07f, 1f));
             glyph.fontStyle = FontStyle.Bold;
 
-            Text heading = CreateText(card, "Title", title, wide ? 24 : 20, TextAnchor.MiddleLeft,
+            Text heading = CreateText(card, "Title", title, wide ? 26 : 22, TextAnchor.MiddleLeft,
                 new Vector2(textLeft, 0.48f), new Vector2(0.94f, 0.82f), TextPrimary);
             heading.fontStyle = FontStyle.Bold;
 
-            CreateText(card, "Subtitle", subtitle, wide ? 17 : 14, TextAnchor.MiddleLeft,
+            CreateText(card, "Subtitle", subtitle, wide ? 18 : 16, TextAnchor.MiddleLeft,
                 new Vector2(textLeft, 0.14f), new Vector2(0.94f, 0.50f), TextMuted);
 
             Button button = card.gameObject.AddComponent<Button>();
