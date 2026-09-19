@@ -388,20 +388,20 @@ namespace DontGetSidetracked.Presentation
             _resultHeader = header.gameObject;
             _resultHeader.AddComponent<ReleasePanelMotion>();
 
-            _modeLabel = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЗУЛЬТАТ", 18,
+            _modeLabel = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЗУЛЬТАТ", 22,
                 TextAnchor.MiddleCenter, new Vector2(0.08f, 0.72f), new Vector2(0.92f, 0.92f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
 
-            _scoreText = ReleaseUiKit.TextBlock(header.transform, "Score", "0.0%", 82,
+            _scoreText = ReleaseUiKit.TextBlock(header.transform, "Score", "0.0%", 92,
                 TextAnchor.MiddleCenter, new Vector2(0.08f, 0.18f), new Vector2(0.92f, 0.72f),
                 ReleaseUiComponents.Success, FontStyle.Bold);
             ReleaseUiKit.AddTextShadow(_scoreText, 0.58f, -4f);
 
-            _badge = ReleaseUiKit.TextBlock(header.transform, "Medal", string.Empty, 28,
+            _badge = ReleaseUiKit.TextBlock(header.transform, "Medal", string.Empty, 31,
                 TextAnchor.MiddleCenter, new Vector2(0.14f, 0.02f), new Vector2(0.86f, 0.26f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
 
-            _recordLabel = ReleaseUiKit.TextBlock(_canvas.transform, "DailyRecord", string.Empty, 18,
+            _recordLabel = ReleaseUiKit.TextBlock(_canvas.transform, "DailyRecord", string.Empty, 20,
                 TextAnchor.MiddleCenter, new Vector2(0.22f, 0.735f), new Vector2(0.78f, 0.780f),
                 ReleaseUiComponents.Gold, FontStyle.Bold);
 
@@ -409,38 +409,44 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.07f, 0.675f), new Vector2(0.93f, 0.730f),
                 ReleaseUiComponents.Violet, false);
             _detailCard = detail.gameObject;
-            _detailText = ReleaseUiKit.TextBlock(detail.transform, "Detail", string.Empty, 21,
+            _detailText = ReleaseUiKit.TextBlock(detail.transform, "Detail", string.Empty, 23,
                 TextAnchor.MiddleCenter, new Vector2(0.035f, 0.08f), new Vector2(0.965f, 0.92f),
                 ReleaseUiKit.Muted, FontStyle.Bold);
             _detailText.lineSpacing = 1.05f;
 
+            Text routeLegend = ReleaseUiKit.TextBlock(_canvas.transform, "RouteComparisonLegend",
+                "ЭТАЛОН  /  ТВОЯ ЛИНИЯ", 18, TextAnchor.MiddleCenter,
+                new Vector2(0.23f, 0.330f), new Vector2(0.77f, 0.362f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
+            routeLegend.raycastTarget = false;
+
             _meanValue = ReleaseUiComponents.StatTile(_canvas.transform, "MeanDeviation", "◎", "0%", "Среднее\nотклонение",
-                new Vector2(0.07f, 0.215f), new Vector2(0.275f, 0.315f), ReleaseUiComponents.Blue);
+                new Vector2(0.07f, 0.212f), new Vector2(0.275f, 0.322f), ReleaseUiComponents.Blue);
             _endValue = ReleaseUiComponents.StatTile(_canvas.transform, "EndAccuracy", "★", "0%", "Попадание\nв цель",
-                new Vector2(0.285f, 0.215f), new Vector2(0.49f, 0.315f), ReleaseUiComponents.Success);
+                new Vector2(0.285f, 0.212f), new Vector2(0.49f, 0.322f), ReleaseUiComponents.Success);
             _completionValue = ReleaseUiComponents.StatTile(_canvas.transform, "Completion", "✓", "0%", "Завершённость",
-                new Vector2(0.50f, 0.215f), new Vector2(0.705f, 0.315f), ReleaseUiComponents.Violet);
+                new Vector2(0.50f, 0.212f), new Vector2(0.705f, 0.322f), ReleaseUiComponents.Violet);
             _timeValue = ReleaseUiComponents.StatTile(_canvas.transform, "GestureTime", "◷", "0.0 c", "Время",
-                new Vector2(0.715f, 0.215f), new Vector2(0.93f, 0.315f), ReleaseUiComponents.Cyan);
+                new Vector2(0.715f, 0.212f), new Vector2(0.93f, 0.322f), ReleaseUiComponents.Cyan);
 
             Image actions = ReleaseUiComponents.GlassCard(_canvas.transform, "ResultActions",
-                new Vector2(0.07f, 0.045f), new Vector2(0.93f, 0.195f),
+                new Vector2(0.07f, 0.040f), new Vector2(0.93f, 0.198f),
                 ReleaseUiComponents.Violet, true);
             _actionPanel = actions.gameObject;
 
             _primaryAction = ReleaseUiComponents.PrimaryButton(actions.transform, "PrimaryAction", "ЕЩЁ РАЗ",
                 new Vector2(0.34f, 0.52f), new Vector2(0.96f, 0.92f),
-                InvokePrimary, 24);
+                InvokePrimary, 27);
             _primaryActionText = _primaryAction.GetComponentInChildren<Text>(true);
 
             _secondaryAction = ReleaseUiComponents.SecondaryButton(actions.transform, "SecondaryAction", "ДОМОЙ",
                 new Vector2(0.04f, 0.52f), new Vector2(0.31f, 0.92f),
-                InvokeSecondary, 20);
+                InvokeSecondary, 22);
             _secondaryActionText = _secondaryAction.GetComponentInChildren<Text>(true);
 
             _cardButton = ReleaseUiComponents.SecondaryButton(actions.transform, "ShareCard", "БРОСИТЬ ВЫЗОВ",
                 new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.43f),
-                ShareCard, 19);
+                ShareCard, 21);
             _cardButtonText = _cardButton.GetComponentInChildren<Text>(true);
         }
 
