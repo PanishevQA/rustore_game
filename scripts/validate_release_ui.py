@@ -11,6 +11,8 @@ FILES = {
     "ui_components": PRESENTATION / "ReleaseUiComponents.cs",
     "daily_intro": PRESENTATION / "DailyIntroCoordinator.cs",
     "gameplay_hud": PRESENTATION / "GameplayHudCoordinator.cs",
+    "route_graphic": PRESENTATION / "RouteGraphic.cs",
+    "game_bootstrap": PRESENTATION / "GameBootstrap.cs",
     "training": PRESENTATION / "TrainingMenuCoordinator.cs",
     "campaign": PRESENTATION / "CampaignLevelMenuOverlay.cs",
     "meta": PRESENTATION / "MetaMenuOverlay.cs",
@@ -84,6 +86,17 @@ required = {
         "GameBootstrapRuntimeBridge.IsActiveRound(_bootstrap)",
         "ЗАПОМНИ МАРШРУТ",
         "ТВОЯ ОЧЕРЕДЬ",
+    ),
+    "route_graphic": (
+        "BuildLocalPoints",
+        "JoinOffset",
+        "AddRoundCap",
+        "one continuous strip",
+    ),
+    "game_bootstrap": (
+        "corridorWidth * 0.46f",
+        "Mathf.Clamp",
+        "ГОЛУБОЙ ТОЧКИ",
     ),
     "training": (
         "ReleaseUiComponents.GlassCard",
