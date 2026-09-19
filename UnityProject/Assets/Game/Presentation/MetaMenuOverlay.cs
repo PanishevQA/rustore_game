@@ -527,7 +527,7 @@ namespace DontGetSidetracked.Presentation
             releaseVisual.transform.SetParent(_panel.transform, false);
             ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
 
-            ReleaseUiKit.TextBlock(_panel.transform, "Kicker", "НЕ СБЕЙСЯ!", 16,
+            ReleaseUiKit.TextBlock(_panel.transform, "Kicker", "НЕ СБЕЙСЯ!", 19,
                 TextAnchor.MiddleCenter, new Vector2(0.34f, 0.925f), new Vector2(0.66f, 0.962f),
                 ReleaseUiComponents.Cyan, FontStyle.Bold);
 
@@ -542,8 +542,8 @@ namespace DontGetSidetracked.Presentation
                 ReleaseUiComponents.Text, FontStyle.Bold);
             ReleaseUiKit.AddTextShadow(_panelTitle, 0.42f, -3f);
 
-            Button close = ReleaseUiComponents.SecondaryButton(_panel.transform, "Close", "‹",
-                new Vector2(0.055f, 0.865f), new Vector2(0.16f, 0.925f), ClosePanel, 40);
+            Button close = ReleaseUiComponents.SecondaryButton(_panel.transform, "Close", "←",
+                new Vector2(0.055f, 0.865f), new Vector2(0.16f, 0.925f), ClosePanel, 34);
             close.gameObject.name = "ЗАКРЫТЬ";
 
             Image bodyCard = ReleaseUiKit.Panel(_panel.transform, "BodyCard",
