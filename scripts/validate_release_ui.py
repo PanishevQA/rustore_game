@@ -216,7 +216,11 @@ required = {
     ),
     "hint": (
         "ПОКАЗАТЬ МАРШРУТ ЕЩЁ РАЗ",
-        "ReleaseUiKit.Button",
+        '"HintTitle"',
+        '"HintCount"',
+        '"0 ПОДСК."',
+        "RefreshHintLabel",
+        "ReleaseUiComponents.SecondaryButton",
     ),
     "platform": (
         "НЕ ПРОПУСКАТЬ DAILY?",
