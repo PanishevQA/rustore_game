@@ -136,11 +136,11 @@ namespace DontGetSidetracked.Presentation
                 TextAnchor.MiddleLeft, new Vector2(0.055f, 0.41f), new Vector2(0.945f, 0.55f),
                 ReleaseUiComponents.Muted);
             _streak = CreateMetric(hero.transform, "Streak", "0 ДН.", "Серия дней", GeneratedUiAssets.StarFilled,
-                new Vector2(0.055f, 0.08f), new Vector2(0.335f, 0.36f));
-            _best = CreateMetric(hero.transform, "Best", "—", "Лучший за день", GeneratedUiAssets.CampaignIcon,
-                new Vector2(0.365f, 0.08f), new Vector2(0.665f, 0.36f));
+                new Vector2(0.055f, 0.08f), new Vector2(0.335f, 0.36f), ReleaseUiComponents.Gold);
+            _best = CreateMetric(hero.transform, "Best", "—", "Лучший за день", GeneratedUiAssets.MedalGold,
+                new Vector2(0.365f, 0.08f), new Vector2(0.665f, 0.36f), ReleaseUiComponents.Cyan);
             _routeCount = CreateMetric(hero.transform, "Routes", "3", "Маршрутов", GeneratedUiAssets.DailyIcon,
-                new Vector2(0.695f, 0.08f), new Vector2(0.945f, 0.36f));
+                new Vector2(0.695f, 0.08f), new Vector2(0.945f, 0.36f), ReleaseUiComponents.Violet);
 
             ReleaseUiComponents.SectionHeader(_canvas.transform, "КАК ИГРАТЬ",
                 new Vector2(0.07f, 0.418f), new Vector2(0.60f, 0.455f));
@@ -169,14 +169,18 @@ namespace DontGetSidetracked.Presentation
         }
 
         private static Text CreateMetric(Transform parent, string name, string value, string caption,
-            string asset, Vector2 min, Vector2 max)
+            string asset, Vector2 min, Vector2 max, Color accent)
         {
             Transform root = ReleaseUiKit.Rect(parent, name, min, max);
-            ReleaseUiComponents.Icon(root, "Icon", asset, new Vector2(0f, 0.40f), new Vector2(0.26f, 0.97f));
-            Text metric = ReleaseUiKit.TextBlock(root, "Value", value, 32, TextAnchor.MiddleLeft,
-                new Vector2(0.30f, 0.40f), new Vector2(1f, 0.97f), ReleaseUiComponents.Text, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(root, "Caption", caption, 21, TextAnchor.MiddleLeft,
-                new Vector2(0f, 0.02f), new Vector2(1f, 0.37f), ReleaseUiComponents.Muted);
+            Image iconWell = ReleaseUiComponents.GlassCard(root, "IconWell",
+                new Vector2(0.00f, 0.37f), new Vector2(0.28f, 0.97f), accent, false);
+            iconWell.color = new Color(accent.r, accent.g, accent.b, 0.10f);
+            ReleaseUiComponents.Icon(iconWell.transform, "Icon", asset,
+                new Vector2(0.14f, 0.14f), new Vector2(0.86f, 0.86f));
+            Text metric = ReleaseUiKit.TextBlock(root, "Value", value, 34, TextAnchor.MiddleLeft,
+                new Vector2(0.34f, 0.40f), new Vector2(1f, 0.97f), ReleaseUiComponents.Text, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(root, "Caption", caption, 20, TextAnchor.MiddleLeft,
+                new Vector2(0f, 0.01f), new Vector2(1f, 0.35f), ReleaseUiComponents.Muted, FontStyle.Bold);
             return metric;
         }
     }
