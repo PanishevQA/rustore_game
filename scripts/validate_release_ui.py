@@ -223,10 +223,13 @@ required = {
     ),
     "referral_offer": (
         "ЧЕЛЛЕНДЖ ОТ ДРУГА",
+        "РЕЗУЛЬТАТ ДРУГА",
         "ПРИНЯТЬ ВЫЗОВ",
         "public bool Dismiss()",
-        "ReleaseUiKit.Panel",
-        "ReleaseUiKit.Button",
+        '"ReferralReleaseBackdrop"',
+        "ReleaseUiComponents.GlassCard",
+        "ReleaseUiComponents.PrimaryButton",
+        "ReleaseUiComponents.SecondaryButton",
     ),
 }
 
