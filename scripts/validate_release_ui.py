@@ -74,6 +74,9 @@ required = {
         "HomeStatsStrip",
         "BuildQuickActions",
         "GeneratedUiAssets.QuickActionIcon",
+        "GeneratedUiAssets.TryApply(start, GeneratedUiAssets.StartMarker)",
+        "wide ? 28 : 24",
+        "wide ? 20 : 18",
         "DailyIntroCoordinator",
         "ReleaseUiComponents.Backdrop",
         "ОДИН ЧЕЛЛЕНДЖ.",
@@ -90,6 +93,8 @@ required = {
         "ReleaseUiComponents.GlassCard",
         "GameBootstrapRuntimeBridge.IsActiveRound(_bootstrap)",
         "ЗАПОМНИ МАРШРУТ",
+        '"Instruction", "ЗАПОМНИ МАРШРУТ", 40',
+        '"Hint", "Запомни форму и повороты маршрута", 23',
         "ТВОЯ ОЧЕРЕДЬ",
     ),
     "generated_assets": (
@@ -138,6 +143,9 @@ required = {
         "ТЕКУЩИЙ",
         "StartHighestUnlocked",
         "CampaignReleaseBackdrop",
+        '"LevelNumber", levelNumber.ToString(), 44',
+        '"State", stars, 22',
+        '"Best", best, 19',
     ),
     "meta": (
         "MetaReleaseBackdrop",
