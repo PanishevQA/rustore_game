@@ -127,46 +127,48 @@ namespace DontGetSidetracked.Presentation
             root.transform.SetAsLastSibling();
             _overlayGroup = root.GetComponent<CanvasGroup>();
 
-            ReleaseUiKit.TextBlock(root.transform, "Kicker", "ЧЕЛЛЕНДЖ ОТ ДРУГА", 20,
+            ReleaseUiComponents.Backdrop(root.transform, "ReferralReleaseBackdrop");
+
+            ReleaseUiKit.TextBlock(root.transform, "Kicker", "ЧЕЛЛЕНДЖ ОТ ДРУГА", 22,
                 TextAnchor.MiddleLeft, new Vector2(0.075f, 0.900f), new Vector2(0.68f, 0.948f),
                 ReleaseUiKit.Cyan, FontStyle.Bold);
 
-            Text title = ReleaseUiKit.TextBlock(root.transform, "Heading", "НЕ СБЕЙСЯ.", 60,
+            Text title = ReleaseUiKit.TextBlock(root.transform, "Heading", "НЕ СБЕЙСЯ.", 64,
                 TextAnchor.MiddleLeft, new Vector2(0.075f, 0.828f), new Vector2(0.78f, 0.900f),
                 ReleaseUiKit.Text, FontStyle.Bold);
             ReleaseUiKit.AddTextShadow(title, 0.45f, -3f);
 
             ReleaseUiKit.TextBlock(root.transform, "Subheading",
-                "Тот же маршрут. Те же условия. Один шанс доказать, что ты точнее.", 24,
+                "Тот же маршрут. Те же условия. Один шанс доказать, что ты точнее.", 25,
                 TextAnchor.UpperLeft, new Vector2(0.075f, 0.745f), new Vector2(0.91f, 0.825f),
                 ReleaseUiKit.Muted);
 
-            Image card = ReleaseUiKit.Panel(root.transform, "ChallengeCard",
+            Image card = ReleaseUiComponents.GlassCard(root.transform, "ChallengeCard",
                 new Vector2(0.075f, 0.375f), new Vector2(0.925f, 0.710f),
-                ReleaseUiKit.Surface, ReleaseUiKit.Violet, true);
+                ReleaseUiComponents.Violet, true);
             _offerMotion = card.gameObject.AddComponent<ReleasePanelMotion>();
 
-            ReleaseUiKit.TextBlock(card.transform, "TargetLabel", "ЦЕЛЬ", 19,
+            ReleaseUiKit.TextBlock(card.transform, "TargetLabel", "РЕЗУЛЬТАТ ДРУГА", 20,
                 TextAnchor.MiddleCenter, new Vector2(0.10f, 0.76f), new Vector2(0.90f, 0.90f),
                 new Color(0.72f, 0.66f, 1f, 1f), FontStyle.Bold);
 
-            _target = ReleaseUiKit.TextBlock(card.transform, "Target", "—", 78,
+            _target = ReleaseUiKit.TextBlock(card.transform, "Target", "—", 88,
                 TextAnchor.MiddleCenter, new Vector2(0.10f, 0.39f), new Vector2(0.90f, 0.76f),
                 ReleaseUiKit.Text, FontStyle.Bold);
             ReleaseUiKit.AddTextShadow(_target, 0.50f, -4f);
 
             _detail = ReleaseUiKit.TextBlock(card.transform, "Detail",
-                "Побей результат друга и отправь ответный вызов.", 22,
+                "Побей результат друга и отправь ответный вызов.", 24,
                 TextAnchor.MiddleCenter, new Vector2(0.08f, 0.12f), new Vector2(0.92f, 0.39f),
                 ReleaseUiKit.Muted);
 
-            _accept = ReleaseUiKit.Button(root.transform, "Accept", "ПРИНЯТЬ ВЫЗОВ",
+            _accept = ReleaseUiComponents.PrimaryButton(root.transform, "Accept", "ПРИНЯТЬ ВЫЗОВ",
                 new Vector2(0.075f, 0.255f), new Vector2(0.925f, 0.330f),
-                ReleaseUiKit.Cyan, new Color(0.01f, 0.03f, 0.05f, 1f), 28, Accept);
+                Accept, 30);
 
-            _later = ReleaseUiKit.Button(root.transform, "Later", "ПОЗЖЕ",
+            _later = ReleaseUiComponents.SecondaryButton(root.transform, "Later", "ПОЗЖЕ",
                 new Vector2(0.275f, 0.170f), new Vector2(0.725f, 0.225f),
-                new Color(0.065f, 0.085f, 0.135f, 0.98f), ReleaseUiKit.Muted, 22, Later);
+                Later, 23);
 
             ReleaseUiKit.TextBlock(root.transform, "Footnote",
                 "Вызов хранится локально и не требует аккаунта.", 18,
