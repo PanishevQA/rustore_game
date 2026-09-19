@@ -21,8 +21,12 @@ namespace DontGetSidetracked.Presentation
         private GameObject _canvas;
         private Button _button;
         private Text _label;
+        private Text _rewardLabel;
+        private Text _balanceLabel;
+        private Text _iconLabel;
         private bool _inProgress;
         private float _nextPoll;
+        private float _feedbackUntil;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoStart()
@@ -80,6 +84,7 @@ namespace DontGetSidetracked.Presentation
                     SaveData save = _saveRepository.Load();
                     save.Hints++;
                     _saveRepository.Save(save);
+                    _feedbackUntil = Time.unscaledTime + 1.4f;
                     AnalyticsLifecycle.Service?.Track(AnalyticsEventNames.RewardedComplete,
                         new Dictionary<string, object>
                         {
@@ -103,9 +108,14 @@ namespace DontGetSidetracked.Presentation
 
         private void RefreshLabel()
         {
-            if (_label == null) return;
+            if (_label == null || _rewardLabel == null || _balanceLabel == null || _iconLabel == null) return;
             SaveData save = _saveRepository.Load();
-            _label.text = $"▣  СМОТРЕТЬ РЕКЛАМУ   •   +1 ПОДСКАЗКА   •   У ВАС {save.Hints}";
+            bool feedback = Time.unscaledTime < _feedbackUntil;
+            _label.text = feedback ? "ПОДСКАЗКА ПОЛУЧЕНА" : "СМОТРЕТЬ РЕКЛАМУ";
+            _rewardLabel.text = feedback ? "Награда добавлена" : "+1 ПОДСКАЗКА";
+            _balanceLabel.text = $"У ВАС {save.Hints}";
+            _iconLabel.text = feedback ? "OK" : "AD";
+            _iconLabel.color = feedback ? ReleaseUiKit.Green : ReleaseUiKit.Cyan;
         }
 
         private bool IsSafeHome() =>
@@ -157,22 +167,40 @@ namespace DontGetSidetracked.Presentation
 
             _button = ReleaseUiComponents.SecondaryButton(
                 _canvas.transform,
-                "RewardedHint",
-                "▣  СМОТРЕТЬ РЕКЛАМУ   •   +1 ПОДСКАЗКА",
-                new Vector2(0.07f, 0.078f),
-                new Vector2(0.93f, 0.145f),
+                "RewardedHintCard",
+                string.Empty,
+                new Vector2(0.07f, 0.072f),
+                new Vector2(0.93f, 0.150f),
                 ClaimRewardedHint,
                 18);
 
-            _label = _button.GetComponentInChildren<Text>(true);
-            if (_label != null)
-            {
-                _label.alignment = TextAnchor.MiddleCenter;
-                _label.fontStyle = FontStyle.Bold;
-            }
+            Text placeholder = _button.GetComponentInChildren<Text>(true);
+            if (placeholder != null) placeholder.gameObject.SetActive(false);
+
+            Image iconWell = ReleaseUiKit.Panel(
+                _button.transform,
+                "RewardedIconWell",
+                new Vector2(0.035f, 0.16f),
+                new Vector2(0.155f, 0.84f),
+                new Color(ReleaseUiKit.Cyan.r, ReleaseUiKit.Cyan.g, ReleaseUiKit.Cyan.b, 0.12f),
+                ReleaseUiKit.Cyan,
+                true);
+            iconWell.raycastTarget = false;
+            _iconLabel = ReleaseUiKit.TextBlock(iconWell.transform, "RewardedIcon", "AD", 20,
+                TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, ReleaseUiKit.Cyan, FontStyle.Bold);
+
+            _label = ReleaseUiKit.TextBlock(_button.transform, "RewardedTitle", "СМОТРЕТЬ РЕКЛАМУ", 19,
+                TextAnchor.LowerLeft, new Vector2(0.19f, 0.46f), new Vector2(0.66f, 0.86f),
+                ReleaseUiKit.Text, FontStyle.Bold);
+            _rewardLabel = ReleaseUiKit.TextBlock(_button.transform, "RewardedReward", "+1 ПОДСКАЗКА", 16,
+                TextAnchor.UpperLeft, new Vector2(0.19f, 0.14f), new Vector2(0.66f, 0.50f),
+                ReleaseUiKit.Green, FontStyle.Bold);
+            _balanceLabel = ReleaseUiKit.TextBlock(_button.transform, "RewardedBalance", "У ВАС 0", 16,
+                TextAnchor.MiddleRight, new Vector2(0.67f, 0.18f), new Vector2(0.95f, 0.82f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
 
             Outline outline = _button.gameObject.AddComponent<Outline>();
-            outline.effectColor = new Color(ReleaseUiKit.Green.r, ReleaseUiKit.Green.g, ReleaseUiKit.Green.b, 0.20f);
+            outline.effectColor = new Color(ReleaseUiKit.Green.r, ReleaseUiKit.Green.g, ReleaseUiKit.Green.b, 0.22f);
             outline.effectDistance = new Vector2(2f, -2f);
             RefreshLabel();
         }
