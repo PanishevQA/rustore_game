@@ -630,7 +630,11 @@ namespace DontGetSidetracked.Presentation
                 ? GeneratedUiAssets.StatisticsIcon
                 : string.Equals(title, "МАГАЗИН", StringComparison.Ordinal)
                     ? GeneratedUiAssets.StoreIcon
-                    : null;
+                    : string.Equals(title, "НАСТРОЙКИ", StringComparison.Ordinal)
+                        ? GeneratedUiAssets.SettingsIcon
+                        : string.Equals(title, "КОСМЕТИКА", StringComparison.Ordinal)
+                            ? GeneratedUiAssets.CosmeticIcon
+                            : null;
 
             bool visible = GeneratedUiAssets.TryApply(_panelTitleIcon, asset);
             _panelTitleIcon.gameObject.SetActive(visible);
