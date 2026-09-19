@@ -123,6 +123,8 @@ required = {
         "ReleaseUiComponents.GlassCard",
         "SelectDifficulty",
         "StartSelected",
+        "GeneratedUiAssets.TrainingIcon",
+        "GeneratedTrainingIcon",
         "ЛЁГКАЯ",
         "СРЕДНЯЯ",
         "СЛОЖНАЯ",
@@ -139,6 +141,9 @@ required = {
     ),
     "meta": (
         "MetaReleaseBackdrop",
+        "GeneratedPanelIcon",
+        "GeneratedUiAssets.StatisticsIcon",
+        "GeneratedUiAssets.StoreIcon",
         "RenderStatisticsRows",
         "AddInfoRow",
         "AddSettingToggleRow",
