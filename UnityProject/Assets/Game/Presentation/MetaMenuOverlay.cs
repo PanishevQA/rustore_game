@@ -20,6 +20,7 @@ namespace DontGetSidetracked.Presentation
         private GameObject _homeButtons;
         private GameObject _panel;
         private Text _panelTitle;
+        private Image _panelTitleIcon;
         private Text _panelBody;
         private Transform _actionsRoot;
         private GameBootstrap _bootstrap;
@@ -576,6 +577,12 @@ namespace DontGetSidetracked.Presentation
                 TextAnchor.MiddleCenter, new Vector2(0.34f, 0.925f), new Vector2(0.66f, 0.962f),
                 ReleaseUiComponents.Cyan, FontStyle.Bold);
 
+            Transform titleIconRoot = ReleaseUiKit.Rect(_panel.transform, "GeneratedPanelIcon",
+                new Vector2(0.195f, 0.855f), new Vector2(0.285f, 0.925f));
+            _panelTitleIcon = titleIconRoot.gameObject.AddComponent<Image>();
+            _panelTitleIcon.raycastTarget = false;
+            _panelTitleIcon.gameObject.SetActive(false);
+
             _panelTitle = ReleaseUiKit.TextBlock(_panel.transform, "Title", string.Empty, 46,
                 TextAnchor.MiddleCenter, new Vector2(0.15f, 0.845f), new Vector2(0.85f, 0.925f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
@@ -617,9 +624,24 @@ namespace DontGetSidetracked.Presentation
         {
             ClearActions();
             _panelTitle.text = title;
+            ApplyPanelTitleIcon(title);
             _panelBody.text = body;
             _panel.SetActive(true);
             SetHomeButtonsVisible(false);
+        }
+
+        private void ApplyPanelTitleIcon(string title)
+        {
+            if (_panelTitleIcon == null) return;
+
+            string asset = string.Equals(title, "МОЯ СТАТИСТИКА", StringComparison.Ordinal)
+                ? GeneratedUiAssets.StatisticsIcon
+                : string.Equals(title, "МАГАЗИН", StringComparison.Ordinal)
+                    ? GeneratedUiAssets.StoreIcon
+                    : null;
+
+            bool visible = GeneratedUiAssets.TryApply(_panelTitleIcon, asset);
+            _panelTitleIcon.gameObject.SetActive(visible);
         }
 
         public void ClosePanel()
