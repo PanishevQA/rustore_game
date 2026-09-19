@@ -116,7 +116,7 @@ namespace DontGetSidetracked.Presentation
 
             AddMetricPair("DAILY ЗАВЕРШЕНО", _save.CompletedDailyCount.ToString(), "СЕРИЯ ДНЕЙ", _save.Streak.ToString());
             AddMetricPair("МОНЕТЫ", _save.Coins.ToString(), "ПОДСКАЗКИ", _save.Hints.ToString());
-            AddInfoRow(GeneratedUiAssets.CampaignIcon, "ПРОЙДЕНО УРОВНЕЙ",
+            AddInfoRow(GeneratedUiAssets.CheckIcon, "ПРОЙДЕНО УРОВНЕЙ",
                 progress.CompletedLevels() + " / " + CampaignLevelCatalog.TotalLevels, ReleaseUiComponents.Violet);
             AddInfoRow(GeneratedUiAssets.StarFilled, "ЗВЁЗДЫ КАМПАНИИ", progress.TotalStars().ToString(), ReleaseUiComponents.Gold);
             AddStoreSectionLabel("Статистика хранится локально на этом устройстве.", ReleaseUiComponents.Muted);
