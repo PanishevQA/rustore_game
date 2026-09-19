@@ -361,12 +361,17 @@ namespace DontGetSidetracked.Presentation
             float textLeft = wide ? 0.155f : 0.245f;
 
             Image icon = CreateImage(card, "Icon", accent,
-                new Vector2(iconLeft, 0.23f), new Vector2(iconRight, 0.77f), _circle);
+                new Vector2(iconLeft, 0.18f), new Vector2(iconRight, 0.82f), _circle);
             icon.raycastTarget = false;
 
-            Text glyph = CreateText(icon.transform, "Glyph", QuickGlyph(title), wide ? 27 : 24, TextAnchor.MiddleCenter,
-                Vector2.zero, Vector2.one, new Color(0.02f, 0.04f, 0.07f, 1f));
-            glyph.fontStyle = FontStyle.Bold;
+            string generatedIcon = GeneratedUiAssets.QuickActionIcon(title);
+            bool generatedApplied = GeneratedUiAssets.TryApply(icon, generatedIcon);
+            if (!generatedApplied)
+            {
+                Text glyph = CreateText(icon.transform, "Glyph", QuickGlyph(title), wide ? 27 : 24, TextAnchor.MiddleCenter,
+                    Vector2.zero, Vector2.one, new Color(0.02f, 0.04f, 0.07f, 1f));
+                glyph.fontStyle = FontStyle.Bold;
+            }
 
             Text heading = CreateText(card, "Title", title, wide ? 26 : 22, TextAnchor.MiddleLeft,
                 new Vector2(textLeft, 0.48f), new Vector2(0.94f, 0.82f), TextPrimary);
