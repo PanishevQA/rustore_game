@@ -59,7 +59,7 @@ namespace DontGetSidetracked.Presentation
             }
             else
             {
-                ApplyGameplayBoardLayout(false);
+                ApplyRestingBoardLayout(result);
                 SetHudVisible(false);
                 if (!plainHome && !result) SetLegacyVisible(true);
             }
@@ -150,23 +150,25 @@ namespace DontGetSidetracked.Presentation
 
         private void ApplyGameplayBoardLayout(bool active)
         {
+            if (!active || _playArea == null) return;
+
+            // Give the memory gesture most of the portrait screen. This also creates a
+            // clean visual gap between the board, compact header and instruction card.
+            ReleaseUiKit.SetAnchors(_playArea,
+                new Vector2(0.055f, 0.155f),
+                new Vector2(0.945f, 0.825f));
+        }
+
+        private void ApplyRestingBoardLayout(bool result)
+        {
             if (_playArea == null) return;
 
-            if (active)
-            {
-                // Give the memory gesture most of the portrait screen. This also creates a
-                // clean visual gap between the board, compact header and instruction card.
-                ReleaseUiKit.SetAnchors(_playArea,
-                    new Vector2(0.055f, 0.155f),
-                    new Vector2(0.945f, 0.825f));
-            }
-            else
-            {
-                // Result/Home still rely on the original board slot and their own controls.
-                ReleaseUiKit.SetAnchors(_playArea,
-                    new Vector2(0.06f, 0.25f),
-                    new Vector2(0.94f, 0.74f));
-            }
+            // Match VisualThemeCoordinator exactly outside active gameplay so the two
+            // presentation layers do not fight over the same RectTransform each frame.
+            ReleaseUiKit.SetAnchors(
+                _playArea,
+                result ? new Vector2(0.07f, 0.330f) : new Vector2(0.07f, 0.245f),
+                result ? new Vector2(0.93f, 0.665f) : new Vector2(0.93f, 0.760f));
         }
 
         private void Refresh()
