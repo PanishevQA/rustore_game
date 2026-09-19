@@ -96,16 +96,10 @@ namespace DontGetSidetracked.Presentation
             Image playArea = Find<Image>(root, "PlayArea");
             if (playArea != null)
             {
+                // GameplayHudCoordinator is the single layout owner for the board.
+                // This coordinator only applies surface styling; competing anchor writes
+                // used to make the play field jump between two geometries every frame.
                 StylePanel(playArea, Surface, true);
-                RectTransform rt = playArea.rectTransform;
-                rt.anchorMin = resultState
-                    ? new Vector2(0.07f, 0.330f)
-                    : new Vector2(0.07f, 0.245f);
-                rt.anchorMax = resultState
-                    ? new Vector2(0.93f, 0.665f)
-                    : new Vector2(0.93f, 0.760f);
-                rt.offsetMin = Vector2.zero;
-                rt.offsetMax = Vector2.zero;
             }
 
             Button primary = Find<Button>(root, "Primary");
