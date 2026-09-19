@@ -591,10 +591,10 @@ namespace DontGetSidetracked.Presentation
             RouteGraphic route = CreateRoute(host.transform, "Route", CyanBright, 10f);
             route.SetPoints(points);
 
-            Image start = CreateImage(host.transform, "Start", Green,
+            Image start = CreateImage(host.transform, "Start", ReleaseUiComponents.Cyan,
                 new Vector2(0.02f, 0.14f), new Vector2(0.15f, 0.31f), _circle);
             start.raycastTarget = false;
-            Image end = CreateImage(host.transform, "End", new Color(1f, 0.38f, 0.48f, 1f),
+            Image end = CreateImage(host.transform, "End", ReleaseUiComponents.Gold,
                 new Vector2(0.87f, 0.34f), new Vector2(1.00f, 0.51f), _circle);
             end.raycastTarget = false;
         }
