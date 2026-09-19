@@ -58,7 +58,7 @@ namespace DontGetSidetracked.Presentation
                 new Color(0.010f, 0.016f, 0.040f, 1f));
             background.raycastTarget = false;
 
-            CreateText(root.transform, "BrandKicker", "MEMORY TRACE", 22, TextAnchor.MiddleLeft,
+            CreateText(root.transform, "BrandKicker", "ИСПЫТАНИЕ ПАМЯТИ", 22, TextAnchor.MiddleLeft,
                 new Vector2(0.075f, 0.915f), new Vector2(0.45f, 0.955f), new Color(0.20f, 0.86f, 1f, 1f));
             Text brand = CreateText(root.transform, "Brand", "НЕ СБЕЙСЯ!", 68, TextAnchor.MiddleLeft,
                 new Vector2(0.075f, 0.845f), new Vector2(0.68f, 0.925f), Color.white);
@@ -91,9 +91,19 @@ namespace DontGetSidetracked.Presentation
             routeOutline.effectColor = new Color(0.20f, 0.86f, 1f, 0.15f);
             routeOutline.effectDistance = new Vector2(2f, -2f);
 
-            CreateText(routePanel.transform, "ReferenceLabel", "ЭТАЛОН  /  ТВОЯ ЛИНИЯ", 20, TextAnchor.MiddleLeft,
-                new Vector2(0.055f, 0.88f), new Vector2(0.68f, 0.97f),
-                new Color(0.58f, 0.68f, 0.82f, 1f));
+            CreateImage(routePanel.transform, "ReferenceLegendLine",
+                new Vector2(0.055f, 0.914f), new Vector2(0.115f, 0.928f),
+                new Color(0.18f, 0.82f, 1f, 0.72f), true);
+            CreateText(routePanel.transform, "ReferenceLegendText", "ЭТАЛОН", 18, TextAnchor.MiddleLeft,
+                new Vector2(0.125f, 0.88f), new Vector2(0.31f, 0.97f),
+                new Color(0.64f, 0.74f, 0.86f, 1f));
+
+            CreateImage(routePanel.transform, "PlayerLegendLine",
+                new Vector2(0.35f, 0.914f), new Vector2(0.41f, 0.928f),
+                ScoreColor(model.Score), true);
+            CreateText(routePanel.transform, "PlayerLegendText", "ТВОЯ ЛИНИЯ", 18, TextAnchor.MiddleLeft,
+                new Vector2(0.42f, 0.88f), new Vector2(0.72f, 0.97f),
+                new Color(0.82f, 0.88f, 0.96f, 1f));
 
             RouteGraphic reference = CreateRouteGraphic(routePanel.transform, "Reference",
                 new Color(0.18f, 0.82f, 1f, 0.48f), 14f);
