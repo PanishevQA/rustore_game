@@ -132,7 +132,7 @@ namespace DontGetSidetracked.Presentation
             ReleaseUiKit.TextBlock(hero.transform, "Headline", "НОВЫЙ ДЕНЬ.\nНОВЫЙ МАРШРУТ.", 42,
                 TextAnchor.MiddleLeft, new Vector2(0.055f, 0.55f), new Vector2(0.945f, 0.91f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(hero.transform, "Description", "Одно испытание для всех. Превзойди свой рекорд.", 24,
+            ReleaseUiKit.TextBlock(hero.transform, "Description", "Одно испытание для всех. Превзойди свой рекорд.", 27,
                 TextAnchor.MiddleLeft, new Vector2(0.055f, 0.41f), new Vector2(0.945f, 0.55f),
                 ReleaseUiComponents.Muted);
             _streak = CreateMetric(hero.transform, "Streak", "0 ДН.", "Серия дней", GeneratedUiAssets.StarFilled,
@@ -150,7 +150,7 @@ namespace DontGetSidetracked.Presentation
             ReleaseUiComponents.Icon(goal.transform, "Eye", GeneratedUiAssets.EyeIcon,
                 new Vector2(0.04f, 0.15f), new Vector2(0.20f, 0.85f));
             ReleaseUiKit.TextBlock(goal.transform, "GoalCopy",
-                "Запомни линию. Повтори одним движением.\nОт голубой точки до золотой — без отрыва.", 26,
+                "Запомни линию. Повтори одним движением.\nОт голубой точки до золотой — без отрыва.", 28,
                 TextAnchor.MiddleLeft, new Vector2(0.24f, 0.13f), new Vector2(0.94f, 0.88f),
                 ReleaseUiComponents.Text);
 
@@ -179,7 +179,7 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.14f, 0.14f), new Vector2(0.86f, 0.86f));
             Text metric = ReleaseUiKit.TextBlock(root, "Value", value, 34, TextAnchor.MiddleLeft,
                 new Vector2(0.34f, 0.40f), new Vector2(1f, 0.97f), ReleaseUiComponents.Text, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(root, "Caption", caption, 20, TextAnchor.MiddleLeft,
+            ReleaseUiKit.TextBlock(root, "Caption", caption, 22, TextAnchor.MiddleLeft,
                 new Vector2(0f, 0.01f), new Vector2(1f, 0.35f), ReleaseUiComponents.Muted, FontStyle.Bold);
             return metric;
         }
