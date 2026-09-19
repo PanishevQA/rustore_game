@@ -95,9 +95,9 @@ namespace DontGetSidetracked.Presentation
             SaveData save = _progress.Save;
             _title.text = $"ГЛАВА {_chapter} / {CampaignLevelCatalog.TotalChapters}\n{CampaignLevelCatalog.ChapterName(_chapter)}";
             _summary.text =
-                $"Пройдено {_progress.CompletedLevels()}/{CampaignLevelCatalog.TotalLevels}  •  " +
-                $"★ {_progress.TotalStars()}/{CampaignLevelCatalog.TotalLevels * 3}\n" +
-                $"Монеты: {save.Coins}  •  Подсказки: {save.Hints}";
+                $"ПРОЙДЕНО {_progress.CompletedLevels()}/{CampaignLevelCatalog.TotalLevels}  •  " +
+                $"★ {_progress.TotalStars()}/{CampaignLevelCatalog.TotalLevels * 3}  •  " +
+                $"{save.Coins} МОНЕТ  •  {save.Hints} ПОДСКАЗОК";
 
             for (int i = _gridRoot.childCount - 1; i >= 0; i--)
                 Destroy(_gridRoot.GetChild(i).gameObject);
@@ -257,13 +257,13 @@ namespace DontGetSidetracked.Presentation
                 TextAnchor.MiddleCenter, new Vector2(0.30f, 0.925f), new Vector2(0.70f, 0.962f),
                 ReleaseUiComponents.Cyan, FontStyle.Bold);
 
-            _title = ReleaseUiKit.TextBlock(_panel.transform, "Title", string.Empty, 42,
+            _title = ReleaseUiKit.TextBlock(_panel.transform, "Title", string.Empty, 46,
                 TextAnchor.MiddleCenter, new Vector2(0.17f, 0.835f), new Vector2(0.83f, 0.925f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
             _title.lineSpacing = 0.88f;
             ReleaseUiKit.AddTextShadow(_title, 0.42f, -3f);
 
-            _summary = ReleaseUiKit.TextBlock(_panel.transform, "Summary", string.Empty, 18,
+            _summary = ReleaseUiKit.TextBlock(_panel.transform, "Summary", string.Empty, 20,
                 TextAnchor.MiddleCenter, new Vector2(0.11f, 0.775f), new Vector2(0.89f, 0.835f),
                 ReleaseUiComponents.Muted);
 
@@ -272,9 +272,14 @@ namespace DontGetSidetracked.Presentation
                 new Color(0.09f, 0.11f, 0.18f, 0.95f), ReleaseUiKit.Violet, false);
             _chapterProgressFill = ReleaseUiKit.Panel(progressTrack.transform, "ChapterProgressFill",
                 Vector2.zero, new Vector2(0.02f, 1f), ReleaseUiKit.Violet, ReleaseUiKit.Violet, false);
-            _chapterProgressText = ReleaseUiKit.TextBlock(_panel.transform, "ChapterProgressText", "ПРОГРЕСС ГЛАВЫ  0/10", 18,
+            _chapterProgressText = ReleaseUiKit.TextBlock(_panel.transform, "ChapterProgressText", "ПРОГРЕСС ГЛАВЫ  0/10", 20,
                 TextAnchor.MiddleRight, new Vector2(0.57f, 0.748f), new Vector2(0.935f, 0.775f),
                 new Color(0.72f, 0.66f, 1f, 1f), FontStyle.Bold);
+
+            Image pathSurface = ReleaseUiKit.Panel(_panel.transform, "PathSurface",
+                new Vector2(0.045f, 0.220f), new Vector2(0.955f, 0.720f),
+                new Color(0.004f, 0.012f, 0.030f, 0.74f), ReleaseUiComponents.Cyan, false);
+            pathSurface.raycastTarget = false;
 
             var grid = new GameObject("LevelPath", typeof(RectTransform));
             grid.transform.SetParent(_panel.transform, false);
@@ -284,22 +289,22 @@ namespace DontGetSidetracked.Presentation
 
             _coinHint = ReleaseUiComponents.SecondaryButton(_panel.transform, "CoinHint", "30 МОНЕТ  →  +1 ПОДСКАЗКА",
                 new Vector2(0.20f, 0.170f), new Vector2(0.80f, 0.220f),
-                BuyHintWithCoins, 20);
+                BuyHintWithCoins, 22);
 
             _previous = ReleaseUiKit.Button(_panel.transform, "PreviousChapter", "← ГЛАВА",
                 new Vector2(0.055f, 0.085f), new Vector2(0.295f, 0.150f),
-                ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 23, PreviousChapter);
+                ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 25, PreviousChapter);
 
             ReleaseUiComponents.PrimaryButton(_panel.transform, "Home", "▶  ИГРАТЬ ТЕКУЩИЙ",
                 new Vector2(0.32f, 0.080f), new Vector2(0.68f, 0.155f),
-                StartHighestUnlocked, 20);
+                StartHighestUnlocked, 23);
 
             _next = ReleaseUiKit.Button(_panel.transform, "NextChapter", "ГЛАВА →",
                 new Vector2(0.705f, 0.085f), new Vector2(0.945f, 0.150f),
-                ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 23, NextChapter);
+                ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 25, NextChapter);
 
             Text hint = ReleaseUiKit.TextBlock(_panel.transform, "Hint",
-                "Новые звёзды дают монеты  •  финал главы даёт +1 подсказку", 19,
+                "Новые звёзды дают монеты  •  финал главы даёт +1 подсказку", 20,
                 TextAnchor.MiddleCenter, new Vector2(0.07f, 0.025f), new Vector2(0.93f, 0.065f),
                 ReleaseUiKit.Muted);
             hint.raycastTarget = false;
@@ -311,29 +316,16 @@ namespace DontGetSidetracked.Presentation
             bool unlocked,
             LevelProgressData record)
         {
+            if (slot >= CampaignLevelCatalog.LevelsPerChapter - 1) return;
+
             bool completed = record != null && record.Stars > 0;
             Color accent = !unlocked
-                ? new Color(0.30f, 0.38f, 0.50f, 0.40f)
+                ? new Color(0.26f, 0.34f, 0.44f, 0.24f)
                 : completed
-                    ? new Color(ReleaseUiComponents.Success.r, ReleaseUiComponents.Success.g, ReleaseUiComponents.Success.b, 0.52f)
-                    : new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.72f);
+                    ? new Color(ReleaseUiComponents.Success.r, ReleaseUiComponents.Success.g, ReleaseUiComponents.Success.b, 0.72f)
+                    : new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.78f);
 
-            float y = 0.915f - slot * 0.093f;
-            bool left = slot % 2 == 0;
-            float x0 = left ? 0.465f : 0.500f;
-            float x1 = left ? 0.500f : 0.535f;
-
-            Transform connector = ReleaseUiKit.Rect(parent, "PathConnector",
-                new Vector2(x0, y - 0.0035f), new Vector2(x1, y + 0.0035f));
-            Image line = connector.gameObject.AddComponent<Image>();
-            line.sprite = ReleaseUiKit.Rounded;
-            line.type = Image.Type.Sliced;
-            line.color = accent;
-            line.raycastTarget = false;
-
-            ReleaseUiKit.Dot(parent, "PathNode", accent,
-                new Vector2(0.488f, y - 0.012f),
-                new Vector2(0.512f, y + 0.012f)).raycastTarget = false;
+            CreatePathSegment(parent, "PathProgress", LevelCenter(slot), LevelCenter(slot + 1), accent, 0.010f);
         }
 
         private static Button CreateLevelButton(
@@ -347,18 +339,17 @@ namespace DontGetSidetracked.Presentation
             bool completed = record != null && record.Stars > 0;
             bool current = unlocked && !completed;
             Color accent = !unlocked
-                ? new Color(0.30f, 0.38f, 0.50f, 0.85f)
+                ? new Color(0.30f, 0.38f, 0.50f, 0.82f)
                 : completed
                     ? ReleaseUiComponents.Success
                     : ReleaseUiComponents.Cyan;
 
+            Vector2 center = LevelCenter(slot);
             var go = new GameObject("LevelNode", typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(parent, false);
             RectTransform rect = go.GetComponent<RectTransform>();
-            float y = 0.915f - slot * 0.093f;
-            float centerX = slot % 2 == 0 ? 0.26f : 0.74f;
-            rect.anchorMin = new Vector2(centerX - 0.205f, y - 0.044f);
-            rect.anchorMax = new Vector2(centerX + 0.205f, y + 0.044f);
+            rect.anchorMin = new Vector2(center.x - 0.205f, center.y - 0.066f);
+            rect.anchorMax = new Vector2(center.x + 0.205f, center.y + 0.066f);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
 
@@ -366,20 +357,20 @@ namespace DontGetSidetracked.Presentation
             image.sprite = ReleaseUiKit.Rounded;
             image.type = Image.Type.Sliced;
             image.color = !unlocked
-                ? new Color(0.018f, 0.032f, 0.055f, 0.82f)
+                ? new Color(0.016f, 0.027f, 0.050f, 0.93f)
                 : current
-                    ? new Color(0.020f, 0.105f, 0.165f, 0.995f)
-                    : new Color(0.025f, 0.072f, 0.120f, 0.97f);
+                    ? new Color(0.020f, 0.110f, 0.170f, 0.995f)
+                    : new Color(0.022f, 0.070f, 0.115f, 0.985f);
 
             Outline outline = go.AddComponent<Outline>();
-            outline.effectColor = new Color(accent.r, accent.g, accent.b, current ? 0.48f : unlocked ? 0.24f : 0.08f);
+            outline.effectColor = new Color(accent.r, accent.g, accent.b, current ? 0.58f : unlocked ? 0.28f : 0.10f);
             outline.effectDistance = new Vector2(current ? 3f : 2f, current ? -3f : -2f);
 
             if (current)
             {
                 Shadow glow = go.AddComponent<Shadow>();
-                glow.effectColor = new Color(accent.r, accent.g, accent.b, 0.22f);
-                glow.effectDistance = new Vector2(0f, -6f);
+                glow.effectColor = new Color(accent.r, accent.g, accent.b, 0.26f);
+                glow.effectDistance = new Vector2(0f, -7f);
                 glow.useGraphicAlpha = true;
             }
 
@@ -396,33 +387,77 @@ namespace DontGetSidetracked.Presentation
             block.fadeDuration = 0.08f;
             button.colors = block;
 
-            ReleaseUiKit.TextBlock(go.transform, "LevelNumber", levelNumber.ToString(), 35,
-                TextAnchor.MiddleCenter, new Vector2(0.03f, 0.15f), new Vector2(0.28f, 0.85f),
-                unlocked ? ReleaseUiComponents.Text : new Color(0.43f, 0.48f, 0.58f, 0.90f), FontStyle.Bold);
+            ReleaseUiKit.TextBlock(go.transform, "LevelNumber", levelNumber.ToString(), 40,
+                TextAnchor.MiddleCenter, new Vector2(0.035f, 0.12f), new Vector2(0.28f, 0.88f),
+                unlocked ? ReleaseUiComponents.Text : new Color(0.45f, 0.50f, 0.60f, 0.88f), FontStyle.Bold);
 
             string stars = !unlocked ? "ЗАКРЫТ" : current ? "ТЕКУЩИЙ" : Stars(record.Stars);
-            ReleaseUiKit.TextBlock(go.transform, "State", stars, 17,
-                TextAnchor.MiddleLeft, new Vector2(0.31f, 0.48f), new Vector2(0.94f, 0.88f),
+            ReleaseUiKit.TextBlock(go.transform, "State", stars, 20,
+                TextAnchor.MiddleLeft, new Vector2(0.31f, 0.50f), new Vector2(0.95f, 0.88f),
                 accent, FontStyle.Bold);
 
             string best = !unlocked ? "Нужен предыдущий уровень" :
                 current ? "Твой следующий маршрут" : $"ЛУЧШИЙ  {record.BestScore:0.0}%";
-            ReleaseUiKit.TextBlock(go.transform, "Best", best, 15,
-                TextAnchor.MiddleLeft, new Vector2(0.31f, 0.10f), new Vector2(0.94f, 0.48f),
-                unlocked ? ReleaseUiComponents.Muted : new Color(0.38f, 0.42f, 0.50f, 0.85f));
+            ReleaseUiKit.TextBlock(go.transform, "Best", best, 17,
+                TextAnchor.MiddleLeft, new Vector2(0.31f, 0.11f), new Vector2(0.95f, 0.50f),
+                unlocked ? ReleaseUiComponents.Muted : new Color(0.40f, 0.45f, 0.54f, 0.88f));
 
             return button;
         }
 
         private static void CreatePathRail(Transform parent)
         {
-            Transform rail = ReleaseUiKit.Rect(parent, "PathRail", new Vector2(0.492f, 0.05f), new Vector2(0.508f, 0.95f));
-            Image image = rail.gameObject.AddComponent<Image>();
-            image.sprite = ReleaseUiKit.Rounded;
-            image.type = Image.Type.Sliced;
-            image.color = new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.18f);
-            image.raycastTarget = false;
-            rail.SetAsFirstSibling();
+            for (int slot = 0; slot < CampaignLevelCatalog.LevelsPerChapter - 1; slot++)
+            {
+                CreatePathSegment(
+                    parent,
+                    "PathRail",
+                    LevelCenter(slot),
+                    LevelCenter(slot + 1),
+                    new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.12f),
+                    0.016f);
+            }
+        }
+
+        private static Vector2 LevelCenter(int slot)
+        {
+            int row = slot / 2;
+            bool firstInRow = slot % 2 == 0;
+            bool left = row % 2 == 0 ? firstInRow : !firstInRow;
+            float x = left ? 0.24f : 0.76f;
+            float y = 0.885f - row * 0.192f;
+            return new Vector2(x, y);
+        }
+
+        private static void CreatePathSegment(
+            Transform parent,
+            string name,
+            Vector2 a,
+            Vector2 b,
+            Color color,
+            float thickness)
+        {
+            Vector2 min;
+            Vector2 max;
+
+            if (Mathf.Abs(a.y - b.y) < 0.001f)
+            {
+                min = new Vector2(Mathf.Min(a.x, b.x), a.y - thickness * 0.5f);
+                max = new Vector2(Mathf.Max(a.x, b.x), a.y + thickness * 0.5f);
+            }
+            else
+            {
+                min = new Vector2(a.x - thickness * 0.5f, Mathf.Min(a.y, b.y));
+                max = new Vector2(a.x + thickness * 0.5f, Mathf.Max(a.y, b.y));
+            }
+
+            Transform segment = ReleaseUiKit.Rect(parent, name, min, max);
+            Image line = segment.gameObject.AddComponent<Image>();
+            line.sprite = ReleaseUiKit.Rounded;
+            line.type = Image.Type.Sliced;
+            line.color = color;
+            line.raycastTarget = false;
+            segment.SetAsFirstSibling();
         }
 
         private void StartHighestUnlocked()
