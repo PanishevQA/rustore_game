@@ -172,8 +172,19 @@ namespace DontGetSidetracked.Presentation
             UnityEngine.Events.UnityAction action = null)
         {
             Image card = GlassCard(parent, name, min, max, accent, false);
-            Text icon = ReleaseUiKit.TextBlock(card.transform, "Icon", glyph, 24, TextAnchor.MiddleCenter,
-                new Vector2(0.05f, 0.08f), new Vector2(0.27f, 0.92f), accent, FontStyle.Bold);
+
+            Transform iconRoot = ReleaseUiKit.Rect(card.transform, "GeneratedCoin",
+                new Vector2(0.04f, 0.08f), new Vector2(0.27f, 0.92f));
+            Image iconImage = iconRoot.gameObject.AddComponent<Image>();
+            bool generatedCoin = GeneratedUiAssets.TryApply(iconImage, GeneratedUiAssets.CoinIcon);
+            if (!generatedCoin)
+            {
+                UnityEngine.Object.Destroy(iconRoot.gameObject);
+                Text fallbackIcon = ReleaseUiKit.TextBlock(card.transform, "Icon", glyph, 24, TextAnchor.MiddleCenter,
+                    new Vector2(0.05f, 0.08f), new Vector2(0.27f, 0.92f), accent, FontStyle.Bold);
+                fallbackIcon.raycastTarget = false;
+            }
+
             Text valueText = ReleaseUiKit.TextBlock(card.transform, "Value", value, 24, TextAnchor.MiddleLeft,
                 new Vector2(0.28f, 0.08f), new Vector2(action == null ? 0.93f : 0.72f, 0.92f), Text, FontStyle.Bold);
             if (action != null)
