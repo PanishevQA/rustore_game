@@ -117,8 +117,8 @@ namespace DontGetSidetracked.Presentation
 
             Image start = Find<Image>(root, "Start");
             Image end = Find<Image>(root, "End");
-            StyleMarker(start, ReleaseUiComponents.Cyan);
-            StyleMarker(end, ReleaseUiComponents.Gold);
+            StyleMarker(start, ReleaseUiComponents.Cyan, GeneratedUiAssets.StartMarker);
+            StyleMarker(end, ReleaseUiComponents.Gold, GeneratedUiAssets.EndMarker);
 
             RouteGraphic reference = Find<RouteGraphic>(root, "Reference");
             RouteGraphic player = Find<RouteGraphic>(root, "Player");
@@ -270,14 +270,25 @@ namespace DontGetSidetracked.Presentation
             }
         }
 
-        private static void StyleMarker(Image marker, Color color)
+        private static void StyleMarker(Image marker, Color color, string generatedAsset)
         {
             if (marker == null) return;
+
+            Shadow shadow = marker.GetComponent<Shadow>();
+            if (GeneratedUiAssets.TryApply(marker, generatedAsset))
+            {
+                marker.rectTransform.sizeDelta = new Vector2(72f, 72f);
+                if (shadow != null) shadow.enabled = false;
+                return;
+            }
+
             marker.sprite = _circleSprite;
             marker.type = Image.Type.Simple;
             marker.color = color;
-            Shadow shadow = marker.GetComponent<Shadow>();
+            marker.preserveAspect = false;
+            marker.rectTransform.sizeDelta = new Vector2(46f, 46f);
             if (shadow == null) shadow = marker.gameObject.AddComponent<Shadow>();
+            shadow.enabled = true;
             shadow.effectColor = new Color(color.r, color.g, color.b, 0.55f);
             shadow.effectDistance = new Vector2(0f, -2f);
         }
