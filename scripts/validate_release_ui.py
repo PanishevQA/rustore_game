@@ -65,6 +65,7 @@ required = {
         "BuildDailyCard",
         "BuildCampaignCard",
         "BuildStatRow",
+        "HomeStatsStrip",
         "BuildQuickActions",
         "DailyIntroCoordinator",
         "ReleaseUiComponents.Backdrop",
@@ -77,6 +78,8 @@ required = {
         "GameplayHeader",
         "GameplayMetrics",
         "GameplayInstruction",
+        "ApplyGameplayBoardLayout(true)",
+        "new Vector2(0.055f, 0.155f)",
         "ReleaseUiComponents.GlassCard",
         "GameBootstrapRuntimeBridge.IsActiveRound(_bootstrap)",
         "ЗАПОМНИ МАРШРУТ",
@@ -96,6 +99,7 @@ required = {
         "LevelPath",
         "CreatePathRail",
         "CreateLevelButton(",
+        "ТЕКУЩИЙ",
         "StartHighestUnlocked",
         "CampaignReleaseBackdrop",
     ),
@@ -122,6 +126,8 @@ required = {
         "Completion",
         "GestureTime",
         "LastScoreBreakdown",
+        "SetStatTileVisible(_meanValue, visible)",
+        "SetStatTileVisible(_timeValue, visible)",
         "ReleaseUiComponents.PrimaryButton",
         "SuppressLegacyResultHeader",
         "SuppressLegacyResultControls",
@@ -187,6 +193,9 @@ for key in ("ui_components", "daily_intro", "meta", "result", "share_card", "rew
 result = texts["result"]
 if "group.interactable = visible;" not in result or "group.blocksRaycasts = visible;" not in result:
     errors.append("Result release action sheet must restore legacy fallback controls after leaving Result.")
+
+if "SetStatTileVisible(_meanValue, visible)" not in texts["result"]:
+    errors.append("Result metrics must be hidden outside Result; leaked stat cards obstruct gameplay input.")
 
 if "+50 МОНЕТ" in texts["home"]:
     errors.append("Home must not advertise an unimplemented fixed Daily coin reward.")
