@@ -23,6 +23,7 @@ namespace DontGetSidetracked.Presentation
         private GameObject _canvas;
         private Button _button;
         private Text _label;
+        private Text _countLabel;
         private float _nextPoll;
         private int _revealGeneration;
         private RouteDefinition _revealedRoute;
@@ -69,7 +70,7 @@ namespace DontGetSidetracked.Presentation
             SaveData save = _saveRepository.Load();
             bool visible = save.Hints > 0 && route != null && !IsMetaPanelOpen();
             SetVisible(visible);
-            if (visible) _label.text = $"ПОКАЗАТЬ МАРШРУТ ЕЩЁ РАЗ  •  {save.Hints}";
+            if (visible) RefreshHintLabel(save.Hints);
         }
 
         private void UseHint()
@@ -106,7 +107,7 @@ namespace DontGetSidetracked.Presentation
                     ["source"] = "local_inventory"
                 });
 
-            _label.text = $"ПОКАЗАТЬ МАРШРУТ ЕЩЁ РАЗ  •  {save.Hints}";
+            RefreshHintLabel(save.Hints);
             if (save.Hints <= 0) SetVisible(false);
         }
 
@@ -177,27 +178,41 @@ namespace DontGetSidetracked.Presentation
             releaseVisual.transform.SetParent(_canvas.transform, false);
             ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
 
-            _button = ReleaseUiKit.Button(
+            _button = ReleaseUiComponents.SecondaryButton(
                 _canvas.transform,
                 "UseHint",
-                "ПОКАЗАТЬ МАРШРУТ ЕЩЁ РАЗ",
-                new Vector2(0.18f, 0.195f),
-                new Vector2(0.82f, 0.247f),
-                new Color(0.055f, 0.080f, 0.140f, 0.98f),
-                ReleaseUiKit.Gold,
-                23,
-                UseHint);
+                string.Empty,
+                new Vector2(0.15f, 0.192f),
+                new Vector2(0.85f, 0.250f),
+                UseHint,
+                21);
 
-            _label = _button.GetComponentInChildren<Text>(true);
-            if (_label != null)
+            Text placeholder = _button.GetComponentInChildren<Text>(true);
+            if (placeholder != null) placeholder.gameObject.SetActive(false);
+
+            Image buttonImage = _button.GetComponent<Image>();
+            if (buttonImage != null)
+                buttonImage.color = new Color(ReleaseUiKit.Gold.r, ReleaseUiKit.Gold.g, ReleaseUiKit.Gold.b, 0.08f);
+
+            Outline outline = _button.GetComponent<Outline>();
+            if (outline != null)
             {
-                _label.alignment = TextAnchor.MiddleCenter;
-                _label.fontStyle = FontStyle.Bold;
+                outline.effectColor = new Color(ReleaseUiKit.Gold.r, ReleaseUiKit.Gold.g, ReleaseUiKit.Gold.b, 0.42f);
+                outline.effectDistance = new Vector2(2f, -2f);
             }
 
-            Outline outline = _button.gameObject.AddComponent<Outline>();
-            outline.effectColor = new Color(ReleaseUiKit.Gold.r, ReleaseUiKit.Gold.g, ReleaseUiKit.Gold.b, 0.20f);
-            outline.effectDistance = new Vector2(2f, -2f);
+            _label = ReleaseUiKit.TextBlock(_button.transform, "HintTitle", "ПОКАЗАТЬ МАРШРУТ ЕЩЁ РАЗ", 20,
+                TextAnchor.MiddleLeft, new Vector2(0.055f, 0.12f), new Vector2(0.76f, 0.88f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+            _countLabel = ReleaseUiKit.TextBlock(_button.transform, "HintCount", "0 ПОДСК.", 17,
+                TextAnchor.MiddleRight, new Vector2(0.76f, 0.12f), new Vector2(0.945f, 0.88f),
+                ReleaseUiKit.Gold, FontStyle.Bold);
+        }
+
+        private void RefreshHintLabel(int hints)
+        {
+            if (_label != null) _label.text = "ПОКАЗАТЬ МАРШРУТ ЕЩЁ РАЗ";
+            if (_countLabel != null) _countLabel.text = hints + " ПОДСК.";
         }
 
         private void SetVisible(bool visible)
