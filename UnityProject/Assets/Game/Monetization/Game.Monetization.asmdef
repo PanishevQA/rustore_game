@@ -1,0 +1,16 @@
+{
+  "name": "Game.Monetization",
+  "rootNamespace": "DontGetSidetracked.Monetization",
+  "references": [
+    "Game.Services",
+    "YandexMobileAds"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.yandex.mobileads",
+      "expression": "[8.4.0,8.5.0)",
+      "define": "YANDEX_MOBILE_ADS"
+    }
+  ],
+  "autoReferenced": true
+}
