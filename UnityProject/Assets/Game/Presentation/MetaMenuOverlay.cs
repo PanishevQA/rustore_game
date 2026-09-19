@@ -648,6 +648,11 @@ namespace DontGetSidetracked.Presentation
             if (_actionsRoot == null) return;
             for (int i = _actionsRoot.childCount - 1; i >= 0; i--)
                 Destroy(_actionsRoot.GetChild(i).gameObject);
+            if (_scroll != null)
+            {
+                _scroll.StopMovement();
+                _scroll.verticalNormalizedPosition = 1f;
+            }
         }
 
         private void AddSettingToggleRow(
