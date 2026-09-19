@@ -108,24 +108,24 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.055f, 0.845f), new Vector2(0.945f, 0.955f),
                 ReleaseUiComponents.Cyan, true);
 
-            _mode = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЖИМ", 17,
+            _mode = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЖИМ", 19,
                 TextAnchor.MiddleCenter, new Vector2(0.08f, 0.72f), new Vector2(0.92f, 0.94f),
                 ReleaseUiComponents.Cyan, FontStyle.Bold);
 
-            _instruction = ReleaseUiKit.TextBlock(header.transform, "Instruction", "ЗАПОМНИ МАРШРУТ", 36,
+            _instruction = ReleaseUiKit.TextBlock(header.transform, "Instruction", "ЗАПОМНИ МАРШРУТ", 40,
                 TextAnchor.MiddleCenter, new Vector2(0.05f, 0.30f), new Vector2(0.95f, 0.74f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
             ReleaseUiKit.AddTextShadow(_instruction, 0.42f, -2f);
 
             Transform metrics = ReleaseUiKit.Rect(header.transform, "GameplayMetrics",
                 new Vector2(0.06f, 0.055f), new Vector2(0.94f, 0.30f));
-            ReleaseUiKit.TextBlock(metrics, "Memory", "ПАМЯТЬ", 14,
+            ReleaseUiKit.TextBlock(metrics, "Memory", "ПАМЯТЬ", 16,
                 TextAnchor.MiddleLeft, new Vector2(0.00f, 0f), new Vector2(0.30f, 1f),
                 ReleaseUiComponents.Cyan, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(metrics, "Gesture", "1 ДВИЖЕНИЕ", 14,
+            ReleaseUiKit.TextBlock(metrics, "Gesture", "1 ДВИЖЕНИЕ", 16,
                 TextAnchor.MiddleCenter, new Vector2(0.30f, 0f), new Vector2(0.70f, 1f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(metrics, "Rule", "БЕЗ ПОДСКАЗКИ", 14,
+            ReleaseUiKit.TextBlock(metrics, "Rule", "БЕЗ ПОДСКАЗКИ", 16,
                 TextAnchor.MiddleRight, new Vector2(0.70f, 0f), new Vector2(1.00f, 1f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
 
@@ -133,14 +133,14 @@ namespace DontGetSidetracked.Presentation
             Image hintCard = ReleaseUiComponents.GlassCard(root.transform, "GameplayInstruction",
                 new Vector2(0.055f, 0.050f), new Vector2(0.945f, 0.135f),
                 ReleaseUiComponents.Blue, false);
-            ReleaseUiKit.TextBlock(hintCard.transform, "Eye", "◎", 30, TextAnchor.MiddleCenter,
+            ReleaseUiKit.TextBlock(hintCard.transform, "Eye", "◎", 34, TextAnchor.MiddleCenter,
                 new Vector2(0.035f, 0.12f), new Vector2(0.16f, 0.88f),
                 ReleaseUiComponents.Blue, FontStyle.Bold);
-            _hint = ReleaseUiKit.TextBlock(hintCard.transform, "Hint", "Запомни форму и повороты маршрута", 20,
+            _hint = ReleaseUiKit.TextBlock(hintCard.transform, "Hint", "Запомни форму и повороты маршрута", 23,
                 TextAnchor.MiddleLeft, new Vector2(0.17f, 0.08f), new Vector2(0.95f, 0.92f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
 
-            _countdown = ReleaseUiKit.TextBlock(root.transform, "Countdown", string.Empty, 122,
+            _countdown = ReleaseUiKit.TextBlock(root.transform, "Countdown", string.Empty, 132,
                 TextAnchor.MiddleCenter, new Vector2(0.34f, 0.49f), new Vector2(0.66f, 0.64f),
                 ReleaseUiComponents.Cyan, FontStyle.Bold);
             ReleaseUiKit.AddTextShadow(_countdown, 0.64f, -5f);
