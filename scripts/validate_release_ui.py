@@ -11,6 +11,8 @@ FILES = {
     "ui_components": PRESENTATION / "ReleaseUiComponents.cs",
     "daily_intro": PRESENTATION / "DailyIntroCoordinator.cs",
     "gameplay_hud": PRESENTATION / "GameplayHudCoordinator.cs",
+    "generated_assets": PRESENTATION / "GeneratedUiAssets.cs",
+    "visual_theme": PRESENTATION / "VisualThemeCoordinator.cs",
     "route_graphic": PRESENTATION / "RouteGraphic.cs",
     "game_bootstrap": PRESENTATION / "GameBootstrap.cs",
     "training": PRESENTATION / "TrainingMenuCoordinator.cs",
@@ -51,6 +53,8 @@ required = {
         "Backdrop(",
         "StatTile(",
         "CurrencyPill(",
+        "GeneratedCoin",
+        "GeneratedUiAssets.CoinIcon",
         "CreateGradientRoundedSprite",
         "CreateBackdropTexture",
     ),
@@ -69,6 +73,7 @@ required = {
         "BuildStatRow",
         "HomeStatsStrip",
         "BuildQuickActions",
+        "GeneratedUiAssets.QuickActionIcon",
         "DailyIntroCoordinator",
         "ReleaseUiComponents.Backdrop",
         "ОДИН ЧЕЛЛЕНДЖ.",
@@ -86,6 +91,22 @@ required = {
         "GameBootstrapRuntimeBridge.IsActiveRound(_bootstrap)",
         "ЗАПОМНИ МАРШРУТ",
         "ТВОЯ ОЧЕРЕДЬ",
+    ),
+    "generated_assets": (
+        'Root = "GeneratedUI/"',
+        'TrainingIcon = "icon_training"',
+        'StatisticsIcon = "icon_stats"',
+        'StoreIcon = "icon_store"',
+        'CoinIcon = "coin"',
+        'StartMarker = "marker_start_glow"',
+        'EndMarker = "marker_end_glow"',
+        "Resources.Load<Texture2D>",
+        "Sprite.Create",
+    ),
+    "visual_theme": (
+        "GeneratedUiAssets.StartMarker",
+        "GeneratedUiAssets.EndMarker",
+        "marker.rectTransform.sizeDelta = new Vector2(72f, 72f)",
     ),
     "route_graphic": (
         "BuildLocalPoints",
@@ -194,6 +215,18 @@ for key, markers in required.items():
 
 if "_hudVisible == visible" in texts["gameplay_hud"]:
     errors.append("Gameplay HUD visibility must always write CanvasGroup state; equality short-circuit can leak HUD on initial Home.")
+
+GENERATED_UI = ROOT / "UnityProject/Assets/Resources/GeneratedUI"
+for asset in (
+    "icon_training.png",
+    "icon_stats.png",
+    "icon_store.png",
+    "coin.png",
+    "marker_start_glow.png",
+    "marker_end_glow.png",
+):
+    if not (GENERATED_UI / asset).is_file():
+        errors.append(f"Missing generated UI runtime asset: {asset}")
 
 # Avoid emoji glyphs in runtime text rendered through Unity's built-in fallback font.
 for key in ("ui_components", "daily_intro", "meta", "result", "share_card", "rewarded", "hint", "gameplay_hud", "referral_offer"):
