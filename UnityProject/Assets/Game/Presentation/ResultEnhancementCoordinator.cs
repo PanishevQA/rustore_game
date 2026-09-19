@@ -728,6 +728,7 @@ namespace DontGetSidetracked.Presentation
             SetStatTileVisible(_completionValue, visible);
             SetStatTileVisible(_timeValue, visible);
 
+            if (_metricsPanel != null) _metricsPanel.SetActive(visible);
             if (_actionPanel != null) _actionPanel.SetActive(visible);
             if (_shareFeedback != null)
             {
