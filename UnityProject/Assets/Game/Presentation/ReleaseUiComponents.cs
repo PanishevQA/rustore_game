@@ -26,6 +26,23 @@ namespace DontGetSidetracked.Presentation
         public static readonly Color Text = new Color(0.965f, 0.982f, 1f, 1f);
         public static readonly Color Muted = new Color(0.64f, 0.72f, 0.84f, 1f);
 
+        public static Image Icon(Transform parent, string name, string assetName, Vector2 min, Vector2 max)
+        {
+            Image icon = ReleaseUiKit.Rect(parent, name, min, max).gameObject.AddComponent<Image>();
+            GeneratedUiAssets.TryApply(icon, assetName);
+            icon.raycastTarget = false;
+            return icon;
+        }
+
+        public static Button GhostButton(Transform parent, string name, string label,
+            Vector2 min, Vector2 max, UnityEngine.Events.UnityAction action, int fontSize = 24)
+        {
+            Button button = SecondaryButton(parent, name, label, min, max, action, fontSize);
+            button.GetComponent<Image>().color = new Color(0.08f, 0.15f, 0.24f, 0.65f);
+            button.GetComponent<Outline>().effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, 0.16f);
+            return button;
+        }
+
         public static RawImage Backdrop(Transform parent, string name = "ReleaseBackdrop")
         {
             EnsureAssets();
@@ -81,9 +98,9 @@ namespace DontGetSidetracked.Presentation
             ColorBlock colors = button.colors;
             colors.normalColor = Color.white;
             colors.highlightedColor = new Color(1f, 1f, 1f, 1f);
-            colors.pressedColor = new Color(0.84f, 0.90f, 1f, 1f);
+            colors.pressedColor = new Color(0.64f, 0.76f, 0.94f, 1f);
             colors.selectedColor = Color.white;
-            colors.disabledColor = new Color(0.35f, 0.42f, 0.58f, 0.55f);
+            colors.disabledColor = new Color(0.36f, 0.45f, 0.60f, 0.80f);
             colors.fadeDuration = 0.07f;
             button.colors = colors;
 
@@ -125,10 +142,11 @@ namespace DontGetSidetracked.Presentation
             button.targetGraphic = image;
             if (action != null) button.onClick.AddListener(action);
             ColorBlock colors = button.colors;
-            colors.normalColor = image.color;
-            colors.highlightedColor = ReleaseUiKit.Lighten(image.color, 0.06f);
-            colors.pressedColor = ReleaseUiKit.Darken(image.color, 0.06f);
-            colors.disabledColor = new Color(image.color.r, image.color.g, image.color.b, 0.45f);
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.18f, 1.18f, 1.18f, 1f);
+            colors.selectedColor = new Color(1.10f, 1.10f, 1.10f, 1f);
+            colors.pressedColor = new Color(0.60f, 0.72f, 0.88f, 1f);
+            colors.disabledColor = new Color(0.62f, 0.68f, 0.78f, 0.80f);
             colors.fadeDuration = 0.07f;
             button.colors = colors;
 

@@ -98,10 +98,10 @@ namespace DontGetSidetracked.Presentation
             Text text = root.gameObject.AddComponent<Text>();
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             text.text = value ?? string.Empty;
-            text.fontSize = size;
+            text.fontSize = Math.Max(20, size);
             text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = Math.Max(13, size - 12);
-            text.resizeTextMaxSize = size;
+            text.resizeTextMinSize = Math.Max(18, size - 4);
+            text.resizeTextMaxSize = Math.Max(20, size);
             text.alignment = alignment;
             text.color = color;
             text.fontStyle = style;
@@ -132,11 +132,13 @@ namespace DontGetSidetracked.Presentation
             button.targetGraphic = image;
             button.transition = Selectable.Transition.ColorTint;
             ColorBlock colors = button.colors;
-            colors.normalColor = background;
-            colors.highlightedColor = Lighten(background, 0.08f);
-            colors.pressedColor = Darken(background, 0.13f);
-            colors.selectedColor = Lighten(background, 0.04f);
-            colors.disabledColor = new Color(background.r, background.g, background.b, 0.28f);
+            // Selectable multiplies this tint by Image.color; repeating the surface
+            // color here made dark buttons almost black and hid their pressed state.
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.18f, 1.18f, 1.18f, 1f);
+            colors.pressedColor = new Color(0.65f, 0.75f, 0.86f, 1f);
+            colors.selectedColor = new Color(1.10f, 1.10f, 1.10f, 1f);
+            colors.disabledColor = new Color(0.60f, 0.64f, 0.72f, 0.75f);
             colors.fadeDuration = 0.08f;
             button.colors = colors;
             if (action != null) button.onClick.AddListener(action);

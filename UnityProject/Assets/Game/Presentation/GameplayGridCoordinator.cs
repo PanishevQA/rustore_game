@@ -56,8 +56,9 @@ namespace DontGetSidetracked.Presentation
             root.offsetMax = Vector2.zero;
             _grid.transform.SetAsFirstSibling();
 
-            const int columns = 7;
-            const int rows = 9;
+            // Even divisions put the two major guides exactly through the board centre.
+            const int columns = 8;
+            const int rows = 12;
             for (int i = 1; i < columns; i++)
             {
                 float x = i / (float)columns;

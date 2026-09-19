@@ -10,7 +10,18 @@ namespace DontGetSidetracked.Presentation
     {
         private readonly List<FixedPoint2> _points = new List<FixedPoint2>();
         private readonly List<Vector2> _localPoints = new List<Vector2>();
-        public float Thickness { get; set; } = 12f;
+        private float _thickness = 12f;
+        public float Thickness
+        {
+            get => _thickness;
+            set
+            {
+                float clamped = Mathf.Max(1f, value);
+                if (Mathf.Approximately(_thickness, clamped)) return;
+                _thickness = clamped;
+                SetVerticesDirty();
+            }
+        }
 
         public void SetPoints(IEnumerable<FixedPoint2> points)
         {
@@ -34,12 +45,16 @@ namespace DontGetSidetracked.Presentation
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
-            if (_points.Count < 2) return;
+            if (_points.Count == 0) return;
 
             BuildLocalPoints(rectTransform.rect);
-            if (_localPoints.Count < 2) return;
-
             float halfWidth = Mathf.Max(1f, Thickness * 0.5f);
+            if (_localPoints.Count == 1)
+            {
+                // Immediate visual feedback while the finger is still on the start.
+                AddRoundCap(vh, _localPoints[0], halfWidth);
+                return;
+            }
 
             // Build one continuous strip. The old implementation emitted an independent
             // quad for every sample; dense curved routes exposed the open quad corners as
