@@ -60,3 +60,7 @@ UnityProject/Assets/Plugins/Android/settingsTemplate.gradle.meta
 
 # Deterministically generated release branding
 UnityProject/Assets/GeneratedBrand/
+
+# Local generated reports / scratch artifacts
+/artifacts/
+UnityProject/Assets/GeneratedBrand.meta
