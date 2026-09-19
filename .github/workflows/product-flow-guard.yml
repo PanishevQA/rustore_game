@@ -55,7 +55,8 @@ jobs:
           grep -q 'AddStoreProductAction' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           grep -q 'AddStoreHeroProduct' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           grep -q 'AddStoreSectionLabel' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
-          grep -q 'FindProduct(products, ProductIds.StarterPack)' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'ProductOrUnavailable(products, ProductIds.RemoveAds)' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'AddStoreProductIfPresent(products, ProductIds.StarterPack)' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           grep -q 'ProductPrice' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           grep -q 'PriceLabel' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
 
