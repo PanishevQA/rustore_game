@@ -179,6 +179,11 @@ required = {
         "ActionsCard",
         "AddStoreProductAction",
         "ProductPrice",
+        "ScrollRect",
+        "RectMask2D",
+        "ContentSizeFitter",
+        '"ActionsViewport"',
+        '"ProductIconWell"',
     ),
     "result": (
         "ResultHeader",
@@ -191,6 +196,7 @@ required = {
         "LastScoreBreakdown",
         "SetStatTileVisible(_meanValue, visible)",
         "SetStatTileVisible(_timeValue, visible)",
+        "_metricsPanel.SetActive(visible)",
         "ReleaseUiComponents.PrimaryButton",
         "SuppressLegacyResultHeader",
         "SuppressLegacyResultControls",
@@ -270,6 +276,9 @@ for key, markers in required.items():
 
 if "_hudVisible == visible" in texts["gameplay_hud"]:
     errors.append("Gameplay HUD visibility must always write CanvasGroup state; equality short-circuit can leak HUD on initial Home.")
+
+if "RectTransform rt = playArea.rectTransform;" in texts["visual_theme"]:
+    errors.append("VisualThemeCoordinator must not own PlayArea geometry; GameplayHudCoordinator is the single board layout owner.")
 
 GENERATED_UI = ROOT / "UnityProject/Assets/Resources/GeneratedUI"
 for asset in (
