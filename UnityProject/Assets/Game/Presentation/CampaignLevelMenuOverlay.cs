@@ -278,28 +278,28 @@ namespace DontGetSidetracked.Presentation
             var grid = new GameObject("LevelPath", typeof(RectTransform));
             grid.transform.SetParent(_panel.transform, false);
             RectTransform gridRect = grid.GetComponent<RectTransform>();
-            ReleaseUiKit.SetAnchors(gridRect, new Vector2(0.10f, 0.245f), new Vector2(0.90f, 0.715f));
+            ReleaseUiKit.SetAnchors(gridRect, new Vector2(0.055f, 0.235f), new Vector2(0.945f, 0.715f));
             _gridRoot = grid.transform;
 
             _coinHint = ReleaseUiComponents.SecondaryButton(_panel.transform, "CoinHint", "30 МОНЕТ  →  +1 ПОДСКАЗКА",
-                new Vector2(0.245f, 0.178f), new Vector2(0.755f, 0.225f),
+                new Vector2(0.20f, 0.170f), new Vector2(0.80f, 0.220f),
                 BuyHintWithCoins, 20);
 
             _previous = ReleaseUiKit.Button(_panel.transform, "PreviousChapter", "← ГЛАВА",
-                new Vector2(0.065f, 0.095f), new Vector2(0.305f, 0.155f),
+                new Vector2(0.055f, 0.085f), new Vector2(0.295f, 0.150f),
                 ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 23, PreviousChapter);
 
             ReleaseUiComponents.PrimaryButton(_panel.transform, "Home", "▶  ИГРАТЬ ТЕКУЩИЙ",
-                new Vector2(0.34f, 0.090f), new Vector2(0.66f, 0.158f),
+                new Vector2(0.32f, 0.080f), new Vector2(0.68f, 0.155f),
                 StartHighestUnlocked, 20);
 
             _next = ReleaseUiKit.Button(_panel.transform, "NextChapter", "ГЛАВА →",
-                new Vector2(0.695f, 0.095f), new Vector2(0.935f, 0.155f),
+                new Vector2(0.705f, 0.085f), new Vector2(0.945f, 0.150f),
                 ReleaseUiKit.SurfaceRaised, ReleaseUiKit.Text, 23, NextChapter);
 
             Text hint = ReleaseUiKit.TextBlock(_panel.transform, "Hint",
                 "Новые звёзды дают монеты  •  финал главы даёт +1 подсказку", 19,
-                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.045f), new Vector2(0.92f, 0.082f),
+                TextAnchor.MiddleCenter, new Vector2(0.07f, 0.025f), new Vector2(0.93f, 0.065f),
                 ReleaseUiKit.Muted);
             hint.raycastTarget = false;
         }
@@ -312,32 +312,44 @@ namespace DontGetSidetracked.Presentation
             LevelProgressData record,
             UnityEngine.Events.UnityAction action)
         {
+            bool completed = record != null && record.Stars > 0;
+            bool current = unlocked && !completed;
             Color accent = !unlocked
                 ? new Color(0.30f, 0.38f, 0.50f, 0.85f)
-                : record != null && record.Stars > 0
+                : completed
                     ? ReleaseUiComponents.Success
-                    : ReleaseUiComponents.Blue;
+                    : ReleaseUiComponents.Cyan;
 
             var go = new GameObject("LevelNode", typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(parent, false);
             RectTransform rect = go.GetComponent<RectTransform>();
-            float y = 0.91f - slot * 0.092f;
-            float centerX = slot % 2 == 0 ? 0.34f : 0.66f;
-            rect.anchorMin = new Vector2(centerX - 0.16f, y - 0.045f);
-            rect.anchorMax = new Vector2(centerX + 0.16f, y + 0.045f);
+            float y = 0.915f - slot * 0.093f;
+            float centerX = slot % 2 == 0 ? 0.26f : 0.74f;
+            rect.anchorMin = new Vector2(centerX - 0.205f, y - 0.044f);
+            rect.anchorMax = new Vector2(centerX + 0.205f, y + 0.044f);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
 
             Image image = go.GetComponent<Image>();
             image.sprite = ReleaseUiKit.Rounded;
             image.type = Image.Type.Sliced;
-            image.color = unlocked
-                ? new Color(0.025f, 0.080f, 0.135f, 0.98f)
-                : new Color(0.025f, 0.040f, 0.065f, 0.84f);
+            image.color = !unlocked
+                ? new Color(0.018f, 0.032f, 0.055f, 0.82f)
+                : current
+                    ? new Color(0.020f, 0.105f, 0.165f, 0.995f)
+                    : new Color(0.025f, 0.072f, 0.120f, 0.97f);
 
             Outline outline = go.AddComponent<Outline>();
-            outline.effectColor = new Color(accent.r, accent.g, accent.b, unlocked ? 0.18f : 0.08f);
-            outline.effectDistance = new Vector2(2f, -2f);
+            outline.effectColor = new Color(accent.r, accent.g, accent.b, current ? 0.48f : unlocked ? 0.24f : 0.08f);
+            outline.effectDistance = new Vector2(current ? 3f : 2f, current ? -3f : -2f);
+
+            if (current)
+            {
+                Shadow glow = go.AddComponent<Shadow>();
+                glow.effectColor = new Color(accent.r, accent.g, accent.b, 0.22f);
+                glow.effectDistance = new Vector2(0f, -6f);
+                glow.useGraphicAlpha = true;
+            }
 
             Button button = go.GetComponent<Button>();
             button.interactable = unlocked;
@@ -352,18 +364,18 @@ namespace DontGetSidetracked.Presentation
             block.fadeDuration = 0.08f;
             button.colors = block;
 
-            ReleaseUiKit.TextBlock(go.transform, "LevelNumber", levelNumber.ToString(), 31,
+            ReleaseUiKit.TextBlock(go.transform, "LevelNumber", levelNumber.ToString(), 35,
                 TextAnchor.MiddleCenter, new Vector2(0.03f, 0.15f), new Vector2(0.28f, 0.85f),
                 unlocked ? ReleaseUiComponents.Text : new Color(0.43f, 0.48f, 0.58f, 0.90f), FontStyle.Bold);
 
-            string stars = !unlocked ? "ЗАКРЫТ" : record == null || record.Stars <= 0 ? "НОВЫЙ" : Stars(record.Stars);
-            ReleaseUiKit.TextBlock(go.transform, "State", stars, 16,
+            string stars = !unlocked ? "ЗАКРЫТ" : current ? "ТЕКУЩИЙ" : Stars(record.Stars);
+            ReleaseUiKit.TextBlock(go.transform, "State", stars, 17,
                 TextAnchor.MiddleLeft, new Vector2(0.31f, 0.48f), new Vector2(0.94f, 0.88f),
                 accent, FontStyle.Bold);
 
             string best = !unlocked ? "Нужен предыдущий уровень" :
-                record == null || record.Stars <= 0 ? "Твой следующий маршрут" : $"ЛУЧШИЙ  {record.BestScore:0.0}%";
-            ReleaseUiKit.TextBlock(go.transform, "Best", best, 14,
+                current ? "Твой следующий маршрут" : $"ЛУЧШИЙ  {record.BestScore:0.0}%";
+            ReleaseUiKit.TextBlock(go.transform, "Best", best, 15,
                 TextAnchor.MiddleLeft, new Vector2(0.31f, 0.10f), new Vector2(0.94f, 0.48f),
                 unlocked ? ReleaseUiComponents.Muted : new Color(0.38f, 0.42f, 0.50f, 0.85f));
 
