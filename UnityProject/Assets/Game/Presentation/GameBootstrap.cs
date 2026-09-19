@@ -274,7 +274,11 @@ namespace DontGetSidetracked.Presentation
             _pointerDown = false;
             _playerGraphic.Clear();
             _referenceGraphic.color = new Color(0.1f, 0.9f, 1f, 1f);
-            _referenceGraphic.Thickness = Mathf.Max(8f, route.PathWidth / (float)FixedPoint2.Scale * _playArea.rect.width);
+            // PathWidth is a gameplay/scoring corridor, not the desired visual stroke width.
+            // Keep the reference elegant and readable on phones instead of rendering the
+            // full tolerance corridor as a thick ribbon.
+            float corridorWidth = route.PathWidth / (float)FixedPoint2.Scale * _playArea.rect.width;
+            _referenceGraphic.Thickness = Mathf.Clamp(corridorWidth * 0.46f, 8f, 14f);
             _referenceGraphic.SetPoints(route.ReferencePoints);
             PositionMarkers(route);
             SetMarkersVisible(true);
@@ -312,7 +316,7 @@ namespace DontGetSidetracked.Presentation
             _status.text = "2"; yield return new WaitForSecondsRealtime(0.35f);
             _status.text = "1"; yield return new WaitForSecondsRealtime(0.35f);
             _referenceGraphic.Clear();
-            _status.text = "ТЕПЕРЬ ПОВТОРИ\nНачни с зелёной точки";
+            _status.text = "ТЕПЕРЬ ПОВТОРИ\nНачни с голубой точки";
             _state = RoundState.Drawing;
         }
 
@@ -343,7 +347,7 @@ namespace DontGetSidetracked.Presentation
                 const long startRadius = 75_000;
                 if (expectedStart.DistanceSquared(start) > startRadius * startRadius)
                 {
-                    _status.text = "НАЧНИ С ЗЕЛЁНОЙ ТОЧКИ";
+                    _status.text = "НАЧНИ С ГОЛУБОЙ ТОЧКИ";
                     return;
                 }
 
