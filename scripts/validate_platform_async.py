@@ -61,14 +61,15 @@ if review_gate < 0 or review_launch < 0 or review_gate > review_launch:
     raise SystemExit("RuStore review can launch without a final UI safety check.")
 
 # Store operations may finish after the player leaves the panel. Entitlements may still be applied,
-# but stale callbacks must not redraw a newer/closed panel.
+# but stale callbacks must not redraw a newer/closed panel. The redesigned store rebuilds the
+# current action cards after completion instead of re-enabling stale Button instances.
 for value in [
     "private int BeginPanelNavigation()",
     "private bool IsCurrentPanel(int revision)",
     "int revision = BeginPanelNavigation();",
     "int revision = _panelRevision;",
     "if (!IsCurrentPanel(revision)) return;",
-    "if (IsCurrentPanel(revision)) SetActionsInteractable(true);",
+    "RenderStore(_lastStoreProducts, feedback);",
 ]:
     if value not in meta:
         raise SystemExit(f"Store panel async navigation guard missing: {value}")
