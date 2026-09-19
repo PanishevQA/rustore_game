@@ -335,12 +335,15 @@ namespace DontGetSidetracked.Presentation
             Button button = card.gameObject.AddComponent<Button>();
             ConfigureCardButton(button, card.GetComponent<Image>(), interactable, () => Purchase(productId));
 
-            ReleaseUiComponents.Icon(card, "ProductIcon", ProductIcon(productId),
-                new Vector2(0.035f, 0.27f), new Vector2(0.16f, 0.78f));
+            Image iconWell = ReleaseUiComponents.GlassCard(card, "ProductIconWell",
+                new Vector2(0.030f, 0.19f), new Vector2(0.190f, 0.81f), accent, false);
+            iconWell.color = new Color(accent.r, accent.g, accent.b, hero ? 0.16f : 0.10f);
+            ReleaseUiComponents.Icon(iconWell.transform, "ProductIcon", ProductIcon(productId),
+                new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f));
             ReleaseUiKit.TextBlock(card, "ProductTitle", ProductLabel(productId), 32, TextAnchor.MiddleLeft,
-                new Vector2(0.20f, 0.57f), new Vector2(0.72f, 0.89f), ReleaseUiComponents.Text, FontStyle.Bold);
-            Text description = ReleaseUiKit.TextBlock(card, "ProductSubtitle", ProductSubtitle(productId), 25, TextAnchor.UpperLeft,
-                new Vector2(0.20f, 0.12f), new Vector2(0.70f, 0.55f), ReleaseUiComponents.Muted);
+                new Vector2(0.225f, 0.57f), new Vector2(0.72f, 0.89f), ReleaseUiComponents.Text, FontStyle.Bold);
+            Text description = ReleaseUiKit.TextBlock(card, "ProductSubtitle", ProductSubtitle(productId), 24, TextAnchor.UpperLeft,
+                new Vector2(0.225f, 0.12f), new Vector2(0.70f, 0.55f), ReleaseUiComponents.Muted);
             description.horizontalOverflow = HorizontalWrapMode.Wrap;
             string price = owned ? "КУПЛЕНО" : _catalogLoading ? "Загрузка…" : !hasPrice ? "Недоступно" : product.PriceLabel;
             ReleaseUiKit.TextBlock(card, "ProductPrice", price, owned || !hasPrice ? 24 : 30, TextAnchor.MiddleCenter,
@@ -382,7 +385,10 @@ namespace DontGetSidetracked.Presentation
             {
                 case ProductIds.RemoveAds: return GeneratedUiAssets.NoAdsIcon;
                 case ProductIds.Hints10: return GeneratedUiAssets.HintIcon;
-                default: return GeneratedUiAssets.CosmeticIcon;
+                case ProductIds.StarterPack: return GeneratedUiAssets.StoreIcon;
+                case ProductIds.SkinNeon: return GeneratedUiAssets.CosmeticIcon;
+                case ProductIds.SkinRetro: return GeneratedUiAssets.ReplayIcon;
+                default: return GeneratedUiAssets.StoreIcon;
             }
         }
 
@@ -541,28 +547,61 @@ namespace DontGetSidetracked.Presentation
             close.gameObject.name = "ЗАКРЫТЬ";
 
             Image bodyCard = ReleaseUiKit.Panel(_panel.transform, "BodyCard",
-                new Vector2(0.07f, 0.570f), new Vector2(0.93f, 0.825f),
-                ReleaseUiKit.Surface, ReleaseUiKit.Cyan, true);
+                new Vector2(0.07f, 0.705f), new Vector2(0.93f, 0.820f),
+                new Color(0.018f, 0.045f, 0.085f, 0.96f), ReleaseUiKit.Cyan, false);
 
-            _panelBody = ReleaseUiKit.TextBlock(bodyCard.transform, "Body", string.Empty, 27,
-                TextAnchor.UpperLeft, new Vector2(0.055f, 0.07f), new Vector2(0.945f, 0.93f),
-                ReleaseUiKit.Muted);
+            _panelBody = ReleaseUiKit.TextBlock(bodyCard.transform, "Body", string.Empty, 23,
+                TextAnchor.MiddleLeft, new Vector2(0.055f, 0.10f), new Vector2(0.945f, 0.90f),
+                ReleaseUiComponents.Muted);
             _panelBody.horizontalOverflow = HorizontalWrapMode.Wrap;
             _panelBody.verticalOverflow = VerticalWrapMode.Overflow;
             _panelBody.lineSpacing = 1.14f;
 
-            var actionsCard = ReleaseUiKit.Panel(_panel.transform, "ActionsCard",
-                new Vector2(0.07f, 0.075f), new Vector2(0.93f, 0.545f),
-                new Color(0.025f, 0.038f, 0.074f, 0.94f), ReleaseUiKit.Violet, false);
+            Image actionsCard = ReleaseUiKit.Panel(_panel.transform, "ActionsCard",
+                new Vector2(0.07f, 0.075f), new Vector2(0.93f, 0.680f),
+                new Color(0.018f, 0.030f, 0.064f, 0.96f), ReleaseUiKit.Violet, false);
 
-            var actions = new GameObject("Actions", typeof(RectTransform), typeof(VerticalLayoutGroup));
-            actions.transform.SetParent(actionsCard.transform, false);
-            ReleaseUiKit.SetAnchors(actions.GetComponent<RectTransform>(), new Vector2(0.035f, 0.055f), new Vector2(0.965f, 0.945f));
+            var viewport = new GameObject("ActionsViewport", typeof(RectTransform), typeof(RectMask2D));
+            viewport.transform.SetParent(actionsCard.transform, false);
+            RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+            ReleaseUiKit.SetAnchors(viewportRect, new Vector2(0.018f, 0.020f), new Vector2(0.982f, 0.980f));
+
+            var actions = new GameObject(
+                "Actions",
+                typeof(RectTransform),
+                typeof(VerticalLayoutGroup),
+                typeof(ContentSizeFitter));
+            actions.transform.SetParent(viewport.transform, false);
+            RectTransform actionsRect = actions.GetComponent<RectTransform>();
+            actionsRect.anchorMin = new Vector2(0f, 1f);
+            actionsRect.anchorMax = new Vector2(1f, 1f);
+            actionsRect.pivot = new Vector2(0.5f, 1f);
+            actionsRect.anchoredPosition = Vector2.zero;
+            actionsRect.sizeDelta = Vector2.zero;
+
             var layout = actions.GetComponent<VerticalLayoutGroup>();
-            layout.spacing = 10;
+            layout.padding = new RectOffset(12, 12, 12, 18);
+            layout.spacing = 12;
             layout.childControlHeight = true;
             layout.childForceExpandHeight = false;
+            layout.childControlWidth = true;
+            layout.childForceExpandWidth = true;
             layout.childAlignment = TextAnchor.UpperCenter;
+
+            ContentSizeFitter fitter = actions.GetComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            _scroll = actionsCard.gameObject.AddComponent<ScrollRect>();
+            _scroll.viewport = viewportRect;
+            _scroll.content = actionsRect;
+            _scroll.horizontal = false;
+            _scroll.vertical = true;
+            _scroll.inertia = true;
+            _scroll.decelerationRate = 0.12f;
+            _scroll.scrollSensitivity = 42f;
+            _scroll.movementType = ScrollRect.MovementType.Elastic;
+            _scroll.elasticity = 0.10f;
             _actionsRoot = actions.transform;
 
             _panel.SetActive(false);
@@ -575,6 +614,11 @@ namespace DontGetSidetracked.Presentation
             ApplyPanelTitleIcon(title);
             _panelBody.text = body;
             _panel.SetActive(true);
+            if (_scroll != null)
+            {
+                Canvas.ForceUpdateCanvases();
+                _scroll.verticalNormalizedPosition = 1f;
+            }
             SetHomeButtonsVisible(false);
         }
 
@@ -640,8 +684,11 @@ namespace DontGetSidetracked.Presentation
             colors.fadeDuration = 0.08f;
             button.colors = colors;
 
-            ReleaseUiComponents.Icon(go.transform, "SettingIcon", glyph,
-                new Vector2(0.045f, 0.18f), new Vector2(0.155f, 0.82f));
+            Image settingWell = ReleaseUiComponents.GlassCard(go.transform, "SettingIconWell",
+                new Vector2(0.035f, 0.14f), new Vector2(0.175f, 0.86f), accent, false);
+            settingWell.color = new Color(accent.r, accent.g, accent.b, 0.09f);
+            ReleaseUiComponents.Icon(settingWell.transform, "SettingIcon", glyph,
+                new Vector2(0.13f, 0.13f), new Vector2(0.87f, 0.87f));
             ReleaseUiKit.TextBlock(go.transform, "Label", label, 18, TextAnchor.MiddleLeft,
                 new Vector2(0.18f, 0.50f), new Vector2(0.67f, 0.88f), ReleaseUiComponents.Text, FontStyle.Bold);
             ReleaseUiKit.TextBlock(go.transform, "Description", description, 14, TextAnchor.MiddleLeft,
@@ -676,8 +723,11 @@ namespace DontGetSidetracked.Presentation
             element.preferredHeight = 72;
             element.minHeight = 66;
 
-            ReleaseUiComponents.Icon(go.transform, "InfoIcon", glyph,
-                new Vector2(0.045f, 0.18f), new Vector2(0.155f, 0.82f));
+            Image infoWell = ReleaseUiComponents.GlassCard(go.transform, "InfoIconWell",
+                new Vector2(0.035f, 0.14f), new Vector2(0.175f, 0.86f), accent, false);
+            infoWell.color = new Color(accent.r, accent.g, accent.b, 0.09f);
+            ReleaseUiComponents.Icon(infoWell.transform, "InfoIcon", glyph,
+                new Vector2(0.13f, 0.13f), new Vector2(0.87f, 0.87f));
             ReleaseUiKit.TextBlock(go.transform, "Label", label, 16, TextAnchor.MiddleLeft,
                 new Vector2(0.18f, 0.50f), new Vector2(0.72f, 0.88f), ReleaseUiComponents.Muted, FontStyle.Bold);
             ReleaseUiKit.TextBlock(go.transform, "Value", value, 22, TextAnchor.MiddleRight,
