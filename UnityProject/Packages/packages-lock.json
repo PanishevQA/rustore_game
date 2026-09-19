@@ -1,0 +1,138 @@
+{
+  "dependencies": {
+    "com.google.external-dependency-manager": {
+      "version": "https://github.com/googlesamples/unity-jar-resolver.git?path=/upm#v1.2.188",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "32c34224fd3f34c813c97c69508d2a3930105dc7"
+    },
+    "com.unity.ext.nunit": {
+      "version": "2.0.5",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {}
+    },
+    "com.unity.mobile.notifications": {
+      "version": "2.4.3",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.modules.androidjni": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.test-framework": {
+      "version": "1.6.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.ext.nunit": "2.0.3",
+        "com.unity.modules.imgui": "1.0.0",
+        "com.unity.modules.jsonserialize": "1.0.0"
+      }
+    },
+    "com.unity.ugui": {
+      "version": "2.0.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.modules.ui": "1.0.0",
+        "com.unity.modules.imgui": "1.0.0"
+      }
+    },
+    "com.yandex.mobileads": {
+      "version": "https://github.com/yandexmobile/yandex-ads-unity-plugin.git?path=/mobileads-sdk#8.4.0",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.google.external-dependency-manager": "1.2.178",
+        "com.yandex.mobileads.appmetrica.adrevenue.adapter": "1.0.0"
+      },
+      "hash": "326048ab9461592ac7603f62d338fce422336dd8"
+    },
+    "com.yandex.mobileads.appmetrica.adrevenue.adapter": {
+      "version": "1.0.0",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://package.openupm.com"
+    },
+    "ru.rustore.core": {
+      "version": "10.5.0",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed"
+    },
+    "ru.rustore.pay": {
+      "version": "11.1.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "ru.rustore.core": "10.5.0"
+      },
+      "url": "https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed"
+    },
+    "ru.rustore.review": {
+      "version": "10.5.1",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "ru.rustore.core": "10.5.0"
+      },
+      "url": "https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed"
+    },
+    "ru.rustore.update": {
+      "version": "10.5.1",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "ru.rustore.core": "10.5.0"
+      },
+      "url": "https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed"
+    },
+    "com.unity.modules.androidjni": {
+      "version": "1.0.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {}
+    },
+    "com.unity.modules.audio": {
+      "version": "1.0.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {}
+    },
+    "com.unity.modules.imageconversion": {
+      "version": "1.0.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {}
+    },
+    "com.unity.modules.imgui": {
+      "version": "1.0.0",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {}
+    },
+    "com.unity.modules.jsonserialize": {
+      "version": "1.0.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {}
+    },
+    "com.unity.modules.ui": {
+      "version": "1.0.0",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {}
+    },
+    "com.unity.modules.unitywebrequest": {
+      "version": "1.0.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {}
+    }
+  }
+}
