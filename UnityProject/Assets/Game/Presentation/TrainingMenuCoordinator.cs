@@ -166,9 +166,16 @@ namespace DontGetSidetracked.Presentation
             ReleaseUiComponents.SecondaryButton(_panel.transform, "Close", "‹",
                 new Vector2(0.055f, 0.875f), new Vector2(0.16f, 0.935f), Close, 40);
 
-            ReleaseUiKit.TextBlock(_panel.transform, "Infinity", "∞", 70, TextAnchor.MiddleCenter,
-                new Vector2(0.37f, 0.855f), new Vector2(0.63f, 0.935f),
-                ReleaseUiComponents.Violet, FontStyle.Bold);
+            Transform trainingIconRoot = ReleaseUiKit.Rect(_panel.transform, "GeneratedTrainingIcon",
+                new Vector2(0.43f, 0.855f), new Vector2(0.57f, 0.935f));
+            Image trainingIcon = trainingIconRoot.gameObject.AddComponent<Image>();
+            if (!GeneratedUiAssets.TryApply(trainingIcon, GeneratedUiAssets.TrainingIcon))
+            {
+                trainingIconRoot.gameObject.SetActive(false);
+                ReleaseUiKit.TextBlock(_panel.transform, "Infinity", "∞", 70, TextAnchor.MiddleCenter,
+                    new Vector2(0.37f, 0.855f), new Vector2(0.63f, 0.935f),
+                    ReleaseUiComponents.Violet, FontStyle.Bold);
+            }
 
             Text title = ReleaseUiKit.TextBlock(_panel.transform, "Title", "ТРЕНИРОВКА", 50,
                 TextAnchor.MiddleCenter, new Vector2(0.16f, 0.795f), new Vector2(0.84f, 0.855f),
