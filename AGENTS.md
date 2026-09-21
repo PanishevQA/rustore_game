@@ -186,12 +186,14 @@ Use the repository wrapper:
     powershell -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode Fast
     powershell -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode Unity
     powershell -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode Full
+    powershell -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode Build
 
 Modes:
 
 - Fast: repository/static validators + pure C# tests. Use during implementation and after non-Unity logic/documentation changes.
 - Unity: Fast checks plus real Unity batchmode compile + EditMode tests + PlayMode startup smoke tests, followed by read-only serialized-project validation of enabled scenes, prefabs, ScriptableObjects, materials, missing scripts, and broken object references. This is the normal final gate for C#, asmdef, scene/editor tooling, gameplay, UI wiring, and serialized project changes.
 - Full: Unity gate plus release-readiness preparation/report. Use for Android, RuStore, Yandex Ads, manifests, packages, signing/build configuration, release tooling, or when explicitly preparing a release candidate.
+- Build: Full gate plus the existing ProductionAndroidBuild batchmode entrypoint and post-build release metadata/SHA-256 verification. Use only when an actual production AAB is requested; this mode requires a correctly configured Android SDK, signing setup, and release-ready RuStore dependencies.
 
 The existing underlying Unity runner is:
 
@@ -218,7 +220,7 @@ The repository contains a gated Windows self-hosted workflow at:
 
 .github/workflows/unity-self-hosted.yml
 
-When repository variable UNITY_SELF_HOSTED_ENABLED is true and a runner with labels self-hosted/windows/x64/unity is online, pushes to trusted agent/** branches automatically execute the real Unity gate. The workflow must never be changed to run on pull_request or pull_request_target while this repository is public.
+When repository variable UNITY_SELF_HOSTED_ENABLED is true and a runner with labels self-hosted/windows/x64/unity is online, pushes to trusted agent/** branches automatically execute the real Unity gate. Manual workflow dispatch exposes Unity, Full, and Build choices; push events always use Unity mode. The workflow must never be changed to run on pull_request or pull_request_target while this repository is public.
 
 One-time runner setup is documented in:
 
