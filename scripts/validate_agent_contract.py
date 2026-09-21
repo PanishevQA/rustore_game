@@ -113,7 +113,6 @@ def main() -> int:
         (
             "6000.3.24f1",
             "UNITY_EXE",
-            "dotnet",
             "Python 3",
         ),
     )
