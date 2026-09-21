@@ -1,9 +1,13 @@
 param(
     [string]$UnityExe = $env:UNITY_EXE,
-    [switch]$SkipReadiness
+    [switch]$SkipReadiness,
+    [switch]$BuildAab
 )
 
 $ErrorActionPreference = "Stop"
+if ($BuildAab -and $SkipReadiness) {
+    throw "BuildAab requires release readiness; do not combine -BuildAab with -SkipReadiness."
+}
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $repoRoot "UnityProject"
 $projectVersionPath = Join-Path $projectPath "ProjectSettings\ProjectVersion.txt"
@@ -113,13 +117,19 @@ Write-Host ""
 
 $testResults = Join-Path $artifacts "editmode-results.xml"
 $testLog = Join-Path $artifacts "editmode.log"
+$playModeResults = Join-Path $artifacts "playmode-results.xml"
+$playModeLog = Join-Path $artifacts "playmode.log"
+$serializedLog = Join-Path $artifacts "serialized-validation.log"
+$serializedReport = Join-Path $repoRoot "artifacts\agent-check\unity-serialized-validation.txt"
+$productionBuildLog = Join-Path $artifacts "production-build.log"
 $readinessLog = Join-Path $artifacts "readiness.log"
 $readinessSource = Join-Path $projectPath "Library\NesbeisyaReleaseReadiness.txt"
 $readinessCopy = Join-Path $artifacts "release-readiness.txt"
 
-Remove-Item $testResults, $testLog, $readinessLog, $readinessCopy -Force -ErrorAction SilentlyContinue
+Remove-Item $testResults, $testLog, $playModeResults, $playModeLog, $serializedLog, $serializedReport, $productionBuildLog, $readinessLog, $readinessCopy -Force -ErrorAction SilentlyContinue
 
-Write-Host "[1/2] Unity compile + EditMode tests..." -ForegroundColor Yellow
+$totalSteps = if ($BuildAab) { 5 } elseif ($SkipReadiness) { 3 } else { 4 }
+Write-Host "[1/$totalSteps] Unity compile + EditMode tests..." -ForegroundColor Yellow
 $testArgs = @(
     "-batchmode",
     "-nographics",
@@ -143,9 +153,57 @@ if (-not (Test-Path $testResults)) {
 }
 Write-Host "Unity compile + EditMode tests passed." -ForegroundColor Green
 
+Write-Host ""
+Write-Host "[2/$totalSteps] PlayMode startup smoke tests..." -ForegroundColor Yellow
+$playModeArgs = @(
+    "-batchmode",
+    "-nographics",
+    "-projectPath", ('"' + $projectPath + '"'),
+    "-runTests",
+    "-testPlatform", "PlayMode",
+    "-testResults", ('"' + $playModeResults + '"'),
+    "-logFile", ('"' + $playModeLog + '"')
+)
+$playModeProcess = Start-Process -FilePath $unity -ArgumentList $playModeArgs -Wait -PassThru
+$playModeExit = $playModeProcess.ExitCode
+if ($playModeExit -ne 0) {
+    Write-Host "Unity PlayMode tests FAILED (exit $playModeExit)." -ForegroundColor Red
+    Write-Host "Log: $playModeLog"
+    if (Test-Path $playModeLog) { Get-Content $playModeLog -Tail 100 }
+    exit $playModeExit
+}
+if (-not (Test-Path $playModeResults)) {
+    throw "Unity exited successfully but did not create PlayMode test results: $playModeResults"
+}
+Write-Host "Unity PlayMode tests passed." -ForegroundColor Green
+
+Write-Host ""
+Write-Host "[3/$totalSteps] Validate scenes, prefabs and serialized references..." -ForegroundColor Yellow
+$serializedArgs = @(
+    "-batchmode",
+    "-nographics",
+    "-quit",
+    "-projectPath", ('"' + $projectPath + '"'),
+    "-executeMethod", "DontGetSidetracked.EditorTools.AgentProjectValidator.ValidateForAutomation",
+    "-logFile", ('"' + $serializedLog + '"')
+)
+$serializedProcess = Start-Process -FilePath $unity -ArgumentList $serializedArgs -Wait -PassThru
+$serializedExit = $serializedProcess.ExitCode
+if ($serializedExit -ne 0) {
+    Write-Host "Serialized project validation FAILED (exit $serializedExit)." -ForegroundColor Red
+    Write-Host "Log: $serializedLog"
+    if (Test-Path $serializedLog) { Get-Content $serializedLog -Tail 100 }
+    exit $serializedExit
+}
+if (-not (Test-Path $serializedReport)) {
+    throw "Serialized project validation completed but report file was not created: $serializedReport"
+}
+Write-Host "Serialized project validation passed." -ForegroundColor Green
+Write-Host "Report: $serializedReport" -ForegroundColor Cyan
+
 if (-not $SkipReadiness) {
     Write-Host ""
-    Write-Host "[2/2] Prepare Android release environment + readiness report..." -ForegroundColor Yellow
+    Write-Host "[4/$totalSteps] Prepare Android release environment + readiness report..." -ForegroundColor Yellow
     $readinessArgs = @(
         "-batchmode",
         "-nographics",
@@ -172,6 +230,65 @@ if (-not $SkipReadiness) {
     } else {
         throw "Readiness command completed but report file was not created: $readinessSource"
     }
+}
+
+
+if ($BuildAab) {
+    Write-Host ""
+    Write-Host "[5/$totalSteps] Build production Android AAB..." -ForegroundColor Yellow
+
+    $releaseOutput = $env:NESBEISYA_RELEASE_OUTPUT
+    if ([string]::IsNullOrWhiteSpace($releaseOutput)) {
+        $releaseOutput = Join-Path $artifacts "android\nesbeisya-production.aab"
+        $env:NESBEISYA_RELEASE_OUTPUT = $releaseOutput
+    } elseif (-not [IO.Path]::IsPathRooted($releaseOutput)) {
+        $releaseOutput = [IO.Path]::GetFullPath((Join-Path $repoRoot $releaseOutput))
+        $env:NESBEISYA_RELEASE_OUTPUT = $releaseOutput
+    }
+
+    $releaseDirectory = Split-Path -Parent $releaseOutput
+    if ($releaseDirectory) {
+        New-Item -ItemType Directory -Force -Path $releaseDirectory | Out-Null
+    }
+
+    if ([string]::IsNullOrWhiteSpace($env:RELEASE_GIT_SHA) -and [string]::IsNullOrWhiteSpace($env:GITHUB_SHA)) {
+        $git = Get-Command git -ErrorAction SilentlyContinue
+        if ($git) {
+            $resolvedSha = (& $git.Source -C $repoRoot rev-parse HEAD).Trim()
+            if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($resolvedSha)) {
+                $env:RELEASE_GIT_SHA = $resolvedSha
+            }
+        }
+    }
+
+    $buildArgs = @(
+        "-batchmode",
+        "-nographics",
+        "-quit",
+        "-projectPath", ('"' + $projectPath + '"'),
+        "-executeMethod", "DontGetSidetracked.EditorTools.ProductionAndroidBuild.BuildFromCommandLine",
+        "-logFile", ('"' + $productionBuildLog + '"')
+    )
+    $buildProcess = Start-Process -FilePath $unity -ArgumentList $buildArgs -Wait -PassThru
+    $buildExit = $buildProcess.ExitCode
+    if ($buildExit -ne 0) {
+        Write-Host "Production Android AAB build FAILED (exit $buildExit)." -ForegroundColor Red
+        Write-Host "Log: $productionBuildLog"
+        if (Test-Path $productionBuildLog) { Get-Content $productionBuildLog -Tail 120 }
+        exit $buildExit
+    }
+
+    $releaseMetadata = [IO.Path]::ChangeExtension($releaseOutput, ".release.json")
+    if (-not (Test-Path $releaseOutput)) {
+        throw "Production build completed but AAB was not created: $releaseOutput"
+    }
+    if (-not (Test-Path $releaseMetadata)) {
+        throw "Production build completed but release metadata was not created: $releaseMetadata"
+    }
+
+    Write-Host "Production Android AAB created." -ForegroundColor Green
+    Write-Host "AAB: $releaseOutput" -ForegroundColor Cyan
+    Write-Host "Metadata: $releaseMetadata" -ForegroundColor Cyan
 }
 
 Write-Host ""
