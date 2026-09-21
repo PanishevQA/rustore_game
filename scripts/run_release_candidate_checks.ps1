@@ -113,15 +113,17 @@ Write-Host ""
 
 $testResults = Join-Path $artifacts "editmode-results.xml"
 $testLog = Join-Path $artifacts "editmode.log"
+$playModeResults = Join-Path $artifacts "playmode-results.xml"
+$playModeLog = Join-Path $artifacts "playmode.log"
 $serializedLog = Join-Path $artifacts "serialized-validation.log"
 $serializedReport = Join-Path $repoRoot "artifacts\agent-check\unity-serialized-validation.txt"
 $readinessLog = Join-Path $artifacts "readiness.log"
 $readinessSource = Join-Path $projectPath "Library\NesbeisyaReleaseReadiness.txt"
 $readinessCopy = Join-Path $artifacts "release-readiness.txt"
 
-Remove-Item $testResults, $testLog, $serializedLog, $serializedReport, $readinessLog, $readinessCopy -Force -ErrorAction SilentlyContinue
+Remove-Item $testResults, $testLog, $playModeResults, $playModeLog, $serializedLog, $serializedReport, $readinessLog, $readinessCopy -Force -ErrorAction SilentlyContinue
 
-$totalSteps = if ($SkipReadiness) { 2 } else { 3 }
+$totalSteps = if ($SkipReadiness) { 3 } else { 4 }
 Write-Host "[1/$totalSteps] Unity compile + EditMode tests..." -ForegroundColor Yellow
 $testArgs = @(
     "-batchmode",
@@ -147,7 +149,31 @@ if (-not (Test-Path $testResults)) {
 Write-Host "Unity compile + EditMode tests passed." -ForegroundColor Green
 
 Write-Host ""
-Write-Host "[2/$totalSteps] Validate scenes, prefabs and serialized references..." -ForegroundColor Yellow
+Write-Host "[2/$totalSteps] PlayMode startup smoke tests..." -ForegroundColor Yellow
+$playModeArgs = @(
+    "-batchmode",
+    "-nographics",
+    "-projectPath", ('"' + $projectPath + '"'),
+    "-runTests",
+    "-testPlatform", "PlayMode",
+    "-testResults", ('"' + $playModeResults + '"'),
+    "-logFile", ('"' + $playModeLog + '"')
+)
+$playModeProcess = Start-Process -FilePath $unity -ArgumentList $playModeArgs -Wait -PassThru
+$playModeExit = $playModeProcess.ExitCode
+if ($playModeExit -ne 0) {
+    Write-Host "Unity PlayMode tests FAILED (exit $playModeExit)." -ForegroundColor Red
+    Write-Host "Log: $playModeLog"
+    if (Test-Path $playModeLog) { Get-Content $playModeLog -Tail 100 }
+    exit $playModeExit
+}
+if (-not (Test-Path $playModeResults)) {
+    throw "Unity exited successfully but did not create PlayMode test results: $playModeResults"
+}
+Write-Host "Unity PlayMode tests passed." -ForegroundColor Green
+
+Write-Host ""
+Write-Host "[3/$totalSteps] Validate scenes, prefabs and serialized references..." -ForegroundColor Yellow
 $serializedArgs = @(
     "-batchmode",
     "-nographics",
@@ -172,7 +198,7 @@ Write-Host "Report: $serializedReport" -ForegroundColor Cyan
 
 if (-not $SkipReadiness) {
     Write-Host ""
-    Write-Host "[3/$totalSteps] Prepare Android release environment + readiness report..." -ForegroundColor Yellow
+    Write-Host "[4/$totalSteps] Prepare Android release environment + readiness report..." -ForegroundColor Yellow
     $readinessArgs = @(
         "-batchmode",
         "-nographics",
