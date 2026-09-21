@@ -46,10 +46,9 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+      - name: Bootstrap portable Python
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap_portable_python.ps1
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
