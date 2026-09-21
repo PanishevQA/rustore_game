@@ -106,7 +106,7 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 
 ## RuStore / Android release target
 
-Последняя сверка RuStore targets на 2026-09-18:
+Последняя сверка RuStore targets на 2026-09-21:
 
 - Pay Unity: `11.1.0`;
 - Install Referrer Unity: `10.6.1`;
