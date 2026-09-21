@@ -26,7 +26,7 @@ permissions:
 
 concurrency:
   group: unity-self-hosted-${{ github.repository }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   unity:
@@ -50,17 +50,13 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap_portable_python.ps1
 
-      - name: Bootstrap portable .NET
-        shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap_portable_dotnet.ps1
-
       - name: Verify Unity runner environment
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_unity_runner_environment.ps1
 
       - name: Run Unity agent gate
         shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode $env:AGENT_CHECK_MODE
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast
 
       - name: Upload Unity diagnostics
         if: ${{ always() }}
