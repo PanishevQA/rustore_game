@@ -113,13 +113,16 @@ Write-Host ""
 
 $testResults = Join-Path $artifacts "editmode-results.xml"
 $testLog = Join-Path $artifacts "editmode.log"
+$serializedLog = Join-Path $artifacts "serialized-validation.log"
+$serializedReport = Join-Path $repoRoot "artifacts\agent-check\unity-serialized-validation.txt"
 $readinessLog = Join-Path $artifacts "readiness.log"
 $readinessSource = Join-Path $projectPath "Library\NesbeisyaReleaseReadiness.txt"
 $readinessCopy = Join-Path $artifacts "release-readiness.txt"
 
-Remove-Item $testResults, $testLog, $readinessLog, $readinessCopy -Force -ErrorAction SilentlyContinue
+Remove-Item $testResults, $testLog, $serializedLog, $serializedReport, $readinessLog, $readinessCopy -Force -ErrorAction SilentlyContinue
 
-Write-Host "[1/2] Unity compile + EditMode tests..." -ForegroundColor Yellow
+$totalSteps = if ($SkipReadiness) { 2 } else { 3 }
+Write-Host "[1/$totalSteps] Unity compile + EditMode tests..." -ForegroundColor Yellow
 $testArgs = @(
     "-batchmode",
     "-nographics",
@@ -143,9 +146,33 @@ if (-not (Test-Path $testResults)) {
 }
 Write-Host "Unity compile + EditMode tests passed." -ForegroundColor Green
 
+Write-Host ""
+Write-Host "[2/$totalSteps] Validate scenes, prefabs and serialized references..." -ForegroundColor Yellow
+$serializedArgs = @(
+    "-batchmode",
+    "-nographics",
+    "-quit",
+    "-projectPath", ('"' + $projectPath + '"'),
+    "-executeMethod", "DontGetSidetracked.EditorTools.AgentProjectValidator.ValidateForAutomation",
+    "-logFile", ('"' + $serializedLog + '"')
+)
+$serializedProcess = Start-Process -FilePath $unity -ArgumentList $serializedArgs -Wait -PassThru
+$serializedExit = $serializedProcess.ExitCode
+if ($serializedExit -ne 0) {
+    Write-Host "Serialized project validation FAILED (exit $serializedExit)." -ForegroundColor Red
+    Write-Host "Log: $serializedLog"
+    if (Test-Path $serializedLog) { Get-Content $serializedLog -Tail 100 }
+    exit $serializedExit
+}
+if (-not (Test-Path $serializedReport)) {
+    throw "Serialized project validation completed but report file was not created: $serializedReport"
+}
+Write-Host "Serialized project validation passed." -ForegroundColor Green
+Write-Host "Report: $serializedReport" -ForegroundColor Cyan
+
 if (-not $SkipReadiness) {
     Write-Host ""
-    Write-Host "[2/2] Prepare Android release environment + readiness report..." -ForegroundColor Yellow
+    Write-Host "[3/$totalSteps] Prepare Android release environment + readiness report..." -ForegroundColor Yellow
     $readinessArgs = @(
         "-batchmode",
         "-nographics",
