@@ -1,7 +1,8 @@
 param(
-    [ValidateSet("Fast", "Unity", "Full")]
+    [ValidateSet("Fast", "Unity", "Full", "Build")]
     [string]$Mode = "Unity",
-    [string]$UnityExe = $env:UNITY_EXE
+    [string]$UnityExe = $env:UNITY_EXE,
+    [switch]$SkipFast
 )
 
 $ErrorActionPreference = "Stop"
@@ -90,7 +91,10 @@ function Invoke-FastChecks {
 
 
 function Invoke-UnityDiagnostics {
-    param([switch]$IncludeReadiness)
+    param(
+        [switch]$IncludeReadiness,
+        [switch]$IncludeBuild
+    )
 
     $analyzer = Join-Path $repoRoot "scripts\analyze_unity_log.py"
     if (-not (Test-Path $analyzer)) {
@@ -106,16 +110,32 @@ function Invoke-UnityDiagnostics {
     $releaseArtifacts = Join-Path $repoRoot "artifacts\release-candidate"
     $editModeLog = Join-Path $releaseArtifacts "editmode.log"
     $editModeResults = Join-Path $releaseArtifacts "editmode-results.xml"
+    $playModeLog = Join-Path $releaseArtifacts "playmode.log"
+    $playModeResults = Join-Path $releaseArtifacts "playmode-results.xml"
+    $serializedLog = Join-Path $releaseArtifacts "serialized-validation.log"
     $readinessLog = Join-Path $releaseArtifacts "readiness.log"
+    $productionBuildLog = Join-Path $releaseArtifacts "production-build.log"
 
     if (Test-Path $editModeLog) {
         $arguments += @("--log", $editModeLog)
     }
+    if (Test-Path $playModeLog) {
+        $arguments += @("--log", $playModeLog)
+    }
+    if (Test-Path $serializedLog) {
+        $arguments += @("--log", $serializedLog)
+    }
     if ($IncludeReadiness -and (Test-Path $readinessLog)) {
         $arguments += @("--log", $readinessLog)
     }
+    if ($IncludeBuild -and (Test-Path $productionBuildLog)) {
+        $arguments += @("--log", $productionBuildLog)
+    }
     if (Test-Path $editModeResults) {
         $arguments += @("--test-results", $editModeResults)
+    }
+    if (Test-Path $playModeResults) {
+        $arguments += @("--test-results", $playModeResults)
     }
 
     $jsonOut = Join-Path $artifactRoot "unity-diagnostics.json"
@@ -130,7 +150,10 @@ function Invoke-UnityDiagnostics {
 }
 
 function Invoke-UnityChecks {
-    param([switch]$IncludeReadiness)
+    param(
+        [switch]$IncludeReadiness,
+        [switch]$BuildAab
+    )
 
     $runner = Join-Path $repoRoot "scripts\run_release_candidate_checks.ps1"
     if (-not (Test-Path $runner)) {
@@ -152,20 +175,58 @@ function Invoke-UnityChecks {
         $args += @("-UnityExe", $UnityExe)
     }
 
-    if (-not $IncludeReadiness) {
+    if ($BuildAab) {
+        $args += "-BuildAab"
+    }
+    elseif (-not $IncludeReadiness) {
         $args += "-SkipReadiness"
     }
 
-    $name = if ($IncludeReadiness) { "Unity + release readiness" } else { "Unity compile + EditMode tests" }
-    $logName = if ($IncludeReadiness) { "unity-full.log" } else { "unity.log" }
+    $name = if ($BuildAab) { "Unity production Android build gate" } elseif ($IncludeReadiness) { "Unity + release readiness" } else { "Unity compile + tests + serialized validation" }
+    $logName = if ($BuildAab) { "unity-build.log" } elseif ($IncludeReadiness) { "unity-full.log" } else { "unity.log" }
 
     try {
         Invoke-LoggedExternal -Name $name -Executable $powershell.Source -Arguments $args -LogPath (Join-Path $artifactRoot $logName)
     }
     catch {
-        Invoke-UnityDiagnostics -IncludeReadiness:$IncludeReadiness
+        Invoke-UnityDiagnostics -IncludeReadiness:($IncludeReadiness -or $BuildAab) -IncludeBuild:$BuildAab
         throw
     }
+}
+
+function Resolve-CurrentGitSha {
+    $git = Get-Command git -ErrorAction SilentlyContinue
+    if (-not $git) {
+        throw "Git is required to bind production release metadata to the current commit."
+    }
+
+    $sha = (& $git.Source -C $repoRoot rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($sha)) {
+        throw "Could not resolve the current Git commit SHA."
+    }
+    return $sha
+}
+
+function Invoke-ReleaseArtifactVerification {
+    param(
+        [Parameter(Mandatory = $true)][string]$ReleaseOutput,
+        [Parameter(Mandatory = $true)][string]$ExpectedGitSha
+    )
+
+    $metadata = [IO.Path]::ChangeExtension($ReleaseOutput, ".release.json")
+    $verifier = Join-Path $repoRoot "scripts\verify_release_artifact.py"
+    if (-not (Test-Path $verifier)) {
+        throw "Release artifact verifier is missing: $verifier"
+    }
+
+    $python = Resolve-Python
+    $arguments = @()
+    $arguments += $python.Prefix
+    $arguments += $verifier
+    $arguments += $metadata
+    $arguments += @("--package", "ru.release.nesbeisya", "--git-sha", $ExpectedGitSha)
+
+    Invoke-LoggedExternal -Name "Verify production AAB metadata and SHA-256" -Executable $python.Executable -Arguments $arguments -LogPath (Join-Path $artifactRoot "verify-release-artifact.log")
 }
 
 Write-Host "НЕ СБЕЙСЯ! agent validation" -ForegroundColor Cyan
@@ -173,13 +234,28 @@ Write-Host "Mode: $Mode"
 Write-Host "Repository: $repoRoot"
 Write-Host ""
 
-Invoke-FastChecks
+if (-not $SkipFast) {
+    Invoke-FastChecks
+}
 
-if ($Mode -eq "Unity") {
+if ($Mode -eq "Fast") {
+    if ($SkipFast) {
+        throw "Mode Fast cannot be combined with -SkipFast."
+    }
+}
+elseif ($Mode -eq "Unity") {
     Invoke-UnityChecks
 }
 elseif ($Mode -eq "Full") {
     Invoke-UnityChecks -IncludeReadiness
+}
+elseif ($Mode -eq "Build") {
+    $releaseOutput = Join-Path $repoRoot "artifacts\release-candidate\android\nesbeisya-production.aab"
+    $gitSha = Resolve-CurrentGitSha
+    $env:NESBEISYA_RELEASE_OUTPUT = $releaseOutput
+    $env:RELEASE_GIT_SHA = $gitSha
+    Invoke-UnityChecks -IncludeReadiness -BuildAab
+    Invoke-ReleaseArtifactVerification -ReleaseOutput $releaseOutput -ExpectedGitSha $gitSha
 }
 
 Write-Host ""

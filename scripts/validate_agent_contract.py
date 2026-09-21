@@ -25,6 +25,10 @@ def main() -> int:
     check = require_file("scripts/agent_check.ps1")
     release = require_file("scripts/run_release_candidate_checks.ps1")
     analyzer = require_file("scripts/analyze_unity_log.py")
+    serialized_validator = require_file("UnityProject/Assets/Game/Editor/AgentProjectValidator.cs")
+    self_hosted_workflow = require_file(".github/workflows/unity-self-hosted.yml")
+    self_hosted_preflight = require_file("scripts/verify_unity_runner_environment.ps1")
+    self_hosted_docs = require_file("docs/ai-agent-self-hosted-unity.md")
     gitignore = require_file(".gitignore")
 
     require_markers(
@@ -42,6 +46,8 @@ def main() -> int:
             "codex-local-ui-20260919",
             "GameBootstrapRuntimeBridge",
             "unity-diagnostics.json",
+            "unity-self-hosted.yml",
+            "ai-agent-self-hosted-unity.md",
         ),
     )
 
@@ -49,10 +55,14 @@ def main() -> int:
         "scripts/agent_check.ps1",
         check,
         (
-            '[ValidateSet("Fast", "Unity", "Full")]',
+            '[ValidateSet("Fast", "Unity", "Full", "Build")]',
             'Filter "validate_*.py"',
             'Filter "test_*.py"',
             "analyze_unity_log.py",
+            "playmode.log",
+            "playmode-results.xml",
+            "serialized-validation.log",
+            "verify_release_artifact.py",
             "PureRules.Tests.csproj",
             "run_release_candidate_checks.ps1",
             "-SkipReadiness",
@@ -72,12 +82,66 @@ def main() -> int:
     )
 
     require_markers(
+        "UnityProject/Assets/Game/Editor/AgentProjectValidator.cs",
+        serialized_validator,
+        (
+            "ValidateForAutomation",
+            "EditorSceneManager.GetSceneManagerSetup",
+            "EditorSceneManager.RestoreSceneManagerSetup",
+            "GameObjectUtility.GetMonoBehavioursWithMissingScriptCount",
+            "PrefabUtility.LoadPrefabContents",
+            "objectReferenceInstanceIDValue",
+            "unity-serialized-validation.txt",
+        ),
+    )
+
+    require_markers(
+        ".github/workflows/unity-self-hosted.yml",
+        self_hosted_workflow,
+        (
+            "agent/**",
+            "UNITY_SELF_HOSTED_ENABLED",
+            "runs-on: [self-hosted, windows, x64, unity]",
+            "AGENT_CHECK_MODE",
+            "- Build",
+        ),
+    )
+
+    require_markers(
+        "scripts/verify_unity_runner_environment.ps1",
+        self_hosted_preflight,
+        (
+            "6000.3.24f1",
+            "UNITY_EXE",
+            "Python 3",
+        ),
+    )
+
+    require_markers(
+        "docs/ai-agent-self-hosted-unity.md",
+        self_hosted_docs,
+        (
+            "public",
+            "Settings -> Actions -> Runners -> New self-hosted runner",
+            "UNITY_SELF_HOSTED_ENABLED",
+            "unity",
+        ),
+    )
+
+    require_markers(
         "scripts/run_release_candidate_checks.ps1",
         release,
         (
             "-runTests",
             '"-testPlatform", "EditMode"',
+            '"-testPlatform", "PlayMode"',
+            "playmode-results.xml",
+            "AgentProjectValidator.ValidateForAutomation",
+            "serialized-validation.log",
             "ReleaseReadinessReporter.Report",
+            "ProductionAndroidBuild.BuildFromCommandLine",
+            "[switch]$BuildAab",
+            "production-build.log",
             "editmode.log",
             "editmode-results.xml",
         ),

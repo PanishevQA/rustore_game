@@ -610,6 +610,78 @@ namespace DontGetSidetracked.Presentation
                 Destroy(_actionsRoot.GetChild(i).gameObject);
         }
 
+        private Transform AddLayoutRoot(string name, float preferredHeight)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(LayoutElement));
+            go.transform.SetParent(_actionsRoot, false);
+
+            LayoutElement element = go.GetComponent<LayoutElement>();
+            element.preferredHeight = preferredHeight;
+            element.minHeight = Mathf.Max(1f, preferredHeight - 12f);
+            return go.transform;
+        }
+
+        private Transform AddLayoutCard(string name, float preferredHeight, Color accent, bool emphasized = false)
+        {
+            Transform root = AddLayoutRoot(name, preferredHeight);
+            Image image = root.gameObject.AddComponent<Image>();
+            image.sprite = ReleaseUiKit.Rounded;
+            image.type = Image.Type.Sliced;
+            image.color = emphasized
+                ? new Color(0.030f, 0.075f, 0.125f, 0.99f)
+                : new Color(0.020f, 0.055f, 0.100f, 0.96f);
+
+            Outline outline = root.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(accent.r, accent.g, accent.b, emphasized ? 0.34f : 0.20f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            if (emphasized)
+            {
+                Shadow shadow = root.gameObject.AddComponent<Shadow>();
+                shadow.effectColor = new Color(accent.r, accent.g, accent.b, 0.10f);
+                shadow.effectDistance = new Vector2(0f, -5f);
+            }
+
+            return root;
+        }
+
+        private void AddMetricPair(string leftLabel, string leftValue, string rightLabel, string rightValue)
+        {
+            Transform card = AddLayoutCard("MetricPair", 116, ReleaseUiComponents.Blue);
+
+            ReleaseUiKit.TextBlock(card, "LeftLabel", leftLabel, 17, TextAnchor.MiddleLeft,
+                new Vector2(0.04f, 0.54f), new Vector2(0.47f, 0.88f), ReleaseUiComponents.Muted, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(card, "LeftValue", leftValue, 34, TextAnchor.MiddleLeft,
+                new Vector2(0.04f, 0.10f), new Vector2(0.47f, 0.58f), ReleaseUiComponents.Text, FontStyle.Bold);
+
+            ReleaseUiKit.TextBlock(card, "RightLabel", rightLabel, 17, TextAnchor.MiddleRight,
+                new Vector2(0.53f, 0.54f), new Vector2(0.96f, 0.88f), ReleaseUiComponents.Muted, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(card, "RightValue", rightValue, 34, TextAnchor.MiddleRight,
+                new Vector2(0.53f, 0.10f), new Vector2(0.96f, 0.58f), ReleaseUiComponents.Text, FontStyle.Bold);
+        }
+
+        private static void ConfigureCardButton(
+            Button button,
+            Image image,
+            bool interactable,
+            UnityEngine.Events.UnityAction action)
+        {
+            if (button == null || image == null) return;
+
+            button.targetGraphic = image;
+            button.interactable = interactable;
+            button.onClick.RemoveAllListeners();
+            if (action != null) button.onClick.AddListener(action);
+
+            ColorBlock colors = button.colors;
+            colors.normalColor = image.color;
+            colors.highlightedColor = ReleaseUiKit.Lighten(image.color, 0.05f);
+            colors.pressedColor = ReleaseUiKit.Darken(image.color, 0.06f);
+            colors.disabledColor = new Color(image.color.r, image.color.g, image.color.b, 0.48f);
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+        }
+
         private void AddSettingToggleRow(
             string glyph,
             string label,

@@ -150,7 +150,8 @@ namespace DontGetSidetracked.Presentation
 
             _badge.text = celebration.Label;
             _badge.color = BadgeColor(celebration.Tier);
-            GeneratedUiAssets.TryApply(_medalIcon, MedalAsset(celebration.Tier));
+            bool hasMedal = GeneratedUiAssets.TryApply(_medalIcon, MedalAsset(celebration.Tier));
+            _medalIcon.gameObject.SetActive(hasMedal);
             _recordLabel.text = string.Empty;
             _shareFeedback.text = string.Empty;
             RefreshBest(snapshot, campaign, score);
@@ -739,6 +740,22 @@ namespace DontGetSidetracked.Presentation
             rect.anchorMax = max;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
+        }
+
+        private static string MedalAsset(ScoreMedalTier tier)
+        {
+            switch (tier)
+            {
+                case ScoreMedalTier.Perfect:
+                case ScoreMedalTier.Gold:
+                    return GeneratedUiAssets.MedalGold;
+                case ScoreMedalTier.Silver:
+                    return GeneratedUiAssets.MedalSilver;
+                case ScoreMedalTier.Bronze:
+                    return GeneratedUiAssets.MedalBronze;
+                default:
+                    return null;
+            }
         }
 
         private static Color BadgeColor(ScoreMedalTier tier)

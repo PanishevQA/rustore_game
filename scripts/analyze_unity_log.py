@@ -138,15 +138,15 @@ def parse_test_results(path: Path, items: list[dict], seen: set[tuple]) -> None:
         )
 
 
-def build_summary(logs: list[Path], test_results: Path | None) -> dict:
+def build_summary(logs: list[Path], test_results: list[Path]) -> dict:
     diagnostics: list[dict] = []
     seen: set[tuple] = set()
 
     for log in logs:
         parse_log(log, diagnostics, seen)
 
-    if test_results is not None:
-        parse_test_results(test_results, diagnostics, seen)
+    for result_path in test_results:
+        parse_test_results(result_path, diagnostics, seen)
 
     counts: dict[str, int] = {}
     for diagnostic in diagnostics:
@@ -155,7 +155,7 @@ def build_summary(logs: list[Path], test_results: Path | None) -> dict:
 
     return {
         "logs": [str(path) for path in logs],
-        "testResults": str(test_results) if test_results else None,
+        "testResults": [str(path) for path in test_results],
         "counts": counts,
         "diagnostics": diagnostics,
     }
@@ -190,13 +190,13 @@ def print_summary(summary: dict) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Summarize Unity batchmode logs for an AI coding agent.")
     parser.add_argument("--log", action="append", default=[], help="Unity log file. May be supplied multiple times.")
-    parser.add_argument("--test-results", help="Unity Test Framework XML results.")
+    parser.add_argument("--test-results", action="append", default=[], help="Unity Test Framework XML results. May be supplied multiple times.")
     parser.add_argument("--json-out", help="Optional structured JSON output path.")
     parser.add_argument("--fail-on-errors", action="store_true", help="Return exit 1 when diagnostics are found.")
     args = parser.parse_args()
 
     logs = [Path(value) for value in args.log]
-    test_results = Path(args.test_results) if args.test_results else None
+    test_results = [Path(value) for value in args.test_results]
 
     summary = build_summary(logs, test_results)
     print_summary(summary)

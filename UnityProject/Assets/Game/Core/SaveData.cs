@@ -72,7 +72,7 @@ namespace DontGetSidetracked.Core
     [Serializable]
     public sealed class SaveData
     {
-        public const int CurrentVersion = 13;
+        public const int CurrentVersion = 14;
 
         public int Version = CurrentVersion;
         public string AnonymousPlayerId = string.Empty;
@@ -95,6 +95,8 @@ namespace DontGetSidetracked.Core
         public bool InstallReferrerConsumed;
         public int SessionNumber;
         public int CompletedDailyCount;
+        public int TotalScoredAttempts;
+        public double TotalScoreSum;
 
         // Kept only for backward-compatible deserialization of pre-offline saves.
         // Version 8 migration clears this obsolete developer-backend sync queue.
@@ -215,6 +217,13 @@ namespace DontGetSidetracked.Core
                 data.Version = 13;
             }
 
+            if (data.Version == 13)
+            {
+                data.TotalScoredAttempts = 0;
+                data.TotalScoreSum = 0.0;
+                data.Version = 14;
+            }
+
             NormalizeCurrentData(data);
             data.Version = SaveData.CurrentVersion;
             return data;
@@ -241,6 +250,13 @@ namespace DontGetSidetracked.Core
             data.Streak = Math.Max(0, data.Streak);
             data.SessionNumber = Math.Max(0, data.SessionNumber);
             data.CompletedDailyCount = Math.Max(0, data.CompletedDailyCount);
+            data.TotalScoredAttempts = Math.Max(0, data.TotalScoredAttempts);
+            if (double.IsNaN(data.TotalScoreSum) || double.IsInfinity(data.TotalScoreSum) || data.TotalScoreSum < 0.0)
+                data.TotalScoreSum = 0.0;
+            if (data.TotalScoredAttempts == 0)
+                data.TotalScoreSum = 0.0;
+            else
+                data.TotalScoreSum = Math.Min(data.TotalScoreSum, data.TotalScoredAttempts * 100.0);
             data.LastReviewRequestSession = Math.Max(0, data.LastReviewRequestSession);
             data.ReviewRequestCount = Math.Max(0, data.ReviewRequestCount);
             data.PersonalBest = ClampScore(data.PersonalBest);

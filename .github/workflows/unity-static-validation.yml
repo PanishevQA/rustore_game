@@ -14,6 +14,23 @@ jobs:
           python-version: '3.13'
       - name: Validate AI agent contract
         run: python scripts/validate_agent_contract.py
+      - name: Validate self-hosted Unity runner security contract
+        run: python scripts/validate_self_hosted_unity_runner.py
+      - name: Parse agent PowerShell scripts
+        shell: pwsh
+        run: |
+          $failed = $false
+          foreach ($path in @("scripts/agent_check.ps1", "scripts/run_release_candidate_checks.ps1", "scripts/verify_unity_runner_environment.ps1", "scripts/bootstrap_portable_python.ps1")) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              $failed = $true
+              Write-Host "PowerShell parse errors in $path"
+              $errors | ForEach-Object { Write-Host $_.Message }
+            }
+          }
+          if ($failed) { exit 1 }
       - name: Validate Unity project structure and release-critical pins
         run: python scripts/validate_unity_project.py
       - name: Validate RuStore SDK verified baseline

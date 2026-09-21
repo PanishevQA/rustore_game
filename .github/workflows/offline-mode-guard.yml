@@ -58,7 +58,7 @@ jobs:
           grep -q 'CampaignStarPolicy' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
           grep -q 'HighestUnlockedLevel' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'LevelProgress' UnityProject/Assets/Game/Core/SaveData.cs
-          grep -q 'CurrentVersion = 13' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'CurrentVersion = 14' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'CampaignRuntimeCoordinator.StartLevel' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
           grep -q 'level_complete' UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs
 

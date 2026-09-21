@@ -250,11 +250,72 @@ def validate_required_runtime_files() -> None:
         "Assets/Game/Editor/ReleaseReadinessReporter.cs",
         "Assets/Game/Editor/RuStorePayProductionConfigurator.cs",
         "Assets/Game/Editor/ProductionReleaseValidator.cs",
+        "Assets/Game/Editor/AgentProjectValidator.cs",
+        "Assets/Game/Tests/PlayMode/Game.PlayModeTests.asmdef",
+        "Assets/Game/Tests/PlayMode/MainSceneSmokeTests.cs",
         "Assets/ResultShare.androidlib/src/main/res/xml/nesbeisya_file_paths.xml",
     )
     for relative in paths:
         if not (UNITY / relative).is_file():
             fail(f"Missing required runtime file: UnityProject/{relative}")
+
+
+def validate_playmode_smoke_contract() -> None:
+    asmdef = read(UNITY / "Assets/Game/Tests/PlayMode/Game.PlayModeTests.asmdef")
+    smoke = read(UNITY / "Assets/Game/Tests/PlayMode/MainSceneSmokeTests.cs")
+    required_asmdef = (
+        '"name": "Game.PlayModeTests"',
+        '"Game.Presentation"',
+        '"optionalUnityReferences"',
+        '"TestAssemblies"',
+        '"includePlatforms": []',
+        '"UNITY_INCLUDE_TESTS"',
+    )
+    for marker in required_asmdef:
+        if marker not in asmdef:
+            fail(f"PlayMode test assembly contract is incomplete: missing {marker!r}.")
+
+    required_smoke = (
+        'MainScenePath = "Assets/Scenes/Main.unity"',
+        "SceneManager.LoadSceneAsync",
+        "FindFirstObjectByType<GameBootstrap>()",
+        'GameObject.Find("GameCanvas")',
+        "Application.targetFrameRate",
+    )
+    for marker in required_smoke:
+        if marker not in smoke:
+            fail(f"Main scene PlayMode smoke test is incomplete: missing {marker!r}.")
+
+
+def validate_agent_serialized_project_validator() -> None:
+    text = read(UNITY / "Assets/Game/Editor/AgentProjectValidator.cs")
+    required = (
+        "public static void ValidateForAutomation()",
+        "EditorSceneManager.GetSceneManagerSetup()",
+        "EditorSceneManager.RestoreSceneManagerSetup(originalSetup)",
+        "EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single)",
+        "setup => setup.isLoaded",
+        "EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single)",
+        "GameObjectUtility.GetMonoBehavioursWithMissingScriptCount",
+        "PrefabUtility.LoadPrefabContents",
+        'AssetDatabase.FindAssets("t:ScriptableObject"',
+        'AssetDatabase.FindAssets("t:Material"',
+        "SerializedPropertyType.ObjectReference",
+        "objectReferenceInstanceIDValue",
+        "unity-serialized-validation.txt",
+    )
+    for marker in required:
+        if marker not in text:
+            fail(f"Agent serialized-project validator is incomplete: missing {marker!r}.")
+
+    forbidden_writes = (
+        "EditorSceneManager.SaveScene",
+        "AssetDatabase.SaveAssets",
+        "PrefabUtility.SaveAsPrefabAsset",
+    )
+    for marker in forbidden_writes:
+        if marker in text:
+            fail(f"Agent serialized-project validator must remain read-only: found {marker!r}.")
 
 
 def validate_remote_config_runtime_contract() -> None:
@@ -326,6 +387,15 @@ def validate_local_release_candidate_runner() -> None:
         ".ExitCode",
         "-runTests",
         '"-testPlatform", "EditMode"',
+        '"-testPlatform", "PlayMode"',
+        "playmode-results.xml",
+        "playmode.log",
+        "DontGetSidetracked.EditorTools.AgentProjectValidator.ValidateForAutomation",
+        "serialized-validation.log",
+        "unity-serialized-validation.txt",
+        "[switch]$BuildAab",
+        "DontGetSidetracked.EditorTools.ProductionAndroidBuild.BuildFromCommandLine",
+        "production-build.log",
         "DontGetSidetracked.EditorTools.ReleaseReadinessReporter.Report",
         "release-readiness.txt",
     )
@@ -442,6 +512,8 @@ def main() -> int:
     validate_share_path_alignment()
     validate_local_notification_contract()
     validate_required_runtime_files()
+    validate_playmode_smoke_contract()
+    validate_agent_serialized_project_validator()
     validate_remote_config_runtime_contract()
     validate_live_stroke_contract()
     validate_release_preflight_contract()
