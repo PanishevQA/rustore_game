@@ -4,7 +4,7 @@ namespace DontGetSidetracked.Platform.RuStore
     {
         // Re-verified against the official RuStore Unity documentation on this date.
         // A production SDK upgrade must update both the exact pins and this verification date.
-        public const string LastVerifiedUtc = "2026-09-18";
+        public const string LastVerifiedUtc = "2026-09-21";
 
         public const string Pay = "11.1.0";
         public const string InstallReferrer = "10.6.1";
@@ -17,7 +17,7 @@ namespace DontGetSidetracked.Platform.RuStore
         // Do not add a Push version/package without a fresh Unity-specific compatibility check.
 
         // Current official RuStore Unity registry re-verified against the Pay / Install Referrer /
-        // Remote Config / Update / Review documentation on 2026-09-18.
+        // Remote Config / Update / Review documentation on 2026-09-21.
         // Pay/Update/Review remain in the compile-safe Editor manifest. Install Referrer 10.6.1
         // and Remote Config 10.5.1 remain verified release targets but are intentionally quarantined
         // from Unity 6000.3.24f1 after a real batchmode compile reproduced PackageCache compiler
