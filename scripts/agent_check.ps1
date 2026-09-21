@@ -1,7 +1,8 @@
 param(
     [ValidateSet("Fast", "Unity", "Full", "Build")]
     [string]$Mode = "Unity",
-    [string]$UnityExe = $env:UNITY_EXE
+    [string]$UnityExe = $env:UNITY_EXE,
+    [switch]$SkipFast
 )
 
 $ErrorActionPreference = "Stop"
@@ -233,9 +234,16 @@ Write-Host "Mode: $Mode"
 Write-Host "Repository: $repoRoot"
 Write-Host ""
 
-Invoke-FastChecks
+if (-not $SkipFast) {
+    Invoke-FastChecks
+}
 
-if ($Mode -eq "Unity") {
+if ($Mode -eq "Fast") {
+    if ($SkipFast) {
+        throw "Mode Fast cannot be combined with -SkipFast."
+    }
+}
+elseif ($Mode -eq "Unity") {
     Invoke-UnityChecks
 }
 elseif ($Mode -eq "Full") {
