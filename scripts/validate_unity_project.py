@@ -391,6 +391,9 @@ def validate_local_release_candidate_runner() -> None:
         "DontGetSidetracked.EditorTools.AgentProjectValidator.ValidateForAutomation",
         "serialized-validation.log",
         "unity-serialized-validation.txt",
+        "[switch]$BuildAab",
+        "DontGetSidetracked.EditorTools.ProductionAndroidBuild.BuildFromCommandLine",
+        "production-build.log",
         "DontGetSidetracked.EditorTools.ReleaseReadinessReporter.Report",
         "release-readiness.txt",
     )
