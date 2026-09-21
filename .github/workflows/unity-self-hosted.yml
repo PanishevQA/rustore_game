@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 60
     env:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
-      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'Unity' }}
+      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'Full' }}
 
     steps:
       - name: Checkout trusted agent branch
