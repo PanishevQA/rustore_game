@@ -42,7 +42,7 @@ jobs:
       - name: Checkout trusted agent branch
         uses: actions/checkout@v4
         with:
-          clean: true
+          clean: false
           fetch-depth: 1
           persist-credentials: false
 
