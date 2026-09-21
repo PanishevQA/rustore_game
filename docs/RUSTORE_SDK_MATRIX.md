@@ -1,4 +1,4 @@
-# RuStore SDK matrix — 2026-09-18
+# RuStore SDK matrix — 2026-09-21
 
 Сверено с актуальными официальными RuStore Unity-страницами на дату выше. Перед **каждой** production-сборкой версии и repository requirements нужно проверить ещё раз: документация и registry могут обновляться независимо.
 
@@ -16,7 +16,7 @@
 
 `RuStoreSdkVersions.LastVerifiedUtc` должен совпадать с датой этой матрицы. CI проверяет дату, exact release targets и установленные feature packages. `ru.rustore.core` должен разрешаться транзитивно и не pin-иться отдельно.
 
-На 2026-09-18 официальные Unity-источники подтверждают следующие release targets: Pay `11.1.0`, Install Referrer `10.6.1`, Update `10.5.1`, Review `10.5.1`, GameCenter `10.5.2`, Remote Config `10.5.1`.
+На 2026-09-21 официальные Unity-источники подтверждают следующие release targets: Pay `11.1.0`, Install Referrer `10.6.1`, Update `10.5.1`, Review `10.5.1`, GameCenter `10.5.2`, Remote Config `10.5.1`.
 
 ## Android baseline
 
