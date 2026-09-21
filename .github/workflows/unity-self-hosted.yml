@@ -10,6 +10,16 @@ on:
       - 'scripts/**'
       - '.github/workflows/unity-self-hosted.yml'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Agent validation mode'
+        required: true
+        default: 'Unity'
+        type: choice
+        options:
+          - Unity
+          - Full
+          - Build
 
 permissions:
   contents: read
@@ -26,6 +36,7 @@ jobs:
     timeout-minutes: 60
     env:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
+      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'Unity' }}
 
     steps:
       - name: Checkout trusted agent branch
@@ -41,7 +52,7 @@ jobs:
 
       - name: Run Unity agent gate
         shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode Unity
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode $env:AGENT_CHECK_MODE
 
       - name: Upload Unity diagnostics
         if: ${{ always() }}
