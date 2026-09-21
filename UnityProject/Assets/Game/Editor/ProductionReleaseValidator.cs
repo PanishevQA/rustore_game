@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Xml;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -84,8 +85,8 @@ namespace DontGetSidetracked.EditorTools
                 ("android:scheme=\"nesbeisya\"", "Challenge deeplink scheme is missing from AndroidManifest."),
                 ("android:host=\"challenge\"", "Challenge deeplink host is missing from AndroidManifest."),
                 ("androidx.core.content.FileProvider", "Result-card FileProvider is missing from AndroidManifest."),
-                ("${applicationId}.shareprovider", "Result-card FileProvider authority must be application-scoped."),
                 ("@xml/nesbeisya_file_paths", "Result-card FileProvider paths resource is missing."));
+            ValidateFileProviderAuthority(errors, packageName);
             ValidateForbiddenManifestPermissions(errors);
 
             ValidateFileContains(SharePathsPath, errors,
@@ -119,6 +120,43 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Deprecated BillingClient reference detected under Platform/RuStore.");
 
             return errors;
+        }
+
+        private static void ValidateFileProviderAuthority(List<string> errors, string packageName)
+        {
+            if (!File.Exists(ManifestPath)) return;
+
+            try
+            {
+                var document = new XmlDocument();
+                document.Load(ManifestPath);
+
+                var namespaces = new XmlNamespaceManager(document.NameTable);
+                namespaces.AddNamespace("android", "http://schemas.android.com/apk/res/android");
+
+                XmlElement provider = document.SelectSingleNode(
+                    "/manifest/application/provider[@android:name='androidx.core.content.FileProvider']",
+                    namespaces) as XmlElement;
+                if (provider == null) return;
+
+                string authority = provider.GetAttribute(
+                    "authorities",
+                    "http://schemas.android.com/apk/res/android");
+                string placeholder = "${applicationId}.shareprovider";
+                string concrete = (packageName ?? string.Empty) + ".shareprovider";
+
+                if (!string.Equals(authority, placeholder, StringComparison.Ordinal) &&
+                    !string.Equals(authority, concrete, StringComparison.Ordinal))
+                {
+                    errors.Add(
+                        $"Result-card FileProvider authority must be application-scoped. " +
+                        $"Actual='{authority}', expected='{placeholder}' or '{concrete}'.");
+                }
+            }
+            catch (Exception error)
+            {
+                errors.Add("Could not parse AndroidManifest.xml while validating FileProvider authority: " + error.Message);
+            }
         }
 
         private static void ValidateSigning(List<string> errors)
