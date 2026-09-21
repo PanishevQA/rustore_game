@@ -106,10 +106,14 @@ function Invoke-UnityDiagnostics {
     $releaseArtifacts = Join-Path $repoRoot "artifacts\release-candidate"
     $editModeLog = Join-Path $releaseArtifacts "editmode.log"
     $editModeResults = Join-Path $releaseArtifacts "editmode-results.xml"
+    $serializedLog = Join-Path $releaseArtifacts "serialized-validation.log"
     $readinessLog = Join-Path $releaseArtifacts "readiness.log"
 
     if (Test-Path $editModeLog) {
         $arguments += @("--log", $editModeLog)
+    }
+    if (Test-Path $serializedLog) {
+        $arguments += @("--log", $serializedLog)
     }
     if ($IncludeReadiness -and (Test-Path $readinessLog)) {
         $arguments += @("--log", $readinessLog)
