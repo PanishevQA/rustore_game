@@ -13,7 +13,7 @@ It only sends a job to the local runner when all of the following are true:
 - the repository is exactly `PanishevQA/rustore_game`;
 - a runner is online with labels `self-hosted`, `windows`, `x64`, and `unity`.
 
-The job has read-only repository permissions, does not consume GitHub secrets, and runs the same repository-owned `scripts/agent_check.ps1 -Mode Unity` gate used locally.
+The job has read-only repository permissions and does not consume GitHub secrets. Push events always run `scripts/agent_check.ps1 -Mode Unity`. Manual dispatch lets an authorized collaborator explicitly choose `Unity`, `Full`, or `Build`.
 
 ## One-time Windows setup
 
@@ -63,3 +63,12 @@ Because the repository is public:
 - remove or disable the runner when it is no longer needed.
 
 The static validator `scripts/validate_self_hosted_unity_runner.py` protects the main workflow security invariants.
+
+
+## Production AAB from the runner
+
+Use **Actions -> unity-self-hosted -> Run workflow** and select **Build** only when you intentionally want a production Android artifact.
+
+Build mode first runs all normal checks, PlayMode smoke, serialized validation, and release readiness. Only after those pass does it call the existing `DontGetSidetracked.EditorTools.ProductionAndroidBuild.BuildFromCommandLine` entrypoint. The AAB and adjacent `.release.json` metadata are written under `artifacts/release-candidate/android/`, then `scripts/verify_release_artifact.py` verifies the package name, commit SHA, file size, and SHA-256 digest.
+
+A successful Build mode still does not replace a signed physical-device smoke test of RuStore Pay, Update, Review, ads, deeplinks, and referral flows.
