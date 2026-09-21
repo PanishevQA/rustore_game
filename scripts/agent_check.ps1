@@ -106,11 +106,16 @@ function Invoke-UnityDiagnostics {
     $releaseArtifacts = Join-Path $repoRoot "artifacts\release-candidate"
     $editModeLog = Join-Path $releaseArtifacts "editmode.log"
     $editModeResults = Join-Path $releaseArtifacts "editmode-results.xml"
+    $playModeLog = Join-Path $releaseArtifacts "playmode.log"
+    $playModeResults = Join-Path $releaseArtifacts "playmode-results.xml"
     $serializedLog = Join-Path $releaseArtifacts "serialized-validation.log"
     $readinessLog = Join-Path $releaseArtifacts "readiness.log"
 
     if (Test-Path $editModeLog) {
         $arguments += @("--log", $editModeLog)
+    }
+    if (Test-Path $playModeLog) {
+        $arguments += @("--log", $playModeLog)
     }
     if (Test-Path $serializedLog) {
         $arguments += @("--log", $serializedLog)
@@ -120,6 +125,9 @@ function Invoke-UnityDiagnostics {
     }
     if (Test-Path $editModeResults) {
         $arguments += @("--test-results", $editModeResults)
+    }
+    if (Test-Path $playModeResults) {
+        $arguments += @("--test-results", $playModeResults)
     }
 
     $jsonOut = Join-Path $artifactRoot "unity-diagnostics.json"
