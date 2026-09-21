@@ -22,7 +22,7 @@ jobs:
   unity:
     name: Unity batchmode gate
     if: ${{ vars.UNITY_SELF_HOSTED_ENABLED == 'true' && github.repository == 'PanishevQA/rustore_game' }}
-    runs-on: [self-hosted, Windows, X64, unity]
+    runs-on: [self-hosted, windows, x64, unity]
     timeout-minutes: 60
     env:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
