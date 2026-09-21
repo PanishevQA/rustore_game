@@ -68,7 +68,7 @@ for value in [
     "int revision = BeginPanelNavigation();",
     "int revision = _panelRevision;",
     "if (!IsCurrentPanel(revision)) return;",
-    "if (IsCurrentPanel(revision)) SetActionsInteractable(true);",
+    "RenderStore(_lastStoreProducts, feedback);",
 ]:
     if value not in meta:
         raise SystemExit(f"Store panel async navigation guard missing: {value}")
