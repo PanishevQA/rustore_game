@@ -25,6 +25,7 @@ def main() -> int:
     check = require_file("scripts/agent_check.ps1")
     release = require_file("scripts/run_release_candidate_checks.ps1")
     analyzer = require_file("scripts/analyze_unity_log.py")
+    serialized_validator = require_file("UnityProject/Assets/Game/Editor/AgentProjectValidator.cs")
     gitignore = require_file(".gitignore")
 
     require_markers(
@@ -53,6 +54,7 @@ def main() -> int:
             'Filter "validate_*.py"',
             'Filter "test_*.py"',
             "analyze_unity_log.py",
+            "serialized-validation.log",
             "PureRules.Tests.csproj",
             "run_release_candidate_checks.ps1",
             "-SkipReadiness",
@@ -72,11 +74,27 @@ def main() -> int:
     )
 
     require_markers(
+        "UnityProject/Assets/Game/Editor/AgentProjectValidator.cs",
+        serialized_validator,
+        (
+            "ValidateForAutomation",
+            "EditorSceneManager.GetSceneManagerSetup",
+            "EditorSceneManager.RestoreSceneManagerSetup",
+            "GameObjectUtility.GetMonoBehavioursWithMissingScriptCount",
+            "PrefabUtility.LoadPrefabContents",
+            "objectReferenceInstanceIDValue",
+            "unity-serialized-validation.txt",
+        ),
+    )
+
+    require_markers(
         "scripts/run_release_candidate_checks.ps1",
         release,
         (
             "-runTests",
             '"-testPlatform", "EditMode"',
+            "AgentProjectValidator.ValidateForAutomation",
+            "serialized-validation.log",
             "ReleaseReadinessReporter.Report",
             "editmode.log",
             "editmode-results.xml",
