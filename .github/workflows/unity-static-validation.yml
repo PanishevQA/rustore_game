@@ -18,7 +18,7 @@ jobs:
         shell: pwsh
         run: |
           $failed = $false
-          foreach ($path in @("scripts/agent_check.ps1", "scripts/run_release_candidate_checks.ps1")) {
+          foreach ($path in @("scripts/agent_check.ps1", "scripts/run_release_candidate_checks.ps1", "scripts/verify_unity_runner_environment.ps1")) {
             $tokens = $null
             $errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors) | Out-Null
