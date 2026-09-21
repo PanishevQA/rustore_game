@@ -9,7 +9,7 @@ $url = "https://www.python.org/ftp/python/$Version/python-$Version-embed-amd64.z
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $toolRoot = Join-Path $repoRoot ".agent-tools\python-$Version"
 $pythonExe = Join-Path $toolRoot "python.exe"
-$archive = Join-Path $env:RUNNER_TEMP "python-$Version-embeddable-amd64.zip"
+$archive = Join-Path $env:RUNNER_TEMP "python-$Version-embed-amd64.zip"
 
 if (-not (Test-Path $pythonExe)) {
     New-Item -ItemType Directory -Force -Path $toolRoot | Out-Null
