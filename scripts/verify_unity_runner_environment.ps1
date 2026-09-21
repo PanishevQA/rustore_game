@@ -63,8 +63,6 @@ if ($editorVersion -ne "6000.3.24f1") {
 }
 
 $git = Resolve-RequiredCommand "git"
-$dotnet = Resolve-RequiredCommand "dotnet"
-
 $python = Get-Command python -ErrorAction SilentlyContinue
 $py = Get-Command py -ErrorAction SilentlyContinue
 if (-not $python -and -not $py) {
@@ -72,16 +70,6 @@ if (-not $python -and -not $py) {
 }
 
 $unity = Resolve-Unity -Explicit $UnityExe -Version $editorVersion
-
-$dotnetVersion = (& $dotnet.Source --version).Trim()
-if ($LASTEXITCODE -ne 0) {
-    Fail "dotnet --version failed."
-}
-
-$major = 0
-if (-not [int]::TryParse(($dotnetVersion -split "\.")[0], [ref]$major) -or $major -lt 8) {
-    Fail ".NET SDK 8 or newer is required; found $dotnetVersion"
-}
 
 $drive = Get-PSDrive -Name ([IO.Path]::GetPathRoot($repoRoot).TrimEnd("\").TrimEnd(":")) -ErrorAction SilentlyContinue
 if ($drive -and $drive.Free -lt 10GB) {
@@ -96,7 +84,6 @@ Write-Host "Unity self-hosted runner environment is ready." -ForegroundColor Gre
 Write-Host "Repository: $repoRoot"
 Write-Host "Unity: $unity"
 Write-Host "Unity version: $editorVersion"
-Write-Host ".NET SDK: $dotnetVersion"
 if ($python) {
     Write-Host "Python: $($python.Source)"
 } else {
