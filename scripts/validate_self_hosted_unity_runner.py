@@ -37,6 +37,7 @@ required_workflow = (
     "runs-on: [self-hosted, windows, x64, unity]",
     "timeout-minutes: 60",
     "persist-credentials: false",
+    "clean: false",
     "bootstrap_portable_python.ps1",
     "verify_unity_runner_environment.ps1",
     "AGENT_CHECK_MODE",
