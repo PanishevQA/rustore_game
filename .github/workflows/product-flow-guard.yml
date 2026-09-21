@@ -36,9 +36,11 @@ jobs:
           grep -q 'ChapterCompletionHints = 1' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
           grep -q 'CompletedLevels()' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
           grep -q 'КАМПАНИЯ ЗАВЕРШЕНА' UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs
-          grep -q 'CurrentVersion = 13' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'CurrentVersion = 14' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'HighestUnlockedLevel' UnityProject/Assets/Game/Core/SaveData.cs
           grep -q 'LevelProgress' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'TotalScoredAttempts' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'TotalScoreSum' UnityProject/Assets/Game/Core/SaveData.cs
 
           # Statistics must expose Campaign directly in the primary Meta surface, without a reflection patch layer.
           grep -q 'new CampaignProgressService' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
