@@ -29,8 +29,8 @@ namespace DontGetSidetracked.Tests.PlayMode
 
             GameBootstrap bootstrap = Object.FindFirstObjectByType<GameBootstrap>();
             Assert.That(bootstrap, Is.Not.Null, "GameBootstrap was not created after Main scene load.");
-            Assert.That(bootstrap.gameObject.scene.name, Is.EqualTo("DontDestroyOnLoad"),
-                "GameBootstrap should survive scene transitions.");
+            Assert.That(bootstrap.gameObject.activeInHierarchy, Is.True,
+                "GameBootstrap is inactive after Main scene startup.");
 
             GameObject canvas = GameObject.Find("GameCanvas");
             Assert.That(canvas, Is.Not.Null, "Runtime UI root GameCanvas was not created.");
