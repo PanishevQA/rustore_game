@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github/workflows/unity-self-hosted.yml"
 OLD_WORKFLOW = ROOT / ".github/workflows/unity-agent-gate.yml"
 PREFLIGHT = ROOT / "scripts/verify_unity_runner_environment.ps1"
+PORTABLE_PYTHON = ROOT / "scripts/bootstrap_portable_python.ps1"
 errors: list[str] = []
 
 
@@ -18,6 +19,7 @@ def read(path: Path) -> str:
 
 workflow = read(WORKFLOW)
 preflight = read(PREFLIGHT)
+portable_python = read(PORTABLE_PYTHON)
 
 if OLD_WORKFLOW.exists():
     errors.append("Unsafe legacy self-hosted pull-request workflow returned: .github/workflows/unity-agent-gate.yml")
@@ -35,6 +37,7 @@ required_workflow = (
     "runs-on: [self-hosted, windows, x64, unity]",
     "timeout-minutes: 60",
     "persist-credentials: false",
+    "bootstrap_portable_python.ps1",
     "verify_unity_runner_environment.ps1",
     "AGENT_CHECK_MODE",
     "agent_check.ps1 -Mode $env:AGENT_CHECK_MODE",
@@ -47,7 +50,7 @@ for marker in required_workflow:
     if marker not in workflow:
         errors.append(f"Self-hosted Unity workflow is missing: {marker!r}")
 
-for forbidden in ("pull_request:", "pull_request_target:", "secrets."):
+for forbidden in ("pull_request:", "pull_request_target:", "secrets.", "actions/setup-python@"):
     if forbidden in workflow:
         errors.append(f"Self-hosted Unity workflow must not contain unsafe trigger/secret marker: {forbidden!r}")
 
@@ -65,6 +68,17 @@ required_preflight = (
 for marker in required_preflight:
     if marker not in preflight:
         errors.append(f"Unity runner preflight is missing: {marker!r}")
+
+required_portable_python = (
+    "3.13.15",
+    "python-3.13.15-embeddable-amd64.zip",
+    "d1f04d990aee1253d8569e8e5104e30fa9f5fa830899f14843448872d936a2cf",
+    "Get-FileHash",
+    "GITHUB_PATH",
+)
+for marker in required_portable_python:
+    if marker not in portable_python:
+        errors.append(f"Portable Python bootstrap is incomplete: {marker!r}")
 
 if errors:
     print("Self-hosted Unity runner contract FAILED:")
