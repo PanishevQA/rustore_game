@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github/workflows/unity-self-hosted.yml"
 OLD_WORKFLOW = ROOT / ".github/workflows/unity-agent-gate.yml"
 PREFLIGHT = ROOT / "scripts/verify_unity_runner_environment.ps1"
+LOGON_TASK = ROOT / "scripts/install_unity_runner_logon_task.ps1"
 PORTABLE_PYTHON = ROOT / "scripts/bootstrap_portable_python.ps1"
 errors: list[str] = []
 
@@ -19,6 +20,7 @@ def read(path: Path) -> str:
 
 workflow = read(WORKFLOW)
 preflight = read(PREFLIGHT)
+logon_task = read(LOGON_TASK)
 portable_python = read(PORTABLE_PYTHON)
 
 if OLD_WORKFLOW.exists():
@@ -65,6 +67,18 @@ required_preflight = (
     "10GB",
     "agent_check.ps1",
 )
+
+required_logon_task = (
+    "Get-Content $serviceFile -Raw",
+    "Set-Service -Name $serviceName -StartupType Disabled",
+    "New-ScheduledTaskTrigger -AtLogOn -User $userName",
+    "New-ScheduledTaskPrincipal -UserId $userName -LogonType Interactive",
+    "Start-ScheduledTask -TaskName $TaskName",
+    "run.cmd",
+)
+for marker in required_logon_task:
+    if marker not in logon_task:
+        errors.append(f"Unity licensed-user logon task helper is missing: {marker!r}")
 
 for marker in required_preflight:
     if marker not in preflight:
