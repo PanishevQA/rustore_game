@@ -1,0 +1,55 @@
+name: unity-self-hosted
+
+on:
+  push:
+    branches:
+      - 'agent/**'
+    paths:
+      - 'AGENTS.md'
+      - 'UnityProject/**'
+      - 'scripts/**'
+      - '.github/workflows/unity-self-hosted.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unity-self-hosted-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  unity:
+    name: Unity batchmode gate
+    if: ${{ vars.UNITY_SELF_HOSTED_ENABLED == 'true' && github.repository == 'PanishevQA/rustore_game' }}
+    runs-on: [self-hosted, Windows, X64, unity]
+    timeout-minutes: 60
+    env:
+      UNITY_EXE: ${{ vars.UNITY_EXE }}
+
+    steps:
+      - name: Checkout trusted agent branch
+        uses: actions/checkout@v4
+        with:
+          clean: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify Unity runner environment
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_unity_runner_environment.ps1
+
+      - name: Run Unity agent gate
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode Unity
+
+      - name: Upload Unity diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-agent-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            artifacts/agent-check/**
+            artifacts/release-candidate/**
