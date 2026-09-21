@@ -212,6 +212,18 @@ artifacts/agent-check/
 
 Do not claim Unity compilation passed if only Python/static checks were run.
 
+### Self-hosted Unity feedback loop
+
+The repository contains a gated Windows self-hosted workflow at:
+
+.github/workflows/unity-self-hosted.yml
+
+When repository variable UNITY_SELF_HOSTED_ENABLED is true and a runner with labels self-hosted/windows/x64/unity is online, pushes to trusted agent/** branches automatically execute the real Unity gate. The workflow must never be changed to run on pull_request or pull_request_target while this repository is public.
+
+One-time runner setup is documented in:
+
+docs/ai-agent-self-hosted-unity.md
+
 ## 10. Tests
 
 Unity EditMode tests live under:
