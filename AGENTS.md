@@ -283,6 +283,7 @@ On Unity failure, inspect at minimum:
 - artifacts/release-candidate/editmode-results.xml
 - artifacts/release-candidate/readiness.log when Full mode was used
 - artifacts/release-candidate/release-readiness.txt when produced
+- artifacts/agent-check/unity-diagnostics.json for the structured compiler/exception/test summary produced after a failed Unity gate
 
 Do not stop after the first compiler error if it is fixable within the repository.
 
