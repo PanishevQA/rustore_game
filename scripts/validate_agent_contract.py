@@ -24,6 +24,7 @@ def main() -> int:
     agents = require_file("AGENTS.md")
     check = require_file("scripts/agent_check.ps1")
     release = require_file("scripts/run_release_candidate_checks.ps1")
+    analyzer = require_file("scripts/analyze_unity_log.py")
     gitignore = require_file(".gitignore")
 
     require_markers(
@@ -40,6 +41,7 @@ def main() -> int:
             "git reset --hard",
             "codex-local-ui-20260919",
             "GameBootstrapRuntimeBridge",
+            "unity-diagnostics.json",
         ),
     )
 
@@ -49,10 +51,23 @@ def main() -> int:
         (
             '[ValidateSet("Fast", "Unity", "Full")]',
             'Filter "validate_*.py"',
+            'Filter "test_*.py"',
+            "analyze_unity_log.py",
             "PureRules.Tests.csproj",
             "run_release_candidate_checks.ps1",
             "-SkipReadiness",
             "artifacts\\agent-check",
+        ),
+    )
+
+    require_markers(
+        "scripts/analyze_unity_log.py",
+        analyzer,
+        (
+            "COMPILER_RE",
+            "parse_test_results",
+            "--json-out",
+            "--fail-on-errors",
         ),
     )
 
