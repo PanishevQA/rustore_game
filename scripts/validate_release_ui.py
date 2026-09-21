@@ -105,8 +105,7 @@ required = {
         'CoinIcon = "coin"',
         'StartMarker = "marker_start_glow"',
         'EndMarker = "marker_end_glow"',
-        "Resources.Load<Texture2D>",
-        "Sprite.Create",
+        "Resources.Load<Sprite>",
     ),
     "visual_theme": (
         "GeneratedUiAssets.StartMarker",
