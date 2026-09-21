@@ -69,9 +69,10 @@ function Invoke-FastChecks {
         Invoke-PythonScript -Python $python -ScriptPath $validator.FullName -LogPath $log
     }
 
-    $artifactVerifierTests = Join-Path $repoRoot "scripts\test_release_artifact_verifier.py"
-    if (Test-Path $artifactVerifierTests) {
-        Invoke-PythonScript -Python $python -ScriptPath $artifactVerifierTests -LogPath (Join-Path $artifactRoot "test_release_artifact_verifier.log")
+    $pythonTests = Get-ChildItem (Join-Path $repoRoot "scripts") -File -Filter "test_*.py" | Sort-Object Name
+    foreach ($test in $pythonTests) {
+        $log = Join-Path $artifactRoot ($test.BaseName + ".log")
+        Invoke-PythonScript -Python $python -ScriptPath $test.FullName -LogPath $log
     }
 
     $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
@@ -85,6 +86,47 @@ function Invoke-FastChecks {
         "--configuration", "Release",
         "--nologo"
     ) -LogPath (Join-Path $artifactRoot "pure-csharp-tests.log")
+}
+
+
+function Invoke-UnityDiagnostics {
+    param([switch]$IncludeReadiness)
+
+    $analyzer = Join-Path $repoRoot "scripts\analyze_unity_log.py"
+    if (-not (Test-Path $analyzer)) {
+        Write-Warning "Unity diagnostics parser is missing: $analyzer"
+        return
+    }
+
+    $python = Resolve-Python
+    $arguments = @()
+    $arguments += $python.Prefix
+    $arguments += $analyzer
+
+    $releaseArtifacts = Join-Path $repoRoot "artifacts\release-candidate"
+    $editModeLog = Join-Path $releaseArtifacts "editmode.log"
+    $editModeResults = Join-Path $releaseArtifacts "editmode-results.xml"
+    $readinessLog = Join-Path $releaseArtifacts "readiness.log"
+
+    if (Test-Path $editModeLog) {
+        $arguments += @("--log", $editModeLog)
+    }
+    if ($IncludeReadiness -and (Test-Path $readinessLog)) {
+        $arguments += @("--log", $readinessLog)
+    }
+    if (Test-Path $editModeResults) {
+        $arguments += @("--test-results", $editModeResults)
+    }
+
+    $jsonOut = Join-Path $artifactRoot "unity-diagnostics.json"
+    $arguments += @("--json-out", $jsonOut)
+
+    Write-Host ""
+    Write-Host "[Unity failure diagnostics]" -ForegroundColor Yellow
+    & $python.Executable @arguments 2>&1 | Tee-Object -FilePath (Join-Path $artifactRoot "unity-diagnostics.log")
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Unity diagnostics parser failed; inspect raw release-candidate logs."
+    }
 }
 
 function Invoke-UnityChecks {
@@ -117,7 +159,13 @@ function Invoke-UnityChecks {
     $name = if ($IncludeReadiness) { "Unity + release readiness" } else { "Unity compile + EditMode tests" }
     $logName = if ($IncludeReadiness) { "unity-full.log" } else { "unity.log" }
 
-    Invoke-LoggedExternal -Name $name -Executable $powershell.Source -Arguments $args -LogPath (Join-Path $artifactRoot $logName)
+    try {
+        Invoke-LoggedExternal -Name $name -Executable $powershell.Source -Arguments $args -LogPath (Join-Path $artifactRoot $logName)
+    }
+    catch {
+        Invoke-UnityDiagnostics -IncludeReadiness:$IncludeReadiness
+        throw
+    }
 }
 
 Write-Host "НЕ СБЕЙСЯ! agent validation" -ForegroundColor Cyan
