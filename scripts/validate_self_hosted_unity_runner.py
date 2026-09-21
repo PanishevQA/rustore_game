@@ -7,7 +7,6 @@ WORKFLOW = ROOT / ".github/workflows/unity-self-hosted.yml"
 OLD_WORKFLOW = ROOT / ".github/workflows/unity-agent-gate.yml"
 PREFLIGHT = ROOT / "scripts/verify_unity_runner_environment.ps1"
 PORTABLE_PYTHON = ROOT / "scripts/bootstrap_portable_python.ps1"
-PORTABLE_DOTNET = ROOT / "scripts/bootstrap_portable_dotnet.ps1"
 errors: list[str] = []
 
 
@@ -21,7 +20,6 @@ def read(path: Path) -> str:
 workflow = read(WORKFLOW)
 preflight = read(PREFLIGHT)
 portable_python = read(PORTABLE_PYTHON)
-portable_dotnet = read(PORTABLE_DOTNET)
 
 if OLD_WORKFLOW.exists():
     errors.append("Unsafe legacy self-hosted pull-request workflow returned: .github/workflows/unity-agent-gate.yml")
@@ -40,10 +38,10 @@ required_workflow = (
     "timeout-minutes: 60",
     "persist-credentials: false",
     "bootstrap_portable_python.ps1",
-    "bootstrap_portable_dotnet.ps1",
     "verify_unity_runner_environment.ps1",
     "AGENT_CHECK_MODE",
-    "agent_check.ps1 -Mode $env:AGENT_CHECK_MODE",
+    "agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast",
+    "cancel-in-progress: true",
     "actions/upload-artifact@v4",
     "artifacts/agent-check/**",
     "artifacts/release-candidate/**",
@@ -61,7 +59,6 @@ required_preflight = (
     'if ($env:OS -ne "Windows_NT")',
     "6000.3.24f1",
     'Resolve-RequiredCommand "git"',
-    'Resolve-RequiredCommand "dotnet"',
     "Python 3",
     "UNITY_EXE",
     "10GB",
@@ -82,17 +79,6 @@ required_portable_python = (
 for marker in required_portable_python:
     if marker not in portable_python:
         errors.append(f"Portable Python bootstrap is incomplete: {marker!r}")
-
-required_portable_dotnet = (
-    "8.0.425",
-    "https://dot.net/v1/dotnet-install.ps1",
-    "-InstallDir",
-    "GITHUB_PATH",
-    "DOTNET_ROOT",
-)
-for marker in required_portable_dotnet:
-    if marker not in portable_dotnet:
-        errors.append(f"Portable .NET bootstrap is incomplete: {marker!r}")
 
 if errors:
     print("Self-hosted Unity runner contract FAILED:")
