@@ -13,7 +13,7 @@ It only sends a job to the local runner when all of the following are true:
 - the repository is exactly `PanishevQA/rustore_game`;
 - a runner is online with labels `self-hosted`, `windows`, `x64`, and `unity`.
 
-The job has read-only repository permissions and does not consume GitHub secrets. Push events always run `scripts/agent_check.ps1 -Mode Unity`. Manual dispatch lets an authorized collaborator explicitly choose `Unity`, `Full`, or `Build`.
+The job has read-only repository permissions and does not consume GitHub secrets. Push events run `scripts/agent_check.ps1 -Mode Unity -SkipFast`: hosted CI owns static validators and pure C# tests, while the Windows runner owns the real Unity gate. Manual dispatch likewise uses the selected `Unity`, `Full`, or `Build` mode with `-SkipFast`; run release builds only after hosted CI for that commit is green.
 
 ## One-time Windows setup
 
@@ -27,7 +27,6 @@ The job has read-only repository permissions and does not consume GitHub secrets
 8. Make sure the machine has:
    - Unity `6000.3.24f1`;
    - Git;
-   - .NET does not need to be installed system-wide: the workflow bootstraps pinned .NET SDK 8.0.425 into the runner workspace using Microsoft's official dotnet-install script;
    - Python does not need to be installed system-wide: the workflow bootstraps the pinned Python 3.13.15 embeddable package from python.org and verifies its SHA-256 before use;
    - enough free disk space for Unity Library/package cache/build artifacts.
 9. If Unity is not installed in a normal Unity Hub location, create repository variable `UNITY_EXE` containing the full path to `Unity.exe`.
