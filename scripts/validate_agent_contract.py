@@ -59,6 +59,8 @@ def main() -> int:
             'Filter "validate_*.py"',
             'Filter "test_*.py"',
             "analyze_unity_log.py",
+            "playmode.log",
+            "playmode-results.xml",
             "serialized-validation.log",
             "PureRules.Tests.csproj",
             "run_release_candidate_checks.ps1",
@@ -131,6 +133,8 @@ def main() -> int:
         (
             "-runTests",
             '"-testPlatform", "EditMode"',
+            '"-testPlatform", "PlayMode"',
+            "playmode-results.xml",
             "AgentProjectValidator.ValidateForAutomation",
             "serialized-validation.log",
             "ReleaseReadinessReporter.Report",
