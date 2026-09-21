@@ -10,7 +10,7 @@ CHECKLIST = ROOT / "docs/RUSTORE_RELEASE_CHECKLIST.md"
 README = ROOT / "README.md"
 STATUS = ROOT / "docs/MVP_STATUS.md"
 
-verified_date = "2026-09-18"
+verified_date = "2026-09-21"
 expected = {
     "Pay": "11.1.0",
     "InstallReferrer": "10.6.1",
