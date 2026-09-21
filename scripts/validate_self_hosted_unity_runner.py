@@ -26,7 +26,7 @@ required_workflow = (
     "contents: read",
     "vars.UNITY_SELF_HOSTED_ENABLED == 'true'",
     "github.repository == 'PanishevQA/rustore_game'",
-    "runs-on: [self-hosted, Windows, X64, unity]",
+    "runs-on: [self-hosted, windows, x64, unity]",
     "timeout-minutes: 60",
     "persist-credentials: false",
     "verify_unity_runner_environment.ps1",
