@@ -50,10 +50,9 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap_portable_python.ps1
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
+      - name: Bootstrap portable .NET
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap_portable_dotnet.ps1
 
       - name: Verify Unity runner environment
         shell: powershell
