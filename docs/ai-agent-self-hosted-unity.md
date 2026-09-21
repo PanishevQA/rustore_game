@@ -71,3 +71,12 @@ Use **Actions -> unity-self-hosted -> Run workflow** and select **Build** only w
 Build mode first runs all normal checks, PlayMode smoke, serialized validation, and release readiness. Only after those pass does it call the existing `DontGetSidetracked.EditorTools.ProductionAndroidBuild.BuildFromCommandLine` entrypoint. The AAB and adjacent `.release.json` metadata are written under `artifacts/release-candidate/android/`, then `scripts/verify_release_artifact.py` verifies the package name, commit SHA, file size, and SHA-256 digest.
 
 A successful Build mode still does not replace a signed physical-device smoke test of RuStore Pay, Update, Review, ads, deeplinks, and referral flows.
+
+
+## Unity Personal and Windows service identity
+
+Unity Personal licensing is tied to the Windows user profile that is signed into Unity Hub. A runner running as LocalSystem, NetworkService, or LocalService can connect to the machine-level licensing client but still receive zero Unity entitlements and exit batchmode with code 198.
+
+For unattended Unity validation on this project, the Windows runner process/service must therefore execute as the same normal Windows user that has the active Unity Personal license. Do not use a built-in Windows service identity for Unity jobs.
+
+The runner preflight rejects built-in service identities before launching Unity, so this configuration problem fails immediately instead of wasting a full Unity test cycle.
