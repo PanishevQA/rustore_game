@@ -80,3 +80,26 @@ Unity Personal licensing is tied to the Windows user profile that is signed into
 For unattended Unity validation on this project, the Windows runner process/service must therefore execute as the same normal Windows user that has the active Unity Personal license. Do not use a built-in Windows service identity for Unity jobs.
 
 The runner preflight rejects built-in service identities before launching Unity, so this configuration problem fails immediately instead of wasting a full Unity test cycle.
+
+
+## Recommended Windows startup for Unity Personal
+
+For this project, do not run the GitHub runner as NetworkService, LocalSystem, or LocalService when using Unity Personal.
+
+The repository provides a password-free startup helper:
+
+scripts/install_unity_runner_logon_task.ps1
+
+Run it once from an elevated PowerShell opened by the same Windows user that is signed into Unity Hub:
+
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_unity_runner_logon_task.ps1
+
+The helper:
+- stops and disables the old GitHub Actions Windows service;
+- keeps the existing runner registration and credentials;
+- creates a Windows Scheduled Task for the current user;
+- launches the official C:\actions-runner\run.cmd at user logon;
+- starts the task immediately;
+- stores no Windows password in the repository or command line.
+
+This keeps the runner unattended after login while ensuring Unity batchmode runs in the same user profile that owns the Unity Personal entitlement.
