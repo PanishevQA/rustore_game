@@ -13,6 +13,7 @@ namespace DontGetSidetracked.Presentation
         public string ChallengeLabel = string.Empty;
         public double Score;
         public ScoreCelebration Celebration;
+        public bool IsAggregate;
         public IReadOnlyList<FixedPoint2> ReferencePoints;
         public IReadOnlyList<RecordedPoint> PlayerPoints;
         public double RivalScore;
