@@ -268,10 +268,9 @@ namespace DontGetSidetracked.EditorTools
             List<string> errors,
             ValidationStats stats)
         {
-            SerializedObject serializedObject = null;
             try
             {
-                serializedObject = new SerializedObject(target);
+                SerializedObject serializedObject = new SerializedObject(target);
                 stats.SerializedObjects++;
 
                 SerializedProperty property = serializedObject.GetIterator();
@@ -292,10 +291,6 @@ namespace DontGetSidetracked.EditorTools
             catch (Exception error)
             {
                 errors.Add($"{context} could not be inspected through SerializedObject: {error.Message}");
-            }
-            finally
-            {
-                serializedObject?.Dispose();
             }
         }
 
