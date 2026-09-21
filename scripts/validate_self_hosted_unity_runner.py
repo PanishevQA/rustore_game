@@ -4,6 +4,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github/workflows/unity-self-hosted.yml"
+OLD_WORKFLOW = ROOT / ".github/workflows/unity-agent-gate.yml"
 PREFLIGHT = ROOT / "scripts/verify_unity_runner_environment.ps1"
 errors: list[str] = []
 
@@ -17,6 +18,9 @@ def read(path: Path) -> str:
 
 workflow = read(WORKFLOW)
 preflight = read(PREFLIGHT)
+
+if OLD_WORKFLOW.exists():
+    errors.append("Unsafe legacy self-hosted pull-request workflow returned: .github/workflows/unity-agent-gate.yml")
 
 required_workflow = (
     "branches:",
