@@ -49,6 +49,16 @@ if ($env:OS -ne "Windows_NT") {
     Fail "the Unity runner must use Windows."
 }
 
+$windowsIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+$builtInServiceAccounts = @(
+    "NT AUTHORITY\SYSTEM",
+    "NT AUTHORITY\NETWORK SERVICE",
+    "NT AUTHORITY\LOCAL SERVICE"
+)
+if ($builtInServiceAccounts -contains $windowsIdentity.ToUpperInvariant()) {
+    Fail "runner is executing as built-in Windows service account '$windowsIdentity'. Unity Personal licensing is activated in the normal Windows user profile, so configure the GitHub runner service to log on as that Unity-licensed user (or run run.cmd interactively under that user)."
+}
+
 if (-not (Test-Path $versionPath)) {
     Fail "Unity project version file is missing: $versionPath"
 }
@@ -81,6 +91,7 @@ if (-not (Test-Path (Join-Path $repoRoot "scripts\agent_check.ps1"))) {
 }
 
 Write-Host "Unity self-hosted runner environment is ready." -ForegroundColor Green
+Write-Host "Windows identity: $windowsIdentity"
 Write-Host "Repository: $repoRoot"
 Write-Host "Unity: $unity"
 Write-Host "Unity version: $editorVersion"
