@@ -54,9 +54,9 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_unity_runner_environment.ps1
 
-      - name: Run Unity agent gate
+      - name: Run RuStore package compile probe
         shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\probe_rustore_package_compile.ps1 -TimeoutSeconds 900
 
       - name: Upload Unity diagnostics
         if: ${{ always() }}
@@ -68,3 +68,4 @@ jobs:
           path: |
             artifacts/agent-check/**
             artifacts/release-candidate/**
+            artifacts/rustore-package-probe/**
