@@ -112,6 +112,23 @@ namespace DontGetSidetracked.Tests
         }
 
         [Test]
+        public void Version13MigrationAddsScoreStatistics()
+        {
+            var data = new SaveData
+            {
+                Version = 13,
+                TotalScoredAttempts = -4,
+                TotalScoreSum = double.NaN
+            };
+
+            SaveData migrated = SaveMigrator.Migrate(data);
+
+            Assert.That(migrated.Version, Is.EqualTo(SaveData.CurrentVersion));
+            Assert.That(migrated.TotalScoredAttempts, Is.Zero);
+            Assert.That(migrated.TotalScoreSum, Is.Zero);
+        }
+
+        [Test]
         public void CurrentVersionRepairNormalizesCorruptEconomyProgressAndLegacyQueue()
         {
             var data = new SaveData
@@ -122,6 +139,8 @@ namespace DontGetSidetracked.Tests
                 Streak = -4,
                 SessionNumber = -1,
                 CompletedDailyCount = -8,
+                TotalScoredAttempts = -3,
+                TotalScoreSum = double.PositiveInfinity,
                 PersonalBest = 250.0,
                 Inventory = new System.Collections.Generic.List<string> { "skin_neon", "skin_neon", " ", null },
                 Entitlements = new System.Collections.Generic.List<string> { "remove_ads", "remove_ads" },
@@ -164,6 +183,8 @@ namespace DontGetSidetracked.Tests
             Assert.That(repaired.Streak, Is.Zero);
             Assert.That(repaired.SessionNumber, Is.Zero);
             Assert.That(repaired.CompletedDailyCount, Is.Zero);
+            Assert.That(repaired.TotalScoredAttempts, Is.Zero);
+            Assert.That(repaired.TotalScoreSum, Is.Zero);
             Assert.That(repaired.PersonalBest, Is.EqualTo(100.0));
             Assert.That(repaired.Inventory, Is.EqualTo(new[] { "skin_neon" }));
             Assert.That(repaired.Entitlements, Is.EqualTo(new[] { "remove_ads" }));
