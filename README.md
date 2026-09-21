@@ -102,7 +102,7 @@ Yandex Mobile Ads Unity `8.4.0` закреплён в `Packages/manifest.json`; 
 
 Проект зафиксирован на Unity `6000.3.24f1`, portrait, `UnityPlayerActivity`, IL2CPP/ARM64 release baseline.
 
-Последняя сверка RuStore targets — 2026-09-18:
+Последняя сверка RuStore targets — 2026-09-21:
 
 - Pay Unity `11.1.0`;
 - Install Referrer Unity `10.6.1`;
