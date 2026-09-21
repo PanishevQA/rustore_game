@@ -17,7 +17,7 @@ The job has read-only repository permissions, does not consume GitHub secrets, a
 
 ## One-time Windows setup
 
-1. Keep the GitHub Actions runner in a dedicated directory that is **not** your normal Unity working copy. A location such as `C:\actions-runner\rustore-game` is appropriate.
+1. Use a dedicated Windows account for the GitHub Actions service if practical, and keep the runner in a dedicated directory that is **not** your normal Unity working copy. This isolates Unity persistent data and cached state from your personal Editor profile. A location such as `C:\actions-runner\rustore-game` is appropriate.
 2. In GitHub, open this repository, then go to **Settings -> Actions -> Runners -> New self-hosted runner**.
 3. Choose **Windows / x64**.
 4. Use the download and registration commands shown by GitHub on that page. Do not copy a registration token into this repository or into chat; registration tokens are temporary credentials.
