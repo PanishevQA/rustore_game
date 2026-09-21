@@ -4,7 +4,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $expectedSha256 = "d1f04d990aee1253d8569e8e5104e30fa9f5fa830899f14843448872d936a2cf"
-$url = "https://www.python.org/ftp/python/$Version/python-$Version-embeddable-amd64.zip"
+$url = "https://www.python.org/ftp/python/$Version/python-$Version-embed-amd64.zip"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $toolRoot = Join-Path $repoRoot ".agent-tools\python-$Version"
