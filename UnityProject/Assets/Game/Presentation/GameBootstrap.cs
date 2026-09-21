@@ -416,6 +416,9 @@ namespace DontGetSidetracked.Presentation
                 "score", result.Score,
                 "difficulty", _route.Difficulty.ToString()));
 
+            if (_mode != Mode.Tutorial)
+                RecordScoredAttempt(result.Score);
+
             if (_mode == Mode.Tutorial)
             {
                 bool firstCompletion = !_save.TutorialCompleted;
@@ -481,6 +484,16 @@ namespace DontGetSidetracked.Presentation
                 ConfigureButton(_share, "ПОДЕЛИТЬСЯ", ShareCurrentResult);
                 _share.gameObject.SetActive(true);
             }
+        }
+
+        private void RecordScoredAttempt(double score)
+        {
+            if (_save == null || _save.TotalScoredAttempts == int.MaxValue) return;
+
+            double normalized = Math.Max(0.0, Math.Min(100.0, score));
+            _save.TotalScoredAttempts++;
+            _save.TotalScoreSum += normalized;
+            _saveRepository.Save(_save);
         }
 
         private async void CompleteDaily()
