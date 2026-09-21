@@ -190,7 +190,7 @@ Use the repository wrapper:
 Modes:
 
 - Fast: repository/static validators + pure C# tests. Use during implementation and after non-Unity logic/documentation changes.
-- Unity: Fast checks plus real Unity batchmode compile + EditMode tests, followed by read-only serialized-project validation of enabled scenes, prefabs, ScriptableObjects, materials, missing scripts, and broken object references. This is the normal final gate for C#, asmdef, scene/editor tooling, gameplay, UI wiring, and serialized project changes.
+- Unity: Fast checks plus real Unity batchmode compile + EditMode tests + PlayMode startup smoke tests, followed by read-only serialized-project validation of enabled scenes, prefabs, ScriptableObjects, materials, missing scripts, and broken object references. This is the normal final gate for C#, asmdef, scene/editor tooling, gameplay, UI wiring, and serialized project changes.
 - Full: Unity gate plus release-readiness preparation/report. Use for Android, RuStore, Yandex Ads, manifests, packages, signing/build configuration, release tooling, or when explicitly preparing a release candidate.
 
 The existing underlying Unity runner is:
@@ -301,6 +301,8 @@ On Unity failure, inspect at minimum:
 
 - artifacts/release-candidate/editmode.log
 - artifacts/release-candidate/editmode-results.xml
+- artifacts/release-candidate/playmode.log
+- artifacts/release-candidate/playmode-results.xml
 - artifacts/release-candidate/serialized-validation.log
 - artifacts/agent-check/unity-serialized-validation.txt
 - artifacts/release-candidate/readiness.log when Full mode was used
