@@ -69,7 +69,7 @@ namespace DontGetSidetracked.EditorTools
             {
                 try
                 {
-                    EditorSceneManager.RestoreSceneManagerSetup(originalSetup);
+                    RestoreOriginalSceneSetup(originalSetup);
                 }
                 catch (Exception error)
                 {
@@ -88,6 +88,20 @@ namespace DontGetSidetracked.EditorTools
                 $"Serialized project validation passed. " +
                 $"Scenes={stats.Scenes}, Prefabs={stats.Prefabs}, GameObjects={stats.GameObjects}, " +
                 $"ScriptableObjects={stats.ScriptableObjects}, Materials={stats.Materials}. Report: {reportPath}");
+        }
+
+        private static void RestoreOriginalSceneSetup(SceneSetup[] originalSetup)
+        {
+            bool hasLoadedScene = originalSetup != null && originalSetup.Any(setup => setup.isLoaded);
+            if (hasLoadedScene)
+            {
+                EditorSceneManager.RestoreSceneManagerSetup(originalSetup);
+                return;
+            }
+
+            // Unity batchmode can start with no loaded/active scene. RestoreSceneManagerSetup
+            // rejects that state, so return to a transient unsaved empty scene instead.
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         }
 
         private static bool HasDirtyOpenScenes()
