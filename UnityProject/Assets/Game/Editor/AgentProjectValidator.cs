@@ -313,8 +313,9 @@ namespace DontGetSidetracked.EditorTools
         private static string WriteReport(IReadOnlyList<string> errors, ValidationStats stats)
         {
             string projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Directory.GetCurrentDirectory();
+            string repositoryRoot = Directory.GetParent(projectRoot)?.FullName ?? projectRoot;
             string reportPath = Path.Combine(
-                projectRoot,
+                repositoryRoot,
                 ReportRelativePath.Replace('/', Path.DirectorySeparatorChar));
             string directory = Path.GetDirectoryName(reportPath);
             if (!string.IsNullOrWhiteSpace(directory))
