@@ -226,6 +226,8 @@ One-time runner setup is documented in:
 
 docs/ai-agent-self-hosted-unity.md
 
+The first self-hosted run after runner setup is expected to validate the runner environment before Unity starts.
+
 ## 10. Tests
 
 Unity EditMode tests live under:
