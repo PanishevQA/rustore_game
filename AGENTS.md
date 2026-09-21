@@ -190,7 +190,7 @@ Use the repository wrapper:
 Modes:
 
 - Fast: repository/static validators + pure C# tests. Use during implementation and after non-Unity logic/documentation changes.
-- Unity: Fast checks plus real Unity batchmode compile + EditMode tests. This is the normal final gate for C#, asmdef, scene/editor tooling, gameplay, UI wiring, and serialized project changes.
+- Unity: Fast checks plus real Unity batchmode compile + EditMode tests, followed by read-only serialized-project validation of enabled scenes, prefabs, ScriptableObjects, materials, missing scripts, and broken object references. This is the normal final gate for C#, asmdef, scene/editor tooling, gameplay, UI wiring, and serialized project changes.
 - Full: Unity gate plus release-readiness preparation/report. Use for Android, RuStore, Yandex Ads, manifests, packages, signing/build configuration, release tooling, or when explicitly preparing a release candidate.
 
 The existing underlying Unity runner is:
@@ -200,6 +200,11 @@ scripts/run_release_candidate_checks.ps1
 It writes Unity logs/results under:
 
 artifacts/release-candidate/
+
+Serialized-project validation additionally writes:
+
+- artifacts/release-candidate/serialized-validation.log
+- artifacts/agent-check/unity-serialized-validation.txt
 
 Agent wrapper logs belong under:
 
@@ -233,7 +238,10 @@ A scene/UI task is not complete merely because C# compiles. The agent should ver
 - serialized references are assigned;
 - only intended owners control each screen/surface;
 - scene can be opened/imported by Unity batchmode without new errors;
-- existing release UI validators still pass.
+- existing release UI validators still pass;
+- DontGetSidetracked.EditorTools.AgentProjectValidator.ValidateForAutomation passes without missing scripts or broken serialized references.
+
+The serialized validator is read-only: it may open build scenes and prefab contents for inspection, but it must restore the original scene setup and must not save scenes/prefabs/assets.
 
 Avoid Computer Use/click automation when the same result can be produced through UnityEditor APIs.
 
@@ -281,6 +289,8 @@ On Unity failure, inspect at minimum:
 
 - artifacts/release-candidate/editmode.log
 - artifacts/release-candidate/editmode-results.xml
+- artifacts/release-candidate/serialized-validation.log
+- artifacts/agent-check/unity-serialized-validation.txt
 - artifacts/release-candidate/readiness.log when Full mode was used
 - artifacts/release-candidate/release-readiness.txt when produced
 - artifacts/agent-check/unity-diagnostics.json for the structured compiler/exception/test summary produced after a failed Unity gate
@@ -294,7 +304,7 @@ A coding task is complete only when all applicable items are true:
 1. requested behavior is implemented and wired into the existing architecture;
 2. no duplicate subsystem was introduced without justification;
 3. changed code respects asmdef/module boundaries;
-4. required assets/scenes/serialized references are intact;
+4. required assets/scenes/serialized references are intact and the serialized-project validator passes for scene/prefab/UI/material/ScriptableObject changes;
 5. relevant automated tests were added/updated;
 6. relevant static validators pass;
 7. for Unity-affecting work, agent_check.ps1 -Mode Unity passes;
