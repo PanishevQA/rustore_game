@@ -26,6 +26,9 @@ def main() -> int:
     release = require_file("scripts/run_release_candidate_checks.ps1")
     analyzer = require_file("scripts/analyze_unity_log.py")
     serialized_validator = require_file("UnityProject/Assets/Game/Editor/AgentProjectValidator.cs")
+    self_hosted_workflow = require_file(".github/workflows/unity-self-hosted.yml")
+    self_hosted_preflight = require_file("scripts/verify_unity_runner_environment.ps1")
+    self_hosted_docs = require_file("docs/ai-agent-self-hosted-unity.md")
     gitignore = require_file(".gitignore")
 
     require_markers(
@@ -43,6 +46,8 @@ def main() -> int:
             "codex-local-ui-20260919",
             "GameBootstrapRuntimeBridge",
             "unity-diagnostics.json",
+            "unity-self-hosted.yml",
+            "ai-agent-self-hosted-unity.md",
         ),
     )
 
@@ -84,6 +89,39 @@ def main() -> int:
             "PrefabUtility.LoadPrefabContents",
             "objectReferenceInstanceIDValue",
             "unity-serialized-validation.txt",
+        ),
+    )
+
+    require_markers(
+        ".github/workflows/unity-self-hosted.yml",
+        self_hosted_workflow,
+        (
+            "agent/**",
+            "UNITY_SELF_HOSTED_ENABLED",
+            "runs-on: [self-hosted, windows, x64, unity]",
+            "agent_check.ps1 -Mode Unity",
+        ),
+    )
+
+    require_markers(
+        "scripts/verify_unity_runner_environment.ps1",
+        self_hosted_preflight,
+        (
+            "6000.3.24f1",
+            "UNITY_EXE",
+            "dotnet",
+            "Python 3",
+        ),
+    )
+
+    require_markers(
+        "docs/ai-agent-self-hosted-unity.md",
+        self_hosted_docs,
+        (
+            "public",
+            "Settings -> Actions -> Runners -> New self-hosted runner",
+            "UNITY_SELF_HOSTED_ENABLED",
+            "unity",
         ),
     )
 
