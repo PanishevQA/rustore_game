@@ -293,6 +293,8 @@ def validate_agent_serialized_project_validator() -> None:
         "public static void ValidateForAutomation()",
         "EditorSceneManager.GetSceneManagerSetup()",
         "EditorSceneManager.RestoreSceneManagerSetup(originalSetup)",
+        "EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single)",
+        "setup => setup.isLoaded",
         "EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single)",
         "GameObjectUtility.GetMonoBehavioursWithMissingScriptCount",
         "PrefabUtility.LoadPrefabContents",
