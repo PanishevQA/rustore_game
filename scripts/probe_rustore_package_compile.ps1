@@ -29,6 +29,7 @@ if (-not $UnityExe -or -not (Test-Path $UnityExe)) {
 }
 
 Write-Host "RuStore package compile probe"
+Write-Host "Remote Config 10.5.1 isolated probe"
 Write-Host "Unity: $UnityExe"
 Write-Host "Project: $projectPath"
 Write-Host "Timeout: $TimeoutSeconds seconds"
