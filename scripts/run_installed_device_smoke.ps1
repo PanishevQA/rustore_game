@@ -95,15 +95,20 @@ function Capture-DeviceFrame([string]$AdbPath, [string]$Serial, [string]$Name) {
     & $AdbPath -s $Serial shell rm -f $remote | Out-Null
 }
 
+function Get-DeviceLogs([string]$AdbPath, [string]$Serial) {
+    $logs = (& $AdbPath -s $Serial logcat -d -v threadtime | Out-String)
+    $logPath = Join-Path $artifactDir "logcat.txt"
+    $logs | Set-Content -Path $logPath -Encoding UTF8
+    return $logs
+}
+
 function Assert-NoFatal([string]$AdbPath, [string]$Serial, [string]$Package) {
-    $logs = (& $AdbPath -s $Serial logcat -d -v brief | Out-String)
+    $logs = Get-DeviceLogs -AdbPath $AdbPath -Serial $Serial
     $escapedPackage = [regex]::Escape($Package)
     $fatalException = $logs -match ("(?is)FATAL EXCEPTION.*Process:\s*" + $escapedPackage)
     $anrForPackage = $logs -match ("(?is)ANR in\s+" + $escapedPackage)
     if ($fatalException -or $anrForPackage) {
-        $logPath = Join-Path $artifactDir "logcat-failure.txt"
-        $logs | Set-Content -Path $logPath -Encoding UTF8
-        Fail "fatal exception/ANR marker detected after app launch. See artifacts/device-runtime-smoke/logcat-failure.txt."
+        Fail "fatal exception/ANR marker detected after app launch. See artifacts/device-runtime-smoke/logcat.txt."
     }
 }
 
@@ -173,6 +178,21 @@ Report "Foreground package ownership: PASS"
 $localScreenshot = Join-Path $artifactDir "launcher-screen.png"
 Copy-Item -Path (Join-Path $artifactDir "launcher-08s.png") -Destination $localScreenshot -Force
 Report "Launcher screenshot timeline captured: PASS"
+
+$startupLogs = Get-DeviceLogs -AdbPath $adb -Serial $serial
+$unityErrorLines = ($startupLogs -split "\r?\n") | Where-Object {
+    $_ -match "(Unity|ru\.release\.nesbeisya)" -and
+    $_ -match "(NullReferenceException|MissingReferenceException|ArgumentException|InvalidOperationException|IndexOutOfRangeException|Exception:|\bError\b)"
+}
+$unityErrorPath = Join-Path $artifactDir "unity-errors.txt"
+if ($unityErrorLines.Count -gt 0) {
+    $unityErrorLines | Set-Content -Path $unityErrorPath -Encoding UTF8
+    Report ("Unity/runtime exception scan: FOUND " + $unityErrorLines.Count + " candidate line(s)")
+}
+else {
+    "No Unity/runtime exception candidates found." | Set-Content -Path $unityErrorPath -Encoding UTF8
+    Report "Unity/runtime exception scan: PASS"
+}
 
 $remoteUi = "/sdcard/window_dump.xml"
 $localUi = Join-Path $artifactDir "launcher-ui.xml"
