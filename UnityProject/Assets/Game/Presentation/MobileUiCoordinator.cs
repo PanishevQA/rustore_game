@@ -17,12 +17,15 @@ namespace DontGetSidetracked.Presentation
     {
         private const string SafeAreaRootName = "SafeAreaRoot";
         private const string FullBleedBackgroundName = "VisualBackground";
+        private const float MinimumSafeAreaScreenFraction = 0.50f;
 
         private readonly Dictionary<Canvas, RectTransform> _safeRoots =
             new Dictionary<Canvas, RectTransform>();
 
         private float _nextCanvasScan;
         private bool _restartTutorialOnResume;
+        private bool _loggedSafeArea;
+        private bool _warnedInvalidSafeArea;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoStart()
@@ -139,7 +142,26 @@ namespace DontGetSidetracked.Presentation
         {
             int width = Math.Max(1, Screen.width);
             int height = Math.Max(1, Screen.height);
-            Rect safe = Screen.safeArea;
+            Rect rawSafe = Screen.safeArea;
+            Rect safe = NormalizeSafeArea(rawSafe, width, height, out bool usedFallback);
+
+            if (!_loggedSafeArea)
+            {
+                _loggedSafeArea = true;
+                Debug.Log(
+                    $"Mobile UI safe area: screen={width}x{height}; " +
+                    $"raw=({rawSafe.x:0.##},{rawSafe.y:0.##},{rawSafe.width:0.##},{rawSafe.height:0.##}); " +
+                    $"applied=({safe.x:0.##},{safe.y:0.##},{safe.width:0.##},{safe.height:0.##}); " +
+                    $"fallback={usedFallback}");
+            }
+
+            if (usedFallback && !_warnedInvalidSafeArea)
+            {
+                _warnedInvalidSafeArea = true;
+                Debug.LogWarning(
+                    "Screen.safeArea was invalid or implausibly small; using the full render surface " +
+                    "so release UI cannot collapse off-screen.");
+            }
 
             Vector2 safeMin = new Vector2(safe.xMin / width, safe.yMin / height);
             Vector2 safeMax = new Vector2(safe.xMax / width, safe.yMax / height);
@@ -160,6 +182,42 @@ namespace DontGetSidetracked.Presentation
 
             CleanupDestroyedCanvases();
         }
+
+        internal static Rect NormalizeSafeArea(Rect safe, int screenWidth, int screenHeight, out bool usedFallback)
+        {
+            int width = Math.Max(1, screenWidth);
+            int height = Math.Max(1, screenHeight);
+            usedFallback = false;
+
+            if (!IsFinite(safe.xMin) || !IsFinite(safe.yMin) ||
+                !IsFinite(safe.xMax) || !IsFinite(safe.yMax))
+            {
+                usedFallback = true;
+                return new Rect(0f, 0f, width, height);
+            }
+
+            float xMin = Mathf.Clamp(safe.xMin, 0f, width);
+            float yMin = Mathf.Clamp(safe.yMin, 0f, height);
+            float xMax = Mathf.Clamp(safe.xMax, 0f, width);
+            float yMax = Mathf.Clamp(safe.yMax, 0f, height);
+            Rect clamped = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+
+            bool collapsed = clamped.width <= 1f || clamped.height <= 1f;
+            bool implausiblySmall =
+                clamped.width < width * MinimumSafeAreaScreenFraction ||
+                clamped.height < height * MinimumSafeAreaScreenFraction;
+
+            if (collapsed || implausiblySmall)
+            {
+                usedFallback = true;
+                return new Rect(0f, 0f, width, height);
+            }
+
+            return clamped;
+        }
+
+        private static bool IsFinite(float value) =>
+            !float.IsNaN(value) && !float.IsInfinity(value);
 
         private RectTransform EnsureSafeAreaRoot(Canvas canvas)
         {
