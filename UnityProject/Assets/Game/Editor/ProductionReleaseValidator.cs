@@ -214,8 +214,8 @@ namespace DontGetSidetracked.EditorTools
                 ("ru.rustore.sdk.install.referrer.InstallReferrerClient", "Install Referrer adapter must call the official native Android client."),
                 ("ru.rustore.sdk.core.tasks.OnSuccessListener", "Install Referrer adapter success listener bridge is missing."),
                 ("ru.rustore.sdk.core.tasks.OnFailureListener", "Install Referrer adapter failure listener bridge is missing."),
-                ("\"getInstallReferrer\"", "Install Referrer adapter must request the native one-shot referrer."),
-                ("\"getReferrerId\"", "Install Referrer adapter must extract referrerId from the native result."));
+                ("\"getInstallReferrerV2\"", "Install Referrer adapter must request the current native V2 referrer."),
+                ("\"getInstallReferrerV2\"", "Install Referrer adapter must extract the current V2 referrer value from the native result."));
         }
 
         private static bool HasLoadedRuStoreType(string simpleName)
