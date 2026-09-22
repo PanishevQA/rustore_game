@@ -52,6 +52,22 @@ Unity -batchmode -quit -projectPath UnityProject -executeMethod DontGetSidetrack
 
 Для локального build metadata можно передать `RELEASE_GIT_SHA`. В GitHub Actions автоматически используется `GITHUB_SHA`, если `RELEASE_GIT_SHA` не задан.
 
+## Signed APK для device smoke
+
+AAB не устанавливается на телефон напрямую. Для физической pre-release проверки используйте отдельный **signed, non-Development APK**, который собирается из того же production package/config и проходит те же production validators:
+
+`Tools → НЕ СБЕЙСЯ! → Build → Signed Device Smoke APK`
+
+На self-hosted runner доступен ручной режим **Actions → unity-self-hosted → DeviceSmokeApk**. Он сначала выполняет compile/EditMode/PlayMode/serialized/readiness, затем собирает APK через `SignedDeviceSmokeBuild.BuildFromCommandLine`. По умолчанию workflow кладёт файл в `artifacts/release-candidate/android-device-smoke/nesbeisya-device-smoke.apk`.
+
+Для APK используется production custom keystore и user-scoped `NESBEISYA_KEYSTORE_PASS` / `NESBEISYA_KEYALIAS_PASS`; debug signing и `BuildOptions.Development` не используются. Рядом создаётся `.sha256` для проверки целостности. Этот APK предназначен **только для физического smoke/regression теста**. Публикационный артефакт остаётся production AAB из `ProductionAndroidBuild`.
+
+После скачивания/получения APK на Windows-машине с подключённым Android-устройством можно выполнить:
+
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_signed_device_smoke_apk.ps1`
+
+Helper сверяет SHA-256 sidecar, находит `adb` в PATH или embedded Android SDK установленного Unity, требует авторизованное устройство и выполняет `adb install -r`. Если подключено несколько устройств, укажите `-DeviceSerial <serial>`. Если на телефоне уже установлена сборка с другой подписью, helper намеренно не удаляет её автоматически — удаление должно быть явным, чтобы случайно не потерять локальные данные.
+
 ## Проверка артефакта
 
 Перед загрузкой в RuStore запустите verifier на соседнем metadata-файле:

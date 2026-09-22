@@ -115,7 +115,7 @@ namespace DontGetSidetracked.EditorTools
             }
         }
 
-        private static void ApplySigningSecretsFromEnvironment()
+        internal static void ApplySigningSecretsFromEnvironment()
         {
             string keystorePassword = Environment.GetEnvironmentVariable(
                 ProductionSigningRuntimeValidator.KeystorePasswordEnvironmentVariable);
