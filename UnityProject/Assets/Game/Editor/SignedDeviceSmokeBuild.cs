@@ -18,6 +18,8 @@ namespace DontGetSidetracked.EditorTools
     {
         private const string OutputEnvironmentVariable = "NESBEISYA_DEVICE_SMOKE_OUTPUT";
 
+        internal static bool IsBuildingSignedSmokeApk { get; private set; }
+
         [MenuItem("Tools/НЕ СБЕЙСЯ!/Build/Signed Device Smoke APK")]
         public static void BuildFromMenu()
         {
@@ -84,7 +86,17 @@ namespace DontGetSidetracked.EditorTools
                     options = BuildOptions.None
                 };
 
-                BuildReport report = BuildPipeline.BuildPlayer(options);
+                BuildReport report;
+                IsBuildingSignedSmokeApk = true;
+                try
+                {
+                    report = BuildPipeline.BuildPlayer(options);
+                }
+                finally
+                {
+                    IsBuildingSignedSmokeApk = false;
+                }
+
                 if (report.summary.result != BuildResult.Succeeded)
                 {
                     throw new BuildFailedException(
