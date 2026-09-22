@@ -105,7 +105,7 @@ required_signing_setup = (
     '[Environment]::SetEnvironmentVariable("NESBEISYA_KEYSTORE_PASS"',
     '[Environment]::SetEnvironmentVariable("NESBEISYA_KEYALIAS_PASS"',
     '"User"',
-    'UnityProject\\user.keystore',
+    'Join-Path $unityProject "user.keystore"',
     'Copy-Item',
     'Get-ScheduledTask -TaskName $TaskName',
     'Start-ScheduledTask -TaskName $TaskName',
