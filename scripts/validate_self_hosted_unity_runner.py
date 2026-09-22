@@ -104,8 +104,17 @@ for marker in required_logon_task:
         errors.append(f"Unity licensed-user logon task helper is missing: {marker!r}")
 
 required_signing_setup = (
-    'Read-Host "Production keystore password" -AsSecureString',
-    'Read-Host "Production key-alias password" -AsSecureString',
+    '[switch]$CreateIfMissing',
+    '[string]$KeyAlias = "nesbeysya"',
+    'Documents\\NesbeisyaReleaseSigning\\user.keystore',
+    'Read-Host $Prompt -AsSecureString',
+    '"-storepass:env", "NESBEISYA_KEYTOOL_STOREPASS"',
+    '"-keypass:env", "NESBEISYA_KEYTOOL_KEYPASS"',
+    '"-storetype", "JKS"',
+    '"-keyalg", "RSA"',
+    '"-keysize", "4096"',
+    'Remove-Item Env:NESBEISYA_KEYTOOL_STOREPASS',
+    'Remove-Item Env:NESBEISYA_KEYTOOL_KEYPASS',
     '[Environment]::SetEnvironmentVariable("NESBEISYA_KEYSTORE_PASS"',
     '[Environment]::SetEnvironmentVariable("NESBEISYA_KEYALIAS_PASS"',
     '"User"',
@@ -114,6 +123,7 @@ required_signing_setup = (
     'Get-ScheduledTask -TaskName $TaskName',
     'Start-ScheduledTask -TaskName $TaskName',
     'Never paste signing passwords',
+    'keep at least two offline backups',
 )
 for marker in required_signing_setup:
     if marker not in signing_setup:
