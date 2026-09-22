@@ -28,6 +28,7 @@ namespace DontGetSidetracked.EditorTools
                 new Section("Release preparation", preparationErrors),
                 new Section("Release version", ProductionReleaseVersionValidator.CollectErrors()),
                 new Section("Production configuration", ProductionPlaceholderValidator.CollectErrors()),
+                new Section("Production signing runtime", ProductionSigningRuntimeValidator.CollectErrors()),
                 new Section("Android / SDK / build contract", ProductionReleaseValidator.CollectErrors()),
                 new Section("RuStore Pay", RuStorePayReleaseContractValidator.CollectErrors())
             };

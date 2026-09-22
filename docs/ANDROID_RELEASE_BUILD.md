@@ -24,7 +24,7 @@
 
 Перед production AAB запустите **Tools → НЕ СБЕЙСЯ! → Release Readiness Report**. Команда сначала выполняет ту же детерминированную подготовку, что и production build (Android target, branding, Gradle templates, EDM4U Force Resolve, AAB profile), затем использует те же fail-closed проверки версии, placeholder-конфигурации, Android/SDK-контракта и RuStore Pay и сохраняет копию отчёта в `Library/NesbeisyaReleaseReadiness.txt`.
 
-Статус `READY FOR SIGNED ANDROID DEVICE SMOKE TEST` означает, что репозиторий и локальная production-конфигурация готовы к финальной проверке на реальном Android-устройстве. Это не заменяет device-тесты Pay, Install Referrer, рекламы, Review, Update, notifications и share.
+Статус `READY FOR SIGNED ANDROID DEVICE SMOKE TEST` означает, что репозиторий, production-конфигурация и signing-runtime этой машины готовы: настроен custom keystore, сам файл keystore доступен, выбран key alias и Unity-процесс видит непустые `NESBEISYA_KEYSTORE_PASS` / `NESBEISYA_KEYALIAS_PASS`. Значения секретов никогда не записываются в отчёт или логи. Статус всё равно не заменяет device-тесты Pay, Install Referrer, рекламы, Review, Update, notifications и share.
 
 ## Сборка из Unity Editor
 
@@ -47,6 +47,8 @@ Unity -batchmode -quit -projectPath UnityProject -executeMethod DontGetSidetrack
 ```
 
 Чтобы задать конкретный путь AAB, перед запуском установите переменную окружения `NESBEISYA_RELEASE_OUTPUT`. Значение обязано оканчиваться на `.aab`.
+
+Для production signing Unity-процесс должен видеть user-scoped переменные `NESBEISYA_KEYSTORE_PASS` и `NESBEISYA_KEYALIAS_PASS`. На self-hosted runner после их изменения нужно перезапустить scheduled runner task, чтобы новый процесс унаследовал переменные. Значения нельзя добавлять в репозиторий, документацию или логи.
 
 Для локального build metadata можно передать `RELEASE_GIT_SHA`. В GitHub Actions автоматически используется `GITHUB_SHA`, если `RELEASE_GIT_SHA` не задан.
 
