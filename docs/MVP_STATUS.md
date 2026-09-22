@@ -109,7 +109,7 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 Последняя сверка RuStore targets на 2026-09-22:
 
 - Pay Unity: `11.1.0`;
-- Install Referrer Unity: `10.6.1`;
+- Install Referrer Android: `10.6.1`;
 - Update Unity: `10.5.1`;
 - Review Unity: `10.5.1`;
 - Remote Config Unity: **`10.5.1`**;
@@ -119,7 +119,7 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 - minSdk проекта: `25` из-за Unity 6000.3 baseline;
 - Remote Config production integration использует C#-инициализацию `RuStoreRemoteConfigClientSettings` с production AppId; актуальная документация позволяет этот путь без кастомного Android Application-класса.
 
-Pay/Update/Review остаются закреплены в `Packages/manifest.json` через актуальный `nexus-external.vkteam.ru` npm registry. Install Referrer 10.6.1 и Remote Config 10.5.1 временно не входят в production Editor baseline до завершения отдельных Unity 6000.3.24f1 package probes. `ru.rustore.core` напрямую не pin-ится. Production preflight требует рабочие client types, поэтому релиз нельзя случайно собрать без проверенной SDK integration.
+Pay/Remote Config/Update/Review закреплены в `Packages/manifest.json` через актуальный RuStore Unity npm registry. Install Referrer `10.6.1` подключается как официальный Android artifact через EDM4U и native AndroidJava adapter; Unity Install Referrer package намеренно не устанавливается рядом с Remote Config из-за подтверждённых cross-package `.meta` GUID collisions. `ru.rustore.core` напрямую не pin-ится.
 
 ## Release readiness tooling
 
@@ -134,7 +134,7 @@ Pay/Update/Review остаются закреплены в `Packages/manifest.js
 - production package name из RuStore Console;
 - production keystore/key alias;
 - реальные PayClient/RuStore Console параметры;
-- успешные isolated Unity 6000.3.24f1 package probes для Install Referrer 10.6.1 и Remote Config 10.5.1;
+- isolated Unity 6000.3.24f1 probes подтверждают, что оба Unity-пакета компилируются по отдельности, но не могут безопасно использоваться вместе из-за duplicate `.meta` GUID; production использует Remote Config Unity + Install Referrer Android;
 - Install Referrer 10.6.1 physical-device smoke test;
 - Remote Config 10.5.1 AppId и physical-device fallback test;
 - реальные Yandex `R-M-...` block IDs + signed-device ad smoke test (plugin 8.4.0 и EDM4U закреплены; production entrypoint сам выполняет fail-closed Force Resolve);
