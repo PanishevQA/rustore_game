@@ -33,10 +33,9 @@ foreach ($relative in $orphanMeta) {
 
 $manifestPath = Join-Path $projectPath "Packages\manifest.json"
 $manifestText = Get-Content $manifestPath -Raw
-foreach ($quarantined in @("ru.rustore.installreferrer", "ru.rustore.remoteconfig")) {
-    if ($manifestText -match [Regex]::Escape('"' + $quarantined + '"')) {
-        throw "$quarantined is still present in Packages/manifest.json. Run git pull on feat/mvp-foundation before release-candidate checks."
-    }
+$forbiddenUnityPackage = "ru.rustore.installreferrer"
+if ($manifestText -match [Regex]::Escape('"' + $forbiddenUnityPackage + '"')) {
+    throw "$forbiddenUnityPackage must not be installed beside Remote Config 10.5.1 because the verified official Unity packages contain duplicate .meta GUIDs."
 }
 
 $lockPath = Join-Path $projectPath "Packages\packages-lock.json"
@@ -46,23 +45,21 @@ $staleRuStoreState = $false
 
 if (Test-Path $lockPath) {
     $lockText = Get-Content $lockPath -Raw
-    foreach ($quarantined in @("ru.rustore.installreferrer", "ru.rustore.remoteconfig")) {
-        if ($lockText -match [Regex]::Escape('"' + $quarantined + '"')) {
-            $staleRuStoreState = $true
-        }
+    if ($lockText -match [Regex]::Escape('"ru.rustore.installreferrer"')) {
+        $staleRuStoreState = $true
     }
 }
 
 if (Test-Path $packageCache) {
     $staleRuStoreState = $staleRuStoreState -or [bool](
         Get-ChildItem $packageCache -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -like "ru.rustore.installreferrer@*" -or $_.Name -like "ru.rustore.remoteconfig@*" } |
+            Where-Object { $_.Name -like "ru.rustore.installreferrer@*" } |
             Select-Object -First 1
     )
 }
 
 if ($staleRuStoreState) {
-    Write-Host "Stale quarantined RuStore package state detected; resetting generated Unity Library..." -ForegroundColor Yellow
+    Write-Host "Stale Unity Install Referrer package state detected; resetting generated Unity Library..." -ForegroundColor Yellow
     Remove-Item $lockPath -Force -ErrorAction SilentlyContinue
     if (Test-Path $libraryPath) {
         Remove-Item $libraryPath -Recurse -Force
