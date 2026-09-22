@@ -20,6 +20,7 @@ on:
           - Unity
           - Full
           - Build
+          - AndroidIntegrationProbe
 
 permissions:
   contents: read
@@ -57,8 +58,14 @@ jobs:
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_unity_runner_environment.ps1
 
       - name: Run Unity agent gate
+        if: ${{ env.AGENT_CHECK_MODE != 'AndroidIntegrationProbe' }}
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast
+
+      - name: Run Android integration and native AAR probe
+        if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_android_integration_probe.ps1 -TimeoutSeconds 2400
 
       - name: Upload Unity diagnostics
         if: ${{ always() }}
@@ -70,3 +77,4 @@ jobs:
           path: |
             artifacts/agent-check/**
             artifacts/release-candidate/**
+            artifacts/android-integration-probe/**

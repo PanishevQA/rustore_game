@@ -32,6 +32,7 @@ required_workflow = (
     "workflow_dispatch:",
     "Agent validation mode",
     "- Build",
+    "- AndroidIntegrationProbe",
     "permissions:",
     "contents: read",
     "vars.UNITY_SELF_HOSTED_ENABLED == 'true'",
@@ -44,10 +45,12 @@ required_workflow = (
     "verify_unity_runner_environment.ps1",
     "AGENT_CHECK_MODE",
     "agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast",
+    "run_android_integration_probe.ps1",
     "cancel-in-progress: true",
     "actions/upload-artifact@v4",
     "artifacts/agent-check/**",
     "artifacts/release-candidate/**",
+    "artifacts/android-integration-probe/**",
 )
 
 for marker in required_workflow:
