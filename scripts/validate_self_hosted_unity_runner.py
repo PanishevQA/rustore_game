@@ -74,6 +74,10 @@ required_logon_task = (
     "New-ScheduledTaskTrigger -AtLogOn -User $userName",
     "New-ScheduledTaskPrincipal -UserId $userName -LogonType Interactive",
     "Start-ScheduledTask -TaskName $TaskName",
+    "run-unity-runner-forever.ps1",
+    "unity-runner-watchdog.log",
+    "while (`$true)",
+    "restarting in 10 seconds",
     "run.cmd",
 )
 for marker in required_logon_task:
