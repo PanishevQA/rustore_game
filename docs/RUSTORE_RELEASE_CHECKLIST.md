@@ -12,6 +12,7 @@
 - [ ] PayClient Settings содержит корректные `consoleApplicationId` и уникальный deeplink scheme.
 - [ ] Выполнены PayClient `Patch Manifest` и `Verify Manifest`/эквивалентные проверки актуального SDK.
 - [ ] Цена в UI берётся только из каталога Pay SDK.
+- [ ] RuStore Pay остаётся на актуальной версии `11.1.0`; перед production/device smoke подтверждено, что SDK использует новую платежную инфраструктуру с `paymentBaseUrl = api-m.rustore.ru` согласно уведомлению RuStore от 2026-09-17.
 - [ ] Старый Billing SDK/BillingClient integration отсутствует.
 - [ ] Scoped npm registry — `https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/`; Maven registry — `https://nexus-external.vkteam.ru/repository/maven-rustore-exposed`; старые `artifactory-external.vkpartner.ru` и `nexus-external.rustore.ru` отсутствуют.
 - [ ] `OptionalBackendBaseUrl` остаётся пустым: production MVP не требует собственного backend/DB.
