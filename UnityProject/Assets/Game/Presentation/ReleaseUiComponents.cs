@@ -12,6 +12,7 @@ namespace DontGetSidetracked.Presentation
     {
         private static Sprite _primaryGradient;
         private static Sprite _secondaryGradient;
+        private static Sprite _glassSheen;
         private static Texture2D _backdropTexture;
 
         public static readonly Color Navy = new Color(0.012f, 0.030f, 0.070f, 1f);
@@ -67,6 +68,23 @@ namespace DontGetSidetracked.Presentation
                 ? new Color(0.025f, 0.080f, 0.135f, 0.985f)
                 : new Color(0.020f, 0.055f, 0.100f, 0.955f);
             Image card = ReleaseUiKit.Panel(parent, name, min, max, fill, accent, true);
+
+            Transform sheenRoot = ReleaseUiKit.Rect(card.transform, "GlassSheen",
+                new Vector2(0.018f, 0.57f), new Vector2(0.982f, 0.985f));
+            Image sheen = sheenRoot.gameObject.AddComponent<Image>();
+            sheen.sprite = _glassSheen;
+            sheen.type = Image.Type.Sliced;
+            sheen.color = new Color(accent.r, accent.g, accent.b, strong ? 0.14f : 0.075f);
+            sheen.raycastTarget = false;
+
+            Transform rimRoot = ReleaseUiKit.Rect(card.transform, "TopRim",
+                new Vector2(0.035f, 0.968f), new Vector2(0.965f, 0.992f));
+            Image rim = rimRoot.gameObject.AddComponent<Image>();
+            rim.sprite = ReleaseUiKit.Rounded;
+            rim.type = Image.Type.Sliced;
+            rim.color = new Color(accent.r, accent.g, accent.b, strong ? 0.34f : 0.18f);
+            rim.raycastTarget = false;
+
             Outline outline = card.GetComponent<Outline>();
             if (outline != null)
             {
@@ -109,8 +127,16 @@ namespace DontGetSidetracked.Presentation
             shadow.effectDistance = new Vector2(0f, -7f);
 
             Outline glow = root.gameObject.AddComponent<Outline>();
-            glow.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, 0.42f);
+            glow.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, 0.38f);
             glow.effectDistance = new Vector2(2f, -2f);
+
+            Transform sheenRoot = ReleaseUiKit.Rect(root, "ButtonSheen",
+                new Vector2(0.025f, 0.54f), new Vector2(0.975f, 0.955f));
+            Image sheen = sheenRoot.gameObject.AddComponent<Image>();
+            sheen.sprite = _glassSheen;
+            sheen.type = Image.Type.Sliced;
+            sheen.color = new Color(1f, 1f, 1f, 0.16f);
+            sheen.raycastTarget = false;
 
             Text text = ReleaseUiKit.TextBlock(root, "Label", label, fontSize, TextAnchor.MiddleCenter,
                 Vector2.zero, Vector2.one, Text, FontStyle.Bold);
@@ -235,8 +261,10 @@ namespace DontGetSidetracked.Presentation
                 _secondaryGradient = CreateGradientRoundedSprite(256, 80, 24,
                     new Color(0.02f, 0.08f, 0.16f, 1f),
                     new Color(0.05f, 0.04f, 0.16f, 1f));
+            if (_glassSheen == null)
+                _glassSheen = CreateVerticalSheenSprite(96, 64, 20);
             if (_backdropTexture == null)
-                _backdropTexture = CreateBackdropTexture(144, 256);
+                _backdropTexture = CreateBackdropTexture(216, 384);
         }
 
         private static Sprite CreateGradientRoundedSprite(int width, int height, int radius, Color left, Color right)
@@ -272,6 +300,38 @@ namespace DontGetSidetracked.Presentation
                 100f, 0, SpriteMeshType.FullRect, border);
         }
 
+        private static Sprite CreateVerticalSheenSprite(int width, int height, int radius)
+        {
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+            {
+                name = "ReleaseGlassSheen",
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                hideFlags = HideFlags.HideAndDontSave
+            };
+
+            Color32[] pixels = new Color32[width * height];
+            for (int y = 0; y < height; y++)
+            {
+                float ny = y / (float)Math.Max(1, height - 1);
+                float alpha = Mathf.SmoothStep(0f, 1f, ny) * 0.30f;
+                for (int x = 0; x < width; x++)
+                {
+                    float dx = x < radius ? radius - x : x >= width - radius ? x - (width - radius - 1) : 0f;
+                    float dy = y < radius ? radius - y : y >= height - radius ? y - (height - radius - 1) : 0f;
+                    float distance = Mathf.Sqrt(dx * dx + dy * dy);
+                    float mask = distance <= radius ? 1f : 0f;
+                    pixels[y * width + x] = new Color(1f, 1f, 1f, alpha * mask);
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+            Vector4 border = new Vector4(radius + 2, radius + 2, radius + 2, radius + 2);
+            return Sprite.Create(texture, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f),
+                100f, 0, SpriteMeshType.FullRect, border);
+        }
+
         private static Texture2D CreateBackdropTexture(int width, int height)
         {
             var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
@@ -282,36 +342,47 @@ namespace DontGetSidetracked.Presentation
                 hideFlags = HideFlags.HideAndDontSave
             };
 
-            Color top = new Color(0.015f, 0.055f, 0.13f, 1f);
-            Color middle = new Color(0.015f, 0.035f, 0.085f, 1f);
-            Color bottom = new Color(0.004f, 0.012f, 0.035f, 1f);
+            Color top = new Color(0.012f, 0.050f, 0.115f, 1f);
+            Color middle = new Color(0.009f, 0.028f, 0.070f, 1f);
+            Color bottom = new Color(0.002f, 0.008f, 0.024f, 1f);
             Color[] pixels = new Color[width * height];
 
             for (int y = 0; y < height; y++)
             {
                 float ny = y / (float)Math.Max(1, height - 1);
-                Color baseColor = ny > 0.48f
-                    ? Color.Lerp(middle, top, (ny - 0.48f) / 0.52f)
-                    : Color.Lerp(bottom, middle, ny / 0.48f);
+                Color baseColor = ny > 0.50f
+                    ? Color.Lerp(middle, top, (ny - 0.50f) / 0.50f)
+                    : Color.Lerp(bottom, middle, ny / 0.50f);
 
                 for (int x = 0; x < width; x++)
                 {
                     float nx = x / (float)Math.Max(1, width - 1);
                     Color color = baseColor;
 
-                    float glow = Mathf.Clamp01(1f - Vector2.Distance(new Vector2(nx, ny), new Vector2(0.72f, 0.72f)) / 0.42f);
-                    color += new Color(0.035f, 0.020f, 0.10f, 0f) * glow;
+                    float cyanGlow = Mathf.Clamp01(1f - Vector2.Distance(
+                        new Vector2(nx, ny), new Vector2(0.22f, 0.82f)) / 0.40f);
+                    float violetGlow = Mathf.Clamp01(1f - Vector2.Distance(
+                        new Vector2(nx, ny), new Vector2(0.84f, 0.58f)) / 0.44f);
+                    color += new Color(0.008f, 0.042f, 0.070f, 0f) * cyanGlow;
+                    color += new Color(0.028f, 0.010f, 0.072f, 0f) * violetGlow;
 
-                    int starHash = (x * 37 + y * 71 + x * y * 3) % 233;
-                    if (ny > 0.34f && starHash == 0)
-                        color = Color.Lerp(color, new Color(0.48f, 0.80f, 1f, 1f), 0.72f);
+                    int starHash = (x * 43 + y * 79 + x * y * 5) % 521;
+                    if (ny > 0.26f && starHash == 0)
+                    {
+                        float sparkle = ((x + y) % 3 == 0) ? 0.74f : 0.48f;
+                        color = Color.Lerp(color, new Color(0.42f, 0.78f, 1f, 1f), sparkle);
+                    }
 
-                    float ridge1 = 0.12f + 0.045f * Mathf.Sin(nx * 10.8f) + 0.028f * Mathf.Sin(nx * 23.0f + 0.7f);
-                    float ridge2 = 0.075f + 0.028f * Mathf.Sin(nx * 15.4f + 1.2f);
-                    if (ny < ridge1)
-                        color = Color.Lerp(color, new Color(0.005f, 0.024f, 0.055f, 1f), 0.86f);
-                    if (ny < ridge2)
-                        color = new Color(0.003f, 0.012f, 0.030f, 1f);
+                    float horizon = 0.095f + 0.026f * Mathf.Sin(nx * 10.5f)
+                        + 0.016f * Mathf.Sin(nx * 27.0f + 0.9f);
+                    if (ny < horizon)
+                        color = Color.Lerp(color, new Color(0.002f, 0.015f, 0.038f, 1f), 0.92f);
+
+                    float horizontalEdge = Mathf.Min(nx, 1f - nx);
+                    float vignette = Mathf.SmoothStep(0f, 0.11f, horizontalEdge);
+                    float bottomDark = Mathf.SmoothStep(0.12f, 0.48f, ny);
+                    float mask = Mathf.Clamp01(vignette * (0.72f + 0.28f * bottomDark));
+                    color = Color.Lerp(new Color(0.001f, 0.004f, 0.014f, 1f), color, mask);
 
                     pixels[y * width + x] = color;
                 }
