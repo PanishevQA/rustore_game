@@ -80,6 +80,7 @@ for value in [
     "new InstallReferrerResult(false, null)",
     'NativeClientClass = "ru.rustore.sdk.install.referrer.InstallReferrerClient"',
     '"getInstallReferrerV2"',
+    '"getInstallReferrer"',
     '"addOnSuccessListener"',
     '"addOnFailureListener"',
     '"ru.rustore.sdk.core.tasks.OnSuccessListener"',
