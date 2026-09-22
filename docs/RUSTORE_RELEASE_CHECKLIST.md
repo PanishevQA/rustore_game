@@ -139,5 +139,5 @@
 - [ ] `LocalAnalyticsService` хранит ограниченный on-device журнал и не отправляет данные на наш сервер.
 - [ ] Campaign `level_start/level_complete`, Daily, share, rewarded, store и purchase события присутствуют в analytics allow-list.
 - [ ] Shared runtime SaveData проверен: покупка/reward/coin exchange не затираются последующим Daily/campaign save.
-- [ ] Перед финальной AAB-публикацией собран signed non-Development device-smoke APK через `SignedDeviceSmokeBuild` / workflow `DeviceSmokeApk` и установлен на реальные Android-устройства.
+- [ ] Перед финальной AAB-публикацией собран signed non-Development device-smoke APK через `SignedDeviceSmokeBuild` / workflow `DeviceSmokeApk`, SHA-256 проверен и APK установлен через `scripts/install_signed_device_smoke_apk.ps1` (или эквивалентный явный `adb install`) на реальные Android-устройства.
 - [ ] AAB release подписан production key и протестирован минимум на API 25 и Android 13+.
