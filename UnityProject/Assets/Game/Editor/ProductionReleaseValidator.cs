@@ -78,8 +78,8 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Android production build must include ARM64.");
 
             ValidateSigning(errors);
-            if (!EditorUserBuildSettings.buildAppBundle)
-                errors.Add("Production release profile requires Android App Bundle (AAB). Enable Build App Bundle before release.");
+            if (!EditorUserBuildSettings.buildAppBundle && !SignedDeviceSmokeBuild.IsBuildingSignedSmokeApk)
+                errors.Add("Production release profile requires Android App Bundle (AAB). Only the scoped SignedDeviceSmokeBuild path may emit a signed release APK for physical-device smoke testing.");
 
             ValidateFileContains(ManifestPath, errors,
                 ("android.permission.POST_NOTIFICATIONS", "Daily reminder permission is missing from AndroidManifest."),
