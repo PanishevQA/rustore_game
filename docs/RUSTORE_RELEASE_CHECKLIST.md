@@ -6,7 +6,7 @@
 - [ ] Unity Editor — `6000.3.24f1` или более новый проверенный патч той же LTS-линии после smoke/regression теста.
 - [ ] `PlayerSettings.Android.applicationEntry == AndroidApplicationEntry.Activity`.
 - [ ] Pay работает через `com.unity3d.player.UnityPlayerActivity`, не GameActivity.
-- [ ] После восстановления рабочей Remote Config integration `<application>` использует `android:name="ru.rustore.unitysdk.RuStoreRemoteConfigApplication"`; compile-safe Editor baseline без SDK не должен ссылаться на отсутствующий Application class.
+- [ ] Remote Config 10.5.1 инициализируется через `RuStoreRemoteConfigClientSettings` с production AppId; кастомный Android `Application` class для выбранного C# init-пути не требуется.
 - [ ] minSdk = **25** (Unity 6.3 уже не поддерживает API 24); targetSdk = 34 либо highest installed после повторной сверки RuStore requirements.
 - [ ] Реальный Package Name полностью совпадает с приложением в RuStore Console.
 - [ ] PayClient Settings содержит корректные `consoleApplicationId` и уникальный deeplink scheme.
@@ -22,13 +22,13 @@
 
 ## Install Referrer / Remote Config
 
-- [ ] До production устранён подтверждённый на Unity 6000.3.24f1 package regression: текущие npm Install Referrer 10.6.1 / Remote Config 10.5.1 не должны возвращаться в manifest, пока не пройдут реальный Unity compile без PackageCache errors/duplicate GUID.
-- [ ] В production Android integration установлен и реально компилируется официальный **Install Referrer Unity 10.6.1** (или более новая версия, повторно проверенная перед сборкой); `ru.rustore.core` разрешается транзитивно, без отдельного direct pin.
-- [ ] После установки Install Referrer проверены Android package resolve, IL2CPP stripping и physical-device `GetInstallReferrer`.
+- [ ] Unity package `ru.rustore.installreferrer` не добавлен рядом с Remote Config 10.5.1: совместный npm/tarball probe подтвердил cross-package duplicate `.meta` GUID.
+- [ ] В production Android integration установлен официальный **Install Referrer Android 10.6.1** через EDM4U/native bridge; `ru.rustore.core` разрешается транзитивно, без отдельного direct pin.
+- [ ] После установки Install Referrer проверены Android dependency resolve, IL2CPP stripping и physical-device `getInstallReferrerV2()`/referral flow.
 - [ ] `referrerId` сохраняется сразу после первого успешного чтения: RuStore выдаёт его одноразово и хранит ограниченное время.
 - [ ] RuStore install URL использует официальный формат `https://www.rustore.ru/catalog/app/<package>?referrerId=<value>`.
 - [ ] В `RuStoreRemoteConfigSettings.AppId` указан реальный App ID из RuStore Console.
-- [ ] Production integration использует официальный Remote Config package версии, повторно проверенной перед release; текущий проверенный Unity target — **10.5.1** (актуальная версия, повторно сверена 2026-09-21).
+- [ ] Production integration использует официальный Remote Config package версии, повторно проверенной перед release; текущий проверенный Unity target — **10.5.1** (актуальная версия, повторно сверена 2026-09-22).
 - [ ] `RuStoreRemoteConfigRuntime` является единственным shared runtime provider; gameplay tuning, ads и platform policy читают один snapshot/cache.
 - [ ] В RuStore Console заведены ключи с корректными типами: `route_display_time_easy_ms`, `route_display_time_medium_ms`, `route_display_time_hard_ms`, `daily_route_count`, `rewarded_enabled`, `interstitial_enabled`, `interstitial_min_rounds`, `interstitial_cooldown_sec`, `share_copy_variant`, `review_min_sessions`, `local_daily_reminder_enabled`, `daily_reminder_hour`, `store_offer_variant`, `min_supported_version`, `recommended_version`.
 - [ ] Четыре gameplay-ключа Daily (`daily_route_count` и три `route_display_time_*`) настроены **глобально без audience targeting/A-B сегментации**; иначе пользователи одного UTC-дня могут получить разные условия.
