@@ -340,16 +340,35 @@ namespace DontGetSidetracked.Presentation
             iconWell.color = new Color(accent.r, accent.g, accent.b, hero ? 0.16f : 0.10f);
             ReleaseUiComponents.Icon(iconWell.transform, "ProductIcon", ProductIcon(productId),
                 new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f));
-            ReleaseUiKit.TextBlock(card, "ProductTitle", ProductLabel(productId), 32, TextAnchor.MiddleLeft,
-                new Vector2(0.225f, 0.57f), new Vector2(0.72f, 0.89f), ReleaseUiComponents.Text, FontStyle.Bold);
-            Text description = ReleaseUiKit.TextBlock(card, "ProductSubtitle", ProductSubtitle(productId), 24, TextAnchor.UpperLeft,
-                new Vector2(0.225f, 0.12f), new Vector2(0.70f, 0.55f), ReleaseUiComponents.Muted);
+            if (hero)
+            {
+                Image badge = ReleaseUiComponents.GlassCard(card, "PremiumBadge",
+                    new Vector2(0.225f, 0.76f), new Vector2(0.47f, 0.92f),
+                    ReleaseUiComponents.Cyan, false);
+                badge.color = new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.12f);
+                ReleaseUiKit.TextBlock(badge.transform, "Label", "PREMIUM", 15, TextAnchor.MiddleCenter,
+                    Vector2.zero, Vector2.one, ReleaseUiComponents.Cyan, FontStyle.Bold);
+            }
+
+            ReleaseUiKit.TextBlock(card, "ProductTitle", ProductLabel(productId), hero ? 34 : 32, TextAnchor.MiddleLeft,
+                new Vector2(0.225f, hero ? 0.48f : 0.57f), new Vector2(0.72f, hero ? 0.76f : 0.89f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+            Text description = ReleaseUiKit.TextBlock(card, "ProductSubtitle", ProductSubtitle(productId), hero ? 23 : 24, TextAnchor.UpperLeft,
+                new Vector2(0.225f, 0.12f), new Vector2(0.70f, hero ? 0.47f : 0.55f), ReleaseUiComponents.Muted);
             description.horizontalOverflow = HorizontalWrapMode.Wrap;
+
             string price = owned ? "КУПЛЕНО" : _catalogLoading ? "Загрузка…" : !hasPrice ? "Недоступно" : product.PriceLabel;
-            ReleaseUiKit.TextBlock(card, "ProductPrice", price, owned || !hasPrice ? 24 : 30, TextAnchor.MiddleCenter,
-                new Vector2(0.73f, 0.29f), new Vector2(0.97f, 0.75f),
-                owned ? ReleaseUiComponents.Success : hasPrice ? ReleaseUiComponents.Gold : ReleaseUiComponents.Muted,
-                FontStyle.Bold);
+            Color priceAccent = owned ? ReleaseUiComponents.Success : hasPrice ? ReleaseUiComponents.Gold : ReleaseUiComponents.Muted;
+            Image pricePill = ReleaseUiComponents.GlassCard(card, "ProductPricePill",
+                new Vector2(0.73f, 0.26f), new Vector2(0.97f, 0.76f), priceAccent, false);
+            pricePill.color = new Color(priceAccent.r, priceAccent.g, priceAccent.b, owned ? 0.13f : hasPrice ? 0.10f : 0.06f);
+            ReleaseUiKit.TextBlock(pricePill.transform, "ProductPrice", price, owned || !hasPrice ? 22 : 28, TextAnchor.MiddleCenter,
+                new Vector2(0.08f, 0.08f), new Vector2(0.92f, 0.92f), priceAccent, FontStyle.Bold);
+            if (owned)
+            {
+                ReleaseUiComponents.Icon(pricePill.transform, "OwnedCheck", GeneratedUiAssets.CheckIcon,
+                    new Vector2(0.36f, 0.64f), new Vector2(0.64f, 0.94f));
+            }
         }
 
         private void AddStoreSectionLabel(string label, Color accent)
