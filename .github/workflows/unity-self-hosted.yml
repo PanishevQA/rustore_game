@@ -21,6 +21,7 @@ on:
           - Full
           - Build
           - DeviceSmokeApk
+          - DeviceRuntimeSmoke
           - AndroidIntegrationProbe
 
 permissions:
@@ -40,7 +41,7 @@ jobs:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
       # Release-readiness probe branch intentionally runs Full on push.
       # Licensed-user runner confirmed on Windows.
-      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'Full' }}
+      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'DeviceRuntimeSmoke' }}
 
     steps:
       - name: Checkout trusted agent branch
@@ -59,7 +60,7 @@ jobs:
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_unity_runner_environment.ps1
 
       - name: Run Unity agent gate
-        if: ${{ env.AGENT_CHECK_MODE != 'AndroidIntegrationProbe' && env.AGENT_CHECK_MODE != 'DeviceSmokeApk' }}
+        if: ${{ env.AGENT_CHECK_MODE != 'AndroidIntegrationProbe' && env.AGENT_CHECK_MODE != 'DeviceSmokeApk' && env.AGENT_CHECK_MODE != 'DeviceRuntimeSmoke' }}
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast
 
@@ -67,6 +68,11 @@ jobs:
         if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_release_candidate_checks.ps1 -BuildSmokeApk
+
+      - name: Run installed Android device runtime smoke
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceRuntimeSmoke' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_installed_device_smoke.ps1
 
       - name: Run Android integration and native AAR probe
         if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
@@ -84,3 +90,4 @@ jobs:
             artifacts/agent-check/**
             artifacts/release-candidate/**
             artifacts/android-integration-probe/**
+            artifacts/device-runtime-smoke/**
