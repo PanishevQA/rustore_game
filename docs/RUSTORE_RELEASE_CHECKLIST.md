@@ -24,6 +24,7 @@ Physical-device pass/fail protocol: `docs/DEVICE_SMOKE_TEST.md`.
 - [ ] Keystore/passwords не закоммичены в репозиторий.
 - [ ] На self-hosted Windows runner заданы user-scoped environment variables `NESBEISYA_KEYSTORE_PASS` и `NESBEISYA_KEYALIAS_PASS`; после изменения переменных runner task перезапущен. Значения не добавляются в GitHub repository variables/secrets и не выводятся в лог.
 - [ ] `scripts/configure_release_signing_runner.ps1` использован (или эквивалентные ручные действия выполнены локально) для размещения production keystore в `UnityProject/user.keystore`; пароли вводятся интерактивно, не передаются через command line/chat.
+- [ ] Для первого релиза без существующего ключа `configure_release_signing_runner.ps1 -CreateIfMissing` создал master keystore вне runner workspace; alias — `nesbeysya`; минимум две offline-копии master keystore и паролей сохранены отдельно от репозитория.
 
 ## Install Referrer / Remote Config
 

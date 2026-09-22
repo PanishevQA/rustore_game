@@ -84,11 +84,19 @@ A successful Build mode still does not replace a signed physical-device smoke te
 
 For signed Build mode, keep the release signing passwords only on the Windows runner account as user-scoped environment variables `NESBEISYA_KEYSTORE_PASS` and `NESBEISYA_KEYALIAS_PASS`. The build entrypoint injects them into Unity at runtime and never writes them to source control or logs. Restart the scheduled runner task after changing those environment variables so the runner process inherits the new values.
 
-The repository provides an interactive helper that copies an existing production keystore into the ignored runner workspace path expected by Unity and prompts for both passwords using secure PowerShell input:
+The repository provides an interactive helper for both existing and first-time production signing keys.
+
+Existing keystore:
 
 `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\configure_release_signing_runner.ps1 -KeystoreSource "D:\secure\user.keystore"`
 
-The helper never accepts passwords as command-line arguments and never prints them. It stores only the two values as **user-scoped Windows environment variables**, then restarts the existing scheduled runner task so the next Unity process inherits them. Never paste signing passwords into chat, GitHub variables, repository files, or shell command arguments.
+First release with no keystore yet:
+
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\configure_release_signing_runner.ps1 -CreateIfMissing`
+
+With `-CreateIfMissing`, the master key is created outside the repository at `%USERPROFILE%\Documents\NesbeisyaReleaseSigning\user.keystore`, using alias `nesbeysya`, RSA-4096 and a long-lived JKS certificate. Passwords are entered through secure prompts. The helper passes them to `keytool` only through temporary environment variables, verifies the alias, copies a working keystore into the ignored runner workspace, stores the two Unity signing passwords as user-scoped Windows environment variables, clears the temporary keytool variables, and restarts the scheduled runner task.
+
+Keep at least two offline backups of the **master** keystore and its passwords. Never paste signing passwords into chat, GitHub variables, repository files, or shell command arguments.
 
 
 ## Unity Personal and Windows service identity
