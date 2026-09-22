@@ -23,6 +23,8 @@ namespace DontGetSidetracked.EditorTools
         private const string GradlePropertiesTemplatePath = "Assets/Plugins/Android/gradleTemplate.properties";
         private const string GradleSettingsTemplatePath = "Assets/Plugins/Android/settingsTemplate.gradle";
         private const string RemoteConfigSettingsPath = "Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs";
+        private const string InstallReferrerAdapterPath = "Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs";
+        private const string InstallReferrerDependenciesPath = "Assets/Game/Platform/RuStore/Editor/RuStoreNativeInstallReferrerDependencies.xml";
         private const string SdkVersionsPath = "Assets/Game/Platform/RuStore/RuStoreSdkVersions.cs";
         public int callbackOrder => -1000;
 
@@ -95,6 +97,7 @@ namespace DontGetSidetracked.EditorTools
 
             ValidateFileContains(PackagesManifestPath, errors,
                 ("\"ru.rustore.pay\": \"11.1.0\"", "RuStore Pay must remain pinned to the verified version."),
+                ("\"ru.rustore.remoteconfig\": \"10.5.1\"", "RuStore Remote Config must remain pinned to the verified Unity package version."),
                 ("\"ru.rustore.update\": \"10.5.1\"", "RuStore Update must remain pinned to the verified version."),
                 ("\"ru.rustore.review\": \"10.5.1\"", "RuStore Review must remain pinned to the verified version."),
                 ("nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed", "RuStore npm registry must use the current verified vkteam endpoint."),
@@ -102,7 +105,7 @@ namespace DontGetSidetracked.EditorTools
                 ("v1.2.188", "EDM4U must stay pinned to the verified 1.2.188 release."));
 
             ValidateNoDirectRuStoreCorePin(errors);
-            ValidateQuarantinedRuStorePackages(errors);
+            ValidateRuStorePackageCompatibility(errors);
             ValidateRuStoreIntegrationPresence(errors);
             ValidateFileContains(SdkVersionsPath, errors,
                 ("InstallReferrer = \"10.6.1\"", "Install Referrer release target must be re-verified before production."),
@@ -184,23 +187,35 @@ namespace DontGetSidetracked.EditorTools
                 errors.Add("Obsolete RuStore repository address detected in Packages/manifest.json.");
         }
 
-        private static void ValidateQuarantinedRuStorePackages(List<string> errors)
+        private static void ValidateRuStorePackageCompatibility(List<string> errors)
         {
             if (!File.Exists(PackagesManifestPath)) return;
             string manifest = File.ReadAllText(PackagesManifestPath);
 
             if (manifest.Contains("\"ru.rustore.installreferrer\"", StringComparison.Ordinal))
-                errors.Add("Remove ru.rustore.installreferrer from the Editor baseline: official 10.6.1 currently fails Unity 6000.3.24f1 script compilation in PackageCache. Production requires a re-verified fixed package/source integration.");
-            if (manifest.Contains("\"ru.rustore.remoteconfig\"", StringComparison.Ordinal))
-                errors.Add("Remove ru.rustore.remoteconfig from the Editor baseline: official 10.5.1 currently fails Unity 6000.3.24f1 script compilation and conflicts on package GUIDs with Install Referrer. Production requires a re-verified fixed package/source integration.");
+            {
+                errors.Add(
+                    "Do not install the RuStore Install Referrer Unity package beside Remote Config 10.5.1: " +
+                    "the official 10.6.1/10.5.1 Unity release artifacts contain duplicate .meta GUIDs. " +
+                    "Production must use the native Android Install Referrer bridge instead.");
+            }
         }
 
         private static void ValidateRuStoreIntegrationPresence(List<string> errors)
         {
-            if (!HasLoadedRuStoreType("InstallReferrerClient"))
-                errors.Add("Install Referrer Unity integration is not loaded. Restore the verified official SDK before production release.");
             if (!HasLoadedRuStoreType("RuStoreRemoteConfigClient"))
-                errors.Add("RuStore Remote Config Unity integration is not loaded. Restore the verified official SDK before production release.");
+                errors.Add("RuStore Remote Config Unity 10.5.1 integration is not loaded.");
+
+            ValidateFileContains(InstallReferrerDependenciesPath, errors,
+                ("ru.rustore.sdk:installreferrer:10.6.1", "Native RuStore Install Referrer 10.6.1 Maven dependency is missing."),
+                ("https://nexus-external.rustore.ru/repository/maven-rustore-exposed", "Native RuStore Install Referrer must use the current official Maven repository."));
+
+            ValidateFileContains(InstallReferrerAdapterPath, errors,
+                ("ru.rustore.sdk.install.referrer.InstallReferrerClient", "Install Referrer adapter must call the official native Android client."),
+                ("ru.rustore.sdk.core.tasks.OnSuccessListener", "Install Referrer adapter success listener bridge is missing."),
+                ("ru.rustore.sdk.core.tasks.OnFailureListener", "Install Referrer adapter failure listener bridge is missing."),
+                ("\"getInstallReferrer\"", "Install Referrer adapter must request the native one-shot referrer."),
+                ("\"getReferrerId\"", "Install Referrer adapter must extract referrerId from the native result."));
         }
 
         private static bool HasLoadedRuStoreType(string simpleName)
