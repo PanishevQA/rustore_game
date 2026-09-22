@@ -54,6 +54,7 @@ def validate_package_manifest() -> None:
         "ru.rustore.pay": "11.1.0",
         "ru.rustore.update": "10.5.1",
         "ru.rustore.review": "10.5.1",
+        "ru.rustore.remoteconfig": "10.5.1",
     }
     for package, version in expected.items():
         actual = dependencies.get(package)
@@ -65,9 +66,8 @@ def validate_package_manifest() -> None:
     if "ru.rustore.core" in dependencies:
         fail("ru.rustore.core must resolve transitively; remove the direct core pin from Packages/manifest.json.")
 
-    for quarantined in ("ru.rustore.installreferrer", "ru.rustore.remoteconfig"):
-        if quarantined in dependencies:
-            fail(f"{quarantined} must stay out of the Unity 6000.3.24f1 Editor baseline until a fixed official/source integration is re-verified.")
+    if "ru.rustore.installreferrer" in dependencies:
+        fail("ru.rustore.installreferrer must stay out of the Unity Editor baseline because the verified official 10.6.1 package collides on .meta GUIDs with Remote Config 10.5.1.")
 
     registries = manifest.get("scopedRegistries") or []
     expected_registry = "https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/"
@@ -348,9 +348,9 @@ def validate_release_preflight_contract() -> None:
     text = read(UNITY / "Assets/Game/Editor/ProductionReleaseValidator.cs")
     required = {
         r'\"ru.rustore.pay\": \"11.1.0\"': "Production preflight must enforce RuStore Pay 11.1.0.",
-        'ValidateQuarantinedRuStorePackages(errors)': "Production preflight must keep known-broken RuStore Editor packages quarantined.",
-        'HasLoadedRuStoreType("InstallReferrerClient")': "Production preflight must require an actually loaded Install Referrer Unity integration.",
         'HasLoadedRuStoreType("RuStoreRemoteConfigClient")': "Production preflight must require an actually loaded Remote Config Unity integration.",
+        'ru.rustore.sdk:installreferrer:10.6.1': "Production preflight must require the native Install Referrer Android dependency.",
+        '"getInstallReferrerV2"': "Production preflight must validate the current native Install Referrer V2 bridge.",
         'InstallReferrer = \\"10.6.1\\"': "Production preflight must protect the current Install Referrer target version.",
         'RemoteConfig = \\"10.5.1\\"': "Production preflight must protect the current Remote Config target version.",
         'android.permission.POST_NOTIFICATIONS': "Production preflight must protect the Daily reminder permission.",
@@ -380,8 +380,7 @@ def validate_local_release_candidate_runner() -> None:
     required = (
         "ProjectSettings\\ProjectVersion.txt",
         '"ru.rustore.installreferrer"',
-        '"ru.rustore.remoteconfig"',
-        "Stale quarantined RuStore package state detected",
+        "Stale Unity Install Referrer package state detected",
         "Start-Process -FilePath $unity",
         "-Wait -PassThru",
         ".ExitCode",
