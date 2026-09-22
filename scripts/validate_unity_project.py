@@ -403,8 +403,12 @@ def validate_local_release_candidate_runner() -> None:
         "serialized-validation.log",
         "unity-serialized-validation.txt",
         "[switch]$BuildAab",
+        "[switch]$BuildSmokeApk",
         "DontGetSidetracked.EditorTools.ProductionAndroidBuild.BuildFromCommandLine",
         "production-build.log",
+        "DontGetSidetracked.EditorTools.SignedDeviceSmokeBuild.BuildFromCommandLine",
+        "device-smoke-build.log",
+        "NESBEISYA_DEVICE_SMOKE_OUTPUT",
         "DontGetSidetracked.EditorTools.ReleaseReadinessReporter.Report",
         "release-readiness.txt",
     )
