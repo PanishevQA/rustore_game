@@ -23,6 +23,7 @@ namespace DontGetSidetracked.Presentation
         private readonly Image[] _difficultyCards = new Image[3];
         private readonly Text[] _difficultyTimings = new Text[3];
         private readonly Text[] _difficultyStates = new Text[3];
+        private readonly Image[] _difficultyChecks = new Image[3];
         private Text _selectionSummary;
 
         public bool IsOpen => _panel != null && _panel.activeSelf;
@@ -259,7 +260,13 @@ namespace DontGetSidetracked.Presentation
                 TextAnchor.MiddleRight, new Vector2(0.66f, 0.54f), new Vector2(0.94f, 0.87f),
                 accent, FontStyle.Bold);
             _difficultyStates[difficulty] = ReleaseUiKit.TextBlock(card.transform, "SelectionState", string.Empty, 20,
-                TextAnchor.MiddleRight, new Vector2(0.73f, 0.10f), new Vector2(0.94f, 0.43f), accent, FontStyle.Bold);
+                TextAnchor.MiddleRight, new Vector2(0.73f, 0.10f), new Vector2(0.88f, 0.43f), accent, FontStyle.Bold);
+
+            Image check = ReleaseUiComponents.Icon(card.transform, "SelectionCheck", GeneratedUiAssets.CheckIcon,
+                new Vector2(0.885f, 0.11f), new Vector2(0.955f, 0.42f));
+            check.color = accent;
+            check.gameObject.SetActive(false);
+            _difficultyChecks[difficulty] = check;
         }
 
         private void RefreshDifficultySelection()
@@ -277,10 +284,19 @@ namespace DontGetSidetracked.Presentation
                 outline.effectColor = new Color(accent.r, accent.g, accent.b, selected ? 0.72f : 0.20f);
                 outline.effectDistance = selected ? new Vector2(4f, -4f) : new Vector2(2f, -2f);
                 card.color = selected
-                    ? new Color(0.035f, 0.110f, 0.145f, 0.995f)
+                    ? new Color(
+                        Mathf.Lerp(0.026f, accent.r * 0.14f, 0.45f),
+                        Mathf.Lerp(0.070f, accent.g * 0.14f, 0.45f),
+                        Mathf.Lerp(0.115f, accent.b * 0.14f, 0.45f),
+                        0.995f)
                     : new Color(0.020f, 0.055f, 0.100f, 0.955f);
                 _difficultyTimings[i].text = "ПОКАЗ " + (RouteRuntimeTuning.GetDisplayTimeMs((RouteDifficulty)i) / 1000f).ToString("0.0") + " С";
                 _difficultyStates[i].text = selected ? "ВЫБРАНО" : string.Empty;
+                if (_difficultyChecks[i] != null)
+                {
+                    _difficultyChecks[i].gameObject.SetActive(selected);
+                    _difficultyChecks[i].color = accent;
+                }
             }
             string selectedName = _selectedDifficulty == 0 ? "ЛЁГКАЯ" : _selectedDifficulty == 1 ? "СРЕДНЯЯ" : "СЛОЖНАЯ";
             if (_selectionSummary != null) _selectionSummary.text = selectedName + "  •  ТОЧНОСТЬ ВАЖНЕЕ СКОРОСТИ";
