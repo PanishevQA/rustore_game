@@ -275,8 +275,14 @@ namespace DontGetSidetracked.Presentation
             _campaignProgressFill.raycastTarget = false;
             _campaignProgressFill.rectTransform.anchorMax = new Vector2(0.02f, 1f);
 
-            ReleaseUiComponents.PrimaryButton(card, "LevelsButton", "ПРОДОЛЖИТЬ  ›",
+            Button levels = ReleaseUiComponents.SecondaryButton(card, "LevelsButton", "ПРОДОЛЖИТЬ  ›",
                 new Vector2(0.66f, 0.12f), new Vector2(0.945f, 0.48f), OpenCampaignFromHome, 24);
+            Image levelsSurface = levels.GetComponent<Image>();
+            if (levelsSurface != null)
+                levelsSurface.color = new Color(0.055f, 0.040f, 0.135f, 0.98f);
+            Outline levelsOutline = levels.GetComponent<Outline>();
+            if (levelsOutline != null)
+                levelsOutline.effectColor = new Color(Violet.r, Violet.g, Violet.b, 0.52f);
         }
 
         private void BuildStatRow(Transform parent)
