@@ -77,6 +77,10 @@ namespace DontGetSidetracked.EditorTools
             if ((PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARM64) == 0)
                 errors.Add("Android production build must include ARM64.");
 
+            ValidateFileContains(ProjectSettingsAssetPath, errors,
+                ("stripEngineCode: 0",
+                    "Disable Strip Engine Code for the production Android player. Runtime-created Unity UI/input components are required on device."));
+
             ValidateSigning(errors);
             if (!EditorUserBuildSettings.buildAppBundle && !SignedDeviceSmokeBuild.IsBuildingSignedSmokeApk)
                 errors.Add("Production release profile requires Android App Bundle (AAB). Only the scoped SignedDeviceSmokeBuild path may emit a signed release APK for physical-device smoke testing.");
