@@ -129,7 +129,7 @@ foreach ($candidate in $resultCandidates) {
     }
 }
 if (-not $resultVerified) {
-    throw "InstallReferrerV2 class was found, but no getInstallReferrerV2() getter was exposed."
+    throw "InstallReferrerV2 class was found, but no getInstallReferrer() getter was exposed."
 }
 
 foreach ($name in @("Success", "Failure")) {
@@ -144,7 +144,7 @@ $summary = Join-Path $artifactRoot "native-aar-summary.txt"
     "RuStore native AAR contract: PASS",
     "InstallReferrerClient=$($client.Source)",
     "ClientMethod=getInstallReferrerV2",
-    "ResultGetter=getInstallReferrerV2",
+    "ResultGetter=getInstallReferrer",
     "SuccessListener=$($found['Success'].Class)",
     "FailureListener=$($found['Failure'].Class)"
 ) | Set-Content $summary
