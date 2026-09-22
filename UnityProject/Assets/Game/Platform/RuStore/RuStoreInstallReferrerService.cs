@@ -1,5 +1,5 @@
 using System;
-using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using DontGetSidetracked.Services;
 using UnityEngine;
@@ -7,66 +7,43 @@ using UnityEngine;
 namespace DontGetSidetracked.Platform.RuStore
 {
     /// <summary>
-    /// Adapter for RuStore Install Referrer. Reflection is intentional here: the public
-    /// Unity API is stable (InstallReferrerClient.Init/GetInstallReferrer), while assembly
-    /// names have changed between plugin packaging variants. Gameplay never depends on it.
+    /// Android-native RuStore Install Referrer adapter.
+    ///
+    /// The official Unity Install Referrer 10.6.1 package cannot coexist with the official
+    /// Remote Config 10.5.1 package because their published Unity .meta files contain duplicate
+    /// GUIDs. To keep both production features without forking either RuStore Unity package,
+    /// this adapter talks directly to the official Android artifact
+    /// ru.rustore.sdk:installreferrer:10.6.1 through Unity's AndroidJava bridge.
+    ///
+    /// Gameplay remains isolated behind IReferrerService and the one-shot persistence policy
+    /// remains owned by InstallReferrerCapture.
     /// </summary>
     public sealed class RuStoreInstallReferrerService : IReferrerService
     {
+        private const string UnityPlayerClass = "com.unity3d.player.UnityPlayer";
+        private const string NativeClientClass = "ru.rustore.sdk.install.referrer.InstallReferrerClient";
+
         public Task<InstallReferrerResult> ConsumeInstallReferrerAsync()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
             try
             {
-                Type clientType = FindRuStoreType("InstallReferrerClient");
-                if (clientType == null)
+                using (var unityPlayer = new AndroidJavaClass(UnityPlayerClass))
+                using (AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
                 {
-                    Debug.LogWarning("RuStore Install Referrer client type was not found.");
-                    return Task.FromResult(new InstallReferrerResult(false, null));
-                }
+                    if (activity == null)
+                    {
+                        Debug.LogWarning("RuStore Install Referrer unavailable: Unity currentActivity is null.");
+                        return Task.FromResult(new InstallReferrerResult(false, null));
+                    }
 
-                PropertyInfo instanceProperty = clientType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static) ??
-                                                clientType.GetProperty("instance", BindingFlags.Public | BindingFlags.Static);
-                object client = instanceProperty?.GetValue(null);
-                if (client == null)
-                    return Task.FromResult(new InstallReferrerResult(false, null));
-
-                PropertyInfo initializedProperty = clientType.GetProperty("IsInitialized", BindingFlags.Public | BindingFlags.Instance) ??
-                                                   clientType.GetProperty("isInitialized", BindingFlags.Public | BindingFlags.Instance);
-                bool initialized = initializedProperty != null && initializedProperty.PropertyType == typeof(bool) &&
-                                   (bool)initializedProperty.GetValue(client);
-                if (!initialized)
-                {
-                    MethodInfo initMethod = clientType.GetMethod("Init", BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
-                    initMethod?.Invoke(client, null);
+                    var request = new NativeRequest();
+                    return request.Start(activity);
                 }
-
-                MethodInfo getMethod = FindGetInstallReferrerMethod(clientType);
-                if (getMethod == null)
-                {
-                    Debug.LogWarning("RuStore Install Referrer GetInstallReferrer method was not found.");
-                    return Task.FromResult(new InstallReferrerResult(false, null));
-                }
-
-                ParameterInfo[] parameters = getMethod.GetParameters();
-                var callbacks = new CallbackBox();
-                var args = new object[2];
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    string name = parameters[i].Name ?? string.Empty;
-                    bool failure = name.IndexOf("failure", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                   name.IndexOf("error", StringComparison.OrdinalIgnoreCase) >= 0;
-                    args[i] = CreateCallback(
-                        parameters[i].ParameterType,
-                        callbacks,
-                        failure ? nameof(CallbackBox.OnFailure) : nameof(CallbackBox.OnSuccess));
-                }
-                getMethod.Invoke(client, args);
-                return callbacks.Task;
             }
             catch (Exception error)
             {
-                Debug.LogWarning($"RuStore Install Referrer unavailable: {Unwrap(error).Message}");
+                Debug.LogWarning($"RuStore Install Referrer unavailable: {error.Message}");
                 return Task.FromResult(new InstallReferrerResult(false, null));
             }
 #else
@@ -74,93 +51,132 @@ namespace DontGetSidetracked.Platform.RuStore
 #endif
         }
 
-        private static MethodInfo FindGetInstallReferrerMethod(Type clientType)
-        {
-            MethodInfo[] methods = clientType.GetMethods(BindingFlags.Public | BindingFlags.Instance);
-            for (int i = 0; i < methods.Length; i++)
-            {
-                MethodInfo method = methods[i];
-                if (!string.Equals(method.Name, "GetInstallReferrer", StringComparison.Ordinal)) continue;
-                ParameterInfo[] parameters = method.GetParameters();
-                if (parameters.Length == 2 &&
-                    typeof(Delegate).IsAssignableFrom(parameters[0].ParameterType) &&
-                    typeof(Delegate).IsAssignableFrom(parameters[1].ParameterType))
-                    return method;
-            }
-            return null;
-        }
-
-        private static Delegate CreateCallback(Type delegateType, CallbackBox target, string methodName)
-        {
-            Type[] genericArguments = delegateType.IsGenericType ? delegateType.GetGenericArguments() : Type.EmptyTypes;
-            if (genericArguments.Length != 1)
-                throw new InvalidOperationException($"Unexpected RuStore callback type: {delegateType.FullName}");
-
-            MethodInfo openMethod = typeof(CallbackBox).GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public) ??
-                                    throw new MissingMethodException(typeof(CallbackBox).FullName, methodName);
-            MethodInfo closedMethod = openMethod.MakeGenericMethod(genericArguments[0]);
-            return Delegate.CreateDelegate(delegateType, target, closedMethod);
-        }
-
-        private static Type FindRuStoreType(string shortName)
-        {
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            for (int a = 0; a < assemblies.Length; a++)
-            {
-                Type[] types;
-                try
-                {
-                    types = assemblies[a].GetTypes();
-                }
-                catch (ReflectionTypeLoadException loadError)
-                {
-                    types = loadError.Types;
-                }
-
-                if (types == null) continue;
-                for (int i = 0; i < types.Length; i++)
-                {
-                    Type type = types[i];
-                    if (type == null || !string.Equals(type.Name, shortName, StringComparison.Ordinal)) continue;
-                    if (type.Namespace != null && type.Namespace.StartsWith("RuStore", StringComparison.Ordinal))
-                        return type;
-                }
-            }
-            return null;
-        }
-
-        private static Exception Unwrap(Exception error) =>
-            error is TargetInvocationException invocation && invocation.InnerException != null
-                ? invocation.InnerException
-                : error;
-
-        private sealed class CallbackBox
+#if UNITY_ANDROID && !UNITY_EDITOR
+        private sealed class NativeRequest
         {
             private readonly TaskCompletionSource<InstallReferrerResult> _completion =
-                new TaskCompletionSource<InstallReferrerResult>();
+                new TaskCompletionSource<InstallReferrerResult>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
 
-            public Task<InstallReferrerResult> Task => _completion.Task;
+            private AndroidJavaObject _client;
+            private AndroidJavaObject _task;
+            private SuccessListener _successListener;
+            private FailureListener _failureListener;
+            private int _completed;
 
-            public void OnFailure<T>(T error)
+            public Task<InstallReferrerResult> Start(AndroidJavaObject activity)
             {
-                Debug.LogWarning($"RuStore Install Referrer request failed: {error}");
-                _completion.TrySetResult(new InstallReferrerResult(false, null));
+                try
+                {
+                    _client = new AndroidJavaObject(NativeClientClass, activity);
+                    _task = _client.Call<AndroidJavaObject>("getInstallReferrerV2");
+                    if (_task == null)
+                        throw new InvalidOperationException("InstallReferrerClient.getInstallReferrerV2() returned null Task.");
+
+                    _successListener = new SuccessListener(this);
+                    _failureListener = new FailureListener(this);
+
+                    _task.Call("addOnSuccessListener", _successListener);
+                    _task.Call("addOnFailureListener", _failureListener);
+                    return _completion.Task;
+                }
+                catch (Exception error)
+                {
+                    CompleteFailure("RuStore Install Referrer request could not be started: " + error.Message);
+                    return _completion.Task;
+                }
             }
 
-            public void OnSuccess<T>(T result)
+            internal void CompleteSuccess(AndroidJavaObject result)
             {
-                if (ReferenceEquals(result, null))
+                string referrerId = null;
+                try
                 {
-                    _completion.TrySetResult(new InstallReferrerResult(true, null));
+                    if (result != null)
+                        referrerId = result.Call<string>("getInstallReferrer");
+                }
+                catch (Exception error)
+                {
+                    CompleteFailure("RuStore Install Referrer response could not be read: " + error.Message);
                     return;
                 }
 
-                Type resultType = result.GetType();
-                PropertyInfo property = resultType.GetProperty("referrerId", BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                FieldInfo field = resultType.GetField("referrerId", BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                string referrerId = (property?.GetValue(result) ?? field?.GetValue(result))?.ToString();
-                _completion.TrySetResult(new InstallReferrerResult(true, string.IsNullOrWhiteSpace(referrerId) ? null : referrerId));
+                Complete(new InstallReferrerResult(
+                    true,
+                    string.IsNullOrWhiteSpace(referrerId) ? null : referrerId));
+            }
+
+            internal void CompleteFailure(AndroidJavaObject error)
+            {
+                string detail = "unknown error";
+                try
+                {
+                    if (error != null)
+                        detail = error.Call<string>("toString") ?? detail;
+                }
+                catch
+                {
+                    // Keep the generic message. A failed referrer request must never crash gameplay.
+                }
+
+                CompleteFailure("RuStore Install Referrer request failed: " + detail);
+            }
+
+            private void CompleteFailure(string message)
+            {
+                Debug.LogWarning(message);
+                Complete(new InstallReferrerResult(false, null));
+            }
+
+            private void Complete(InstallReferrerResult result)
+            {
+                if (Interlocked.Exchange(ref _completed, 1) != 0) return;
+
+                _completion.TrySetResult(result);
+
+                try { _task?.Dispose(); } catch { }
+                try { _client?.Dispose(); } catch { }
+
+                _task = null;
+                _client = null;
+                _successListener = null;
+                _failureListener = null;
             }
         }
+
+        private sealed class SuccessListener : AndroidJavaProxy
+        {
+            private readonly NativeRequest _request;
+
+            public SuccessListener(NativeRequest request)
+                : base("ru.rustore.sdk.core.tasks.OnSuccessListener")
+            {
+                _request = request;
+            }
+
+            // Java interface method name is intentionally lower camel case.
+            public void onSuccess(AndroidJavaObject result)
+            {
+                _request.CompleteSuccess(result);
+            }
+        }
+
+        private sealed class FailureListener : AndroidJavaProxy
+        {
+            private readonly NativeRequest _request;
+
+            public FailureListener(NativeRequest request)
+                : base("ru.rustore.sdk.core.tasks.OnFailureListener")
+            {
+                _request = request;
+            }
+
+            // Java interface method name is intentionally lower camel case.
+            public void onFailure(AndroidJavaObject error)
+            {
+                _request.CompleteFailure(error);
+            }
+        }
+#endif
     }
 }

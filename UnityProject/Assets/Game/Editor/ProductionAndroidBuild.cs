@@ -19,6 +19,8 @@ namespace DontGetSidetracked.EditorTools
     {
         private const string OutputEnvironmentVariable = "NESBEISYA_RELEASE_OUTPUT";
         private const string GitShaEnvironmentVariable = "RELEASE_GIT_SHA";
+        private const string KeystorePasswordEnvironmentVariable = "NESBEISYA_KEYSTORE_PASS";
+        private const string KeyAliasPasswordEnvironmentVariable = "NESBEISYA_KEYALIAS_PASS";
 
         [MenuItem("Tools/НЕ СБЕЙСЯ!/Build/Production Android AAB")]
         public static void BuildFromMenu()
@@ -39,6 +41,7 @@ namespace DontGetSidetracked.EditorTools
         private static void BuildProductionAab()
         {
             ProjectConfigurator.Configure();
+            ApplySigningSecretsFromEnvironment();
             AndroidDependencyConfigurator.Configure();
             BrandAssetConfigurator.Configure();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
@@ -112,6 +115,25 @@ namespace DontGetSidetracked.EditorTools
                 TryDeleteFailedReleaseFile(metadataTempPath);
                 throw;
             }
+        }
+
+        private static void ApplySigningSecretsFromEnvironment()
+        {
+            string keystorePassword = Environment.GetEnvironmentVariable(KeystorePasswordEnvironmentVariable);
+            string keyAliasPassword = Environment.GetEnvironmentVariable(KeyAliasPasswordEnvironmentVariable);
+
+            if (string.IsNullOrWhiteSpace(keystorePassword) ||
+                string.IsNullOrWhiteSpace(keyAliasPassword))
+            {
+                throw new BuildFailedException(
+                    "Production signing passwords are not available to the Unity process. " +
+                    $"Set user-scoped environment variables {KeystorePasswordEnvironmentVariable} and " +
+                    $"{KeyAliasPasswordEnvironmentVariable} on the self-hosted runner machine, then restart " +
+                    "the runner task. Never store these values in the repository or GitHub repository variables.");
+            }
+
+            PlayerSettings.Android.keystorePass = keystorePassword;
+            PlayerSettings.Android.keyaliasPass = keyAliasPassword;
         }
 
         private static string ResolveOutputPath()

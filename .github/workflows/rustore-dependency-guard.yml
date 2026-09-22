@@ -15,8 +15,9 @@ jobs:
           set -euo pipefail
           # ProductionReleaseValidator intentionally mentions forbidden tokens as runtime scan rules,
           # so exclude that one source file from this text-level CI check to avoid self-matching.
-          # Current verified registry is nexus-external.vkteam.ru. Reject previous repository addresses.
-          if grep -RInE 'billingclient|artifactory-external\.vkpartner\.ru|nexus-external\.rustore\.ru' UnityProject \
+          # Unity UPM packages use the verified RuStore npm registry. Native Android dependencies use
+          # the current RuStore Maven endpoint; only the retiring vkpartner Artifactory URL is forbidden.
+          if grep -RInE 'billingclient|artifactory-external\.vkpartner\.ru' UnityProject \
               --exclude-dir=Library \
               --exclude=ProductionReleaseValidator.cs; then
             echo 'Deprecated RuStore dependency/reference found.'
@@ -35,6 +36,7 @@ jobs:
           grep -q '"ru.rustore.pay": "11.1.0"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.update": "10.5.1"' UnityProject/Packages/manifest.json
           grep -q '"ru.rustore.review": "10.5.1"' UnityProject/Packages/manifest.json
+          grep -q '"ru.rustore.remoteconfig": "10.5.1"' UnityProject/Packages/manifest.json
 
           grep -q 'nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed' UnityProject/Packages/manifest.json
           grep -q '"com.google.external-dependency-manager": "https://github.com/googlesamples/unity-jar-resolver.git?path=/upm#v1.2.188"' UnityProject/Packages/manifest.json
@@ -42,13 +44,17 @@ jobs:
             echo 'ru.rustore.core must resolve transitively; direct core pin is forbidden.'
             exit 1
           fi
-          if grep -qE '"ru\.rustore\.(installreferrer|remoteconfig)"' UnityProject/Packages/manifest.json; then
-            echo 'Install Referrer / Remote Config must stay quarantined from the Unity 6000.3.24f1 Editor baseline until the current package compile regression is resolved.'
+          if grep -q '"ru.rustore.installreferrer"' UnityProject/Packages/manifest.json; then
+            echo 'Unity Install Referrer must stay excluded because the verified official 10.6.1 and Remote Config 10.5.1 Unity packages contain duplicate .meta GUIDs when installed together.'
             exit 1
           fi
-          grep -q 'FindRuStoreType("InstallReferrerClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
+
+          grep -q 'ru.rustore.sdk:installreferrer:10.6.1' UnityProject/Assets/Game/Platform/RuStore/Editor/RuStoreNativeInstallReferrerDependencies.xml
+          grep -q 'nexus-external.rustore.ru/repository/maven-rustore-exposed' UnityProject/Assets/Game/Platform/RuStore/Editor/RuStoreNativeInstallReferrerDependencies.xml
+          grep -q 'ru.rustore.sdk.install.referrer.InstallReferrerClient' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
+          grep -Fq '_task = _client.Call<AndroidJavaObject>("getInstallReferrerV2");' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
+          grep -Fq 'result.Call<string>("getInstallReferrer")' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
           grep -q 'FindRuStoreType("RuStoreRemoteConfigClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
-          grep -q 'HasLoadedRuStoreType("InstallReferrerClient")' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs
           grep -q 'HasLoadedRuStoreType("RuStoreRemoteConfigClient")' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs
 
           # Runtime consumers must share one config snapshot/cache and must not grow independent facades again.

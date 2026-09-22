@@ -1,22 +1,22 @@
-# RuStore SDK matrix — 2026-09-18
+# RuStore SDK matrix — 2026-09-22
 
 Сверено с актуальными официальными RuStore Unity-страницами на дату выше. Перед **каждой** production-сборкой версии и repository requirements нужно проверить ещё раз: документация и registry могут обновляться независимо.
 
 | SDK | Release target | Состояние проекта |
 |---|---:|---|
 | Pay Unity | 11.1.0 | установлен из официального npm registry; production дополнительно защищён `RuStorePayReleaseContractValidator` |
-| Install Referrer Unity | 10.6.1 | **release target подтверждён, Editor package временно quarantined**: npm-пакет воспроизводимо не компилируется в Unity 6000.3.24f1; adapter/fallback остаются, production блокируется до рабочей re-verified integration |
+| Install Referrer Android | 10.6.1 | подключён как официальный Android artifact через EDM4U/native bridge; Unity package намеренно не ставится рядом с Remote Config из-за подтверждённых duplicate `.meta` GUID |
 | Update Unity | 10.5.1 | установлен; adapter реализован |
 | Review Unity | 10.5.1 | установлен; запрос только после positive event |
 | GameCenter Unity | 10.5.2 | optional, не source of truth; package не нужен для базового gameplay |
-| Remote Config Unity | 10.5.1 | **release target подтверждён, Editor package временно quarantined**: npm-пакет воспроизводимо не компилируется и конфликтует GUID с Install Referrer; cache/default работают локально, production блокируется до рабочей re-verified integration |
+| Remote Config Unity | 10.5.1 | установлен из официального Unity npm registry; shared runtime/cache/default реализованы, production требует AppId и device fallback smoke |
 | Push Unity | — | **не используется в MVP**; Daily reminder реализован локально через Unity Mobile Notifications, поэтому Push package/version не pin-ится |
 
 ## Baseline verification
 
 `RuStoreSdkVersions.LastVerifiedUtc` должен совпадать с датой этой матрицы. CI проверяет дату, exact release targets и установленные feature packages. `ru.rustore.core` должен разрешаться транзитивно и не pin-иться отдельно.
 
-На 2026-09-18 официальные Unity-источники подтверждают следующие release targets: Pay `11.1.0`, Install Referrer `10.6.1`, Update `10.5.1`, Review `10.5.1`, GameCenter `10.5.2`, Remote Config `10.5.1`.
+На 2026-09-22 официальные Unity-источники подтверждают следующие release targets: Pay `11.1.0`, Install Referrer `10.6.1`, Update `10.5.1`, Review `10.5.1`, GameCenter `10.5.2`, Remote Config `10.5.1`.
 
 ## Android baseline
 
@@ -26,17 +26,19 @@
 
 ## Репозитории и package integration
 
-Текущий compile-safe Editor baseline использует scoped registry `https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/`, scope `ru.rustore`, и держит Pay/Update/Review в manifest. Install Referrer 10.6.1 и Remote Config 10.5.1 остаются release targets, но временно исключены из manifest после реального batchmode compile на Unity 6000.3.24f1: оба пакета дали ошибки внутри PackageCache, а между ними дополнительно обнаружены duplicate GUID. `ru.rustore.core` не pin-ится напрямую. Maven `https://nexus-external.vkteam.ru/repository/maven-rustore-exposed` остаётся в release constants.
+Текущий Editor baseline использует scoped Unity registry `https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/`, scope `ru.rustore`, для Pay 11.1.0, Remote Config 10.5.1, Update 10.5.1 и Review 10.5.1. Install Referrer 10.6.1 подключён отдельно как официальный Android artifact `ru.rustore.sdk:installreferrer:10.6.1` через Maven `https://nexus-external.rustore.ru/repository/maven-rustore-exposed`, потому что совместная установка Unity-пакетов Install Referrer 10.6.1 и Remote Config 10.5.1 подтверждённо даёт cross-package duplicate `.meta` GUID. `ru.rustore.core` напрямую не pin-ится.
 
 Registry меняется только после проверки **конкретных pinned packages**, успешного package resolve в закреплённой версии Unity и полного regression-test. Старый `artifactory-external.vkpartner.ru` запрещён.
 
+Pay 11.1.0 также входит в обязательную проверку инфраструктуры сентября 2026: перед production/device smoke необходимо подтвердить работу новой платежной инфраструктуры `paymentBaseUrl = api-m.rustore.ru`.
+
 ## Install Referrer
 
-Актуальная Unity-линия — 10.6.1. Версия остаётся production target, но текущий npm package временно исключён из Editor baseline из-за воспроизводимого compile failure. Перед release нужна рабочая официальная/исходная integration этой версии либо более новой повторно проверенной версии, затем compile + physical-device test Install Referrer. RuStore принимает install URL вида `https://www.rustore.ru/catalog/app/<package>?referrerId=<value>`. Referrer одноразовый: после успешного чтения приложение должно сразу сохранить `referrerId`; невыданный referrer хранится ограниченное время. Для serverless challenge `referrerId` содержит self-contained challenge token.
+Актуальная линия — 10.6.1. Isolated Unity package probe и Android integration build уже подтвердили артефакт; production baseline использует нативный Android bridge, чтобы избежать collision с Remote Config Unity package. Перед релизом остаётся physical-device test реальной установки → первого запуска → `getInstallReferrerV2()` → восстановления challenge. RuStore принимает install URL вида `https://www.rustore.ru/catalog/app/<package>?referrerId=<value>`. Referrer одноразовый: после успешного чтения приложение сразу сохраняет `referrerId`; невыданный referrer хранится ограниченное время.
 
 ## Remote Config
 
-Актуальная официальная Unity-линия на дату проверки — **10.5.1**. Версия остаётся production target, но текущий npm package временно исключён из Editor baseline из-за воспроизводимого compile failure/duplicate GUID. Пока SDK не подключён, manifest не ссылается на отсутствующий Application class; после восстановления рабочей Remote Config integration production manifest снова должен использовать `android:name="ru.rustore.unitysdk.RuStoreRemoteConfigApplication"`. Runtime adapter/cache/default сохраняют безопасный offline fallback. Production preflight требует реально загруженный `RuStoreRemoteConfigClient`, заданный AppId и Android fallback/device test.
+Актуальная официальная Unity-линия на дату проверки — **10.5.1**. Package успешно прошёл isolated Unity compile probe и входит в production baseline. Инициализация выполняется через `RuStoreRemoteConfigClientSettings` с production AppId; runtime adapter/cache/default сохраняют безопасный offline fallback. Production preflight требует реально загруженный `RuStoreRemoteConfigClient`, заданный AppId и Android fallback/device test.
 
 Runtime использует один `RuStoreRemoteConfigRuntime` instance. Gameplay tuning, review/update policy и локальные Daily reminders читают один общий snapshot/cache; при Unity Play без Domain Reload provider пересоздаётся на `SubsystemRegistration`.
 

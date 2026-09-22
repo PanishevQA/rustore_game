@@ -1,12 +1,20 @@
 param(
     [string]$UnityExe = $env:UNITY_EXE,
     [switch]$SkipReadiness,
-    [switch]$BuildAab
+    [switch]$BuildAab,
+    [int]$UnityStepTimeoutSeconds = 900,
+    [int]$BuildTimeoutSeconds = 1800
 )
 
 $ErrorActionPreference = "Stop"
 if ($BuildAab -and $SkipReadiness) {
     throw "BuildAab requires release readiness; do not combine -BuildAab with -SkipReadiness."
+}
+if ($UnityStepTimeoutSeconds -lt 60) {
+    throw "UnityStepTimeoutSeconds must be at least 60 seconds."
+}
+if ($BuildTimeoutSeconds -lt 300) {
+    throw "BuildTimeoutSeconds must be at least 300 seconds."
 }
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $repoRoot "UnityProject"
@@ -33,10 +41,9 @@ foreach ($relative in $orphanMeta) {
 
 $manifestPath = Join-Path $projectPath "Packages\manifest.json"
 $manifestText = Get-Content $manifestPath -Raw
-foreach ($quarantined in @("ru.rustore.installreferrer", "ru.rustore.remoteconfig")) {
-    if ($manifestText -match [Regex]::Escape('"' + $quarantined + '"')) {
-        throw "$quarantined is still present in Packages/manifest.json. Run git pull on feat/mvp-foundation before release-candidate checks."
-    }
+$forbiddenUnityPackage = "ru.rustore.installreferrer"
+if ($manifestText -match [Regex]::Escape('"' + $forbiddenUnityPackage + '"')) {
+    throw "$forbiddenUnityPackage must not be installed beside Remote Config 10.5.1 because the verified official Unity packages contain duplicate .meta GUIDs."
 }
 
 $lockPath = Join-Path $projectPath "Packages\packages-lock.json"
@@ -46,23 +53,21 @@ $staleRuStoreState = $false
 
 if (Test-Path $lockPath) {
     $lockText = Get-Content $lockPath -Raw
-    foreach ($quarantined in @("ru.rustore.installreferrer", "ru.rustore.remoteconfig")) {
-        if ($lockText -match [Regex]::Escape('"' + $quarantined + '"')) {
-            $staleRuStoreState = $true
-        }
+    if ($lockText -match [Regex]::Escape('"ru.rustore.installreferrer"')) {
+        $staleRuStoreState = $true
     }
 }
 
 if (Test-Path $packageCache) {
     $staleRuStoreState = $staleRuStoreState -or [bool](
         Get-ChildItem $packageCache -Directory -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -like "ru.rustore.installreferrer@*" -or $_.Name -like "ru.rustore.remoteconfig@*" } |
+            Where-Object { $_.Name -like "ru.rustore.installreferrer@*" } |
             Select-Object -First 1
     )
 }
 
 if ($staleRuStoreState) {
-    Write-Host "Stale quarantined RuStore package state detected; resetting generated Unity Library..." -ForegroundColor Yellow
+    Write-Host "Stale Unity Install Referrer package state detected; resetting generated Unity Library..." -ForegroundColor Yellow
     Remove-Item $lockPath -Force -ErrorAction SilentlyContinue
     if (Test-Path $libraryPath) {
         Remove-Item $libraryPath -Recurse -Force
@@ -110,9 +115,43 @@ function Resolve-UnityExe {
 }
 
 $unity = Resolve-UnityExe -Explicit $UnityExe -Version $editorVersion
+
+function Invoke-UnityProcess {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][string]$LogPath,
+        [Parameter(Mandatory = $true)][int]$TimeoutSeconds
+    )
+
+    $process = Start-Process -FilePath $unity -ArgumentList $Arguments -PassThru
+    if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+        Write-Host "$Name TIMED OUT after $TimeoutSeconds seconds." -ForegroundColor Red
+        try {
+            & taskkill.exe /PID $process.Id /T /F | Out-Null
+        }
+        catch {
+            Write-Warning "Could not terminate timed-out Unity process tree: $($_.Exception.Message)"
+        }
+
+        if (Test-Path $LogPath) {
+            Write-Host "Last Unity log lines:" -ForegroundColor Yellow
+            Get-Content $LogPath -Tail 160
+        }
+
+        throw "$Name timed out after $TimeoutSeconds seconds. Log: $LogPath"
+    }
+
+    return $process.ExitCode
+}
+
 Write-Host "Unity: $unity" -ForegroundColor Cyan
 Write-Host "Project: $projectPath" -ForegroundColor Cyan
 Write-Host "Editor version: $editorVersion" -ForegroundColor Cyan
+Write-Host "Unity step timeout: $UnityStepTimeoutSeconds seconds" -ForegroundColor Cyan
+if ($BuildAab) {
+    Write-Host "Android build timeout: $BuildTimeoutSeconds seconds" -ForegroundColor Cyan
+}
 Write-Host ""
 
 $testResults = Join-Path $artifacts "editmode-results.xml"
@@ -139,8 +178,7 @@ $testArgs = @(
     "-testResults", ('"' + $testResults + '"'),
     "-logFile", ('"' + $testLog + '"')
 )
-$testProcess = Start-Process -FilePath $unity -ArgumentList $testArgs -Wait -PassThru
-$testExit = $testProcess.ExitCode
+$testExit = Invoke-UnityProcess -Name "Unity EditMode tests" -Arguments $testArgs -LogPath $testLog -TimeoutSeconds $UnityStepTimeoutSeconds
 if ($testExit -ne 0) {
     Write-Host "Unity EditMode tests FAILED (exit $testExit)." -ForegroundColor Red
     Write-Host "Log: $testLog"
@@ -164,8 +202,7 @@ $playModeArgs = @(
     "-testResults", ('"' + $playModeResults + '"'),
     "-logFile", ('"' + $playModeLog + '"')
 )
-$playModeProcess = Start-Process -FilePath $unity -ArgumentList $playModeArgs -Wait -PassThru
-$playModeExit = $playModeProcess.ExitCode
+$playModeExit = Invoke-UnityProcess -Name "Unity PlayMode tests" -Arguments $playModeArgs -LogPath $playModeLog -TimeoutSeconds $UnityStepTimeoutSeconds
 if ($playModeExit -ne 0) {
     Write-Host "Unity PlayMode tests FAILED (exit $playModeExit)." -ForegroundColor Red
     Write-Host "Log: $playModeLog"
@@ -187,8 +224,7 @@ $serializedArgs = @(
     "-executeMethod", "DontGetSidetracked.EditorTools.AgentProjectValidator.ValidateForAutomation",
     "-logFile", ('"' + $serializedLog + '"')
 )
-$serializedProcess = Start-Process -FilePath $unity -ArgumentList $serializedArgs -Wait -PassThru
-$serializedExit = $serializedProcess.ExitCode
+$serializedExit = Invoke-UnityProcess -Name "Unity serialized validation" -Arguments $serializedArgs -LogPath $serializedLog -TimeoutSeconds $UnityStepTimeoutSeconds
 if ($serializedExit -ne 0) {
     Write-Host "Serialized project validation FAILED (exit $serializedExit)." -ForegroundColor Red
     Write-Host "Log: $serializedLog"
@@ -212,8 +248,7 @@ if (-not $SkipReadiness) {
         "-executeMethod", "DontGetSidetracked.EditorTools.ReleaseReadinessReporter.Report",
         "-logFile", ('"' + $readinessLog + '"')
     )
-    $readinessProcess = Start-Process -FilePath $unity -ArgumentList $readinessArgs -Wait -PassThru
-    $readinessExit = $readinessProcess.ExitCode
+    $readinessExit = Invoke-UnityProcess -Name "Unity release readiness" -Arguments $readinessArgs -LogPath $readinessLog -TimeoutSeconds $UnityStepTimeoutSeconds
     if ($readinessExit -ne 0) {
         Write-Host "Readiness command FAILED (exit $readinessExit)." -ForegroundColor Red
         Write-Host "Log: $readinessLog"
@@ -254,8 +289,9 @@ if ($BuildAab) {
     if ([string]::IsNullOrWhiteSpace($env:RELEASE_GIT_SHA) -and [string]::IsNullOrWhiteSpace($env:GITHUB_SHA)) {
         $git = Get-Command git -ErrorAction SilentlyContinue
         if ($git) {
-            $resolvedSha = (& $git.Source -C $repoRoot rev-parse HEAD).Trim()
-            if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($resolvedSha)) {
+            $shaOutput = & $git.Source -c "safe.directory=$repoRoot" -C $repoRoot rev-parse HEAD
+            if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($shaOutput)) {
+                $resolvedSha = ($shaOutput | Select-Object -First 1).Trim()
                 $env:RELEASE_GIT_SHA = $resolvedSha
             }
         }
@@ -269,8 +305,7 @@ if ($BuildAab) {
         "-executeMethod", "DontGetSidetracked.EditorTools.ProductionAndroidBuild.BuildFromCommandLine",
         "-logFile", ('"' + $productionBuildLog + '"')
     )
-    $buildProcess = Start-Process -FilePath $unity -ArgumentList $buildArgs -Wait -PassThru
-    $buildExit = $buildProcess.ExitCode
+    $buildExit = Invoke-UnityProcess -Name "Unity production Android AAB build" -Arguments $buildArgs -LogPath $productionBuildLog -TimeoutSeconds $BuildTimeoutSeconds
     if ($buildExit -ne 0) {
         Write-Host "Production Android AAB build FAILED (exit $buildExit)." -ForegroundColor Red
         Write-Host "Log: $productionBuildLog"

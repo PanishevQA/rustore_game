@@ -20,7 +20,7 @@ jobs:
         shell: pwsh
         run: |
           $failed = $false
-          foreach ($path in @("scripts/agent_check.ps1", "scripts/run_release_candidate_checks.ps1", "scripts/verify_unity_runner_environment.ps1", "scripts/bootstrap_portable_python.ps1")) {
+          foreach ($path in @("scripts/agent_check.ps1", "scripts/run_release_candidate_checks.ps1", "scripts/verify_unity_runner_environment.ps1", "scripts/bootstrap_portable_python.ps1", "scripts/install_unity_runner_logon_task.ps1", "scripts/run_android_integration_probe.ps1", "scripts/probe_rustore_native_aar.ps1")) {
             $tokens = $null
             $errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors) | Out-Null

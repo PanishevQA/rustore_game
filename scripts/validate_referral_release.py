@@ -78,8 +78,15 @@ if capture.find("if (!result.RequestSucceeded) return;") > capture.find("save.In
 referrer = REFERRER.read_text(encoding="utf-8")
 for value in [
     "new InstallReferrerResult(false, null)",
-    "new InstallReferrerResult(true, null)",
+    'NativeClientClass = "ru.rustore.sdk.install.referrer.InstallReferrerClient"',
+    '_task = _client.Call<AndroidJavaObject>("getInstallReferrerV2");',
+    'referrerId = result.Call<string>("getInstallReferrer");',
+    '"addOnSuccessListener"',
+    '"addOnFailureListener"',
+    '"ru.rustore.sdk.core.tasks.OnSuccessListener"',
+    '"ru.rustore.sdk.core.tasks.OnFailureListener"',
     "referrerId",
+    "string.IsNullOrWhiteSpace(referrerId) ? null : referrerId",
 ]:
     if value not in referrer:
         errors.append(f"RuStore Install Referrer adapter contract missing: {value}")

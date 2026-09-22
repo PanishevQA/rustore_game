@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github/workflows/unity-self-hosted.yml"
 OLD_WORKFLOW = ROOT / ".github/workflows/unity-agent-gate.yml"
 PREFLIGHT = ROOT / "scripts/verify_unity_runner_environment.ps1"
+RELEASE_CHECKS = ROOT / "scripts/run_release_candidate_checks.ps1"
+LOGON_TASK = ROOT / "scripts/install_unity_runner_logon_task.ps1"
 PORTABLE_PYTHON = ROOT / "scripts/bootstrap_portable_python.ps1"
 errors: list[str] = []
 
@@ -19,6 +21,8 @@ def read(path: Path) -> str:
 
 workflow = read(WORKFLOW)
 preflight = read(PREFLIGHT)
+release_checks = read(RELEASE_CHECKS)
+logon_task = read(LOGON_TASK)
 portable_python = read(PORTABLE_PYTHON)
 
 if OLD_WORKFLOW.exists():
@@ -30,6 +34,7 @@ required_workflow = (
     "workflow_dispatch:",
     "Agent validation mode",
     "- Build",
+    "- AndroidIntegrationProbe",
     "permissions:",
     "contents: read",
     "vars.UNITY_SELF_HOSTED_ENABLED == 'true'",
@@ -42,10 +47,12 @@ required_workflow = (
     "verify_unity_runner_environment.ps1",
     "AGENT_CHECK_MODE",
     "agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast",
+    "run_android_integration_probe.ps1",
     "cancel-in-progress: true",
     "actions/upload-artifact@v4",
     "artifacts/agent-check/**",
     "artifacts/release-candidate/**",
+    "artifacts/android-integration-probe/**",
 )
 
 for marker in required_workflow:
@@ -66,9 +73,37 @@ required_preflight = (
     "agent_check.ps1",
 )
 
+required_release_checks = (
+    "UnityStepTimeoutSeconds",
+    "BuildTimeoutSeconds",
+    "taskkill.exe /PID",
+    "WaitForExit",
+    "timed out after",
+)
+
+required_logon_task = (
+    "Get-Content $serviceFile -Raw",
+    "Set-Service -Name $serviceName -StartupType Disabled",
+    "New-ScheduledTaskTrigger -AtLogOn -User $userName",
+    "New-ScheduledTaskPrincipal -UserId $userName -LogonType Interactive",
+    "Start-ScheduledTask -TaskName $TaskName",
+    "run-unity-runner-forever.ps1",
+    "unity-runner-watchdog.log",
+    "while (`$true)",
+    "restarting in 10 seconds",
+    "run.cmd",
+)
+for marker in required_logon_task:
+    if marker not in logon_task:
+        errors.append(f"Unity licensed-user logon task helper is missing: {marker!r}")
+
 for marker in required_preflight:
     if marker not in preflight:
         errors.append(f"Unity runner preflight is missing: {marker!r}")
+
+for marker in required_release_checks:
+    if marker not in release_checks:
+        errors.append(f"Unity release-check runner is missing: {marker!r}")
 
 required_portable_python = (
     "3.13.15",

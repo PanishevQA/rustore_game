@@ -1,8 +1,8 @@
 # RuStore Pay production setup
 
-Last checked against the official RuStore Unity Pay documentation: 2026-09-17.
+Last checked against the official RuStore Unity Pay documentation: 2026-09-21.
 
-The repository intentionally does not contain a real RuStore Console application id. Development builds remain local/offline-first, while a non-development Android build is blocked until the official Pay Client configuration is complete.
+The repository contains the production RuStore application id in the official `PayClientSettings.asset` (`consoleApplicationId = 2063758837`) and keeps the dedicated Pay deeplink scheme there. The Android manifest references the resources generated from that asset; it does not hardcode those generated values. Development builds remain local/offline-first.
 
 ## Before the first production build
 
@@ -13,7 +13,7 @@ The repository intentionally does not contain a real RuStore Console application
 5. Set a dedicated Pay `deeplinkScheme`. Do not reuse `nesbeisya`, which belongs to the gameplay friend-challenge deeplink.
 6. Keep Android Application Entry Point set to `Activity / com.unity3d.player.UnityPlayerActivity`. Do not switch to GameActivity.
 7. In Pay Client settings select the current official deeplink activity (Default unless a deliberately tested custom activity is required).
-8. Run `Patch Manifest`, then `Verify Manifest` from the Pay Client settings window.
+8. `AndroidManifest.xml` is kept in the same form produced by the current Pay 11.1.0 manifest contract; before the final production build, run `Patch Manifest`, then `Verify Manifest` once in the Pay Client settings window as a physical release-machine cross-check.
 9. Confirm the resulting manifest contains the Pay deeplink activity and the generated-resource meta-data references:
    - `console_app_id_value`
    - `internal_config_key`

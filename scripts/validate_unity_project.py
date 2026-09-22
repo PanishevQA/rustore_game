@@ -54,6 +54,7 @@ def validate_package_manifest() -> None:
         "ru.rustore.pay": "11.1.0",
         "ru.rustore.update": "10.5.1",
         "ru.rustore.review": "10.5.1",
+        "ru.rustore.remoteconfig": "10.5.1",
     }
     for package, version in expected.items():
         actual = dependencies.get(package)
@@ -65,9 +66,8 @@ def validate_package_manifest() -> None:
     if "ru.rustore.core" in dependencies:
         fail("ru.rustore.core must resolve transitively; remove the direct core pin from Packages/manifest.json.")
 
-    for quarantined in ("ru.rustore.installreferrer", "ru.rustore.remoteconfig"):
-        if quarantined in dependencies:
-            fail(f"{quarantined} must stay out of the Unity 6000.3.24f1 Editor baseline until a fixed official/source integration is re-verified.")
+    if "ru.rustore.installreferrer" in dependencies:
+        fail("ru.rustore.installreferrer must stay out of the Unity Editor baseline because the verified official 10.6.1 package collides on .meta GUIDs with Remote Config 10.5.1.")
 
     registries = manifest.get("scopedRegistries") or []
     expected_registry = "https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/"
@@ -112,6 +112,15 @@ def validate_asmdefs() -> None:
         for reference in data.get("references") or []:
             if isinstance(reference, str) and reference.startswith("Game.") and reference not in names:
                 fail(f"{path.relative_to(ROOT)} references missing internal assembly {reference!r}.")
+
+    rustore_asmdef = next(
+        (data for path, data in parsed if data.get("name") == "Game.Platform.RuStore"),
+        None,
+    )
+    if rustore_asmdef is None:
+        fail("Game.Platform.RuStore assembly definition is missing.")
+    elif "RuStoreCore" not in (rustore_asmdef.get("references") or []):
+        fail("Game.Platform.RuStore must reference RuStoreCore because Review/Update callback contracts expose RuStoreError from that assembly.")
 
 
 def validate_android_manifest() -> None:
@@ -348,9 +357,9 @@ def validate_release_preflight_contract() -> None:
     text = read(UNITY / "Assets/Game/Editor/ProductionReleaseValidator.cs")
     required = {
         r'\"ru.rustore.pay\": \"11.1.0\"': "Production preflight must enforce RuStore Pay 11.1.0.",
-        'ValidateQuarantinedRuStorePackages(errors)': "Production preflight must keep known-broken RuStore Editor packages quarantined.",
-        'HasLoadedRuStoreType("InstallReferrerClient")': "Production preflight must require an actually loaded Install Referrer Unity integration.",
         'HasLoadedRuStoreType("RuStoreRemoteConfigClient")': "Production preflight must require an actually loaded Remote Config Unity integration.",
+        'ru.rustore.sdk:installreferrer:10.6.1': "Production preflight must require the native Install Referrer Android dependency.",
+        'getInstallReferrerV2': "Production preflight must validate the current native Install Referrer V2 bridge.",
         'InstallReferrer = \\"10.6.1\\"': "Production preflight must protect the current Install Referrer target version.",
         'RemoteConfig = \\"10.5.1\\"': "Production preflight must protect the current Remote Config target version.",
         'android.permission.POST_NOTIFICATIONS': "Production preflight must protect the Daily reminder permission.",
@@ -380,10 +389,10 @@ def validate_local_release_candidate_runner() -> None:
     required = (
         "ProjectSettings\\ProjectVersion.txt",
         '"ru.rustore.installreferrer"',
-        '"ru.rustore.remoteconfig"',
-        "Stale quarantined RuStore package state detected",
+        "Stale Unity Install Referrer package state detected",
         "Start-Process -FilePath $unity",
-        "-Wait -PassThru",
+        "WaitForExit($TimeoutSeconds * 1000)",
+        "taskkill.exe /PID",
         ".ExitCode",
         "-runTests",
         '"-testPlatform", "EditMode"',
@@ -436,6 +445,21 @@ def validate_production_identifiers() -> None:
     for text, marker, label in required:
         if marker not in text:
             fail(f"{label} production contract is missing: {marker!r}.")
+
+
+def validate_production_build_signing_contract() -> None:
+    text = read(UNITY / "Assets/Game/Editor/ProductionAndroidBuild.cs")
+    required = {
+        'NESBEISYA_KEYSTORE_PASS': "Production Android build must read the keystore password from the local runner environment.",
+        'NESBEISYA_KEYALIAS_PASS': "Production Android build must read the key-alias password from the local runner environment.",
+        'Environment.GetEnvironmentVariable': "Production Android build must load signing secrets at runtime instead of source control.",
+        'PlayerSettings.Android.keystorePass = keystorePassword': "Production Android build must pass the runtime keystore password to Unity.",
+        'PlayerSettings.Android.keyaliasPass = keyAliasPassword': "Production Android build must pass the runtime key-alias password to Unity.",
+        'Never store these values in the repository or GitHub repository variables.': "Production build must document the signing-secret boundary in its failure message.",
+    }
+    for needle, message in required.items():
+        if needle not in text:
+            fail(message)
 
 
 def validate_release_readiness_reporter() -> None:
@@ -521,6 +545,7 @@ def main() -> int:
     validate_production_identifiers()
     validate_portrait_game_view_batchmode_guard()
     validate_local_release_candidate_runner()
+    validate_production_build_signing_contract()
     validate_release_readiness_reporter()
     validate_android_dependency_configurator()
     validate_editor_configuration_safety()
