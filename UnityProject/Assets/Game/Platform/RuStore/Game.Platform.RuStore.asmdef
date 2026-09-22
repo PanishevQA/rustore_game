@@ -1,6 +1,13 @@
 {
   "name": "Game.Platform.RuStore",
   "rootNamespace": "DontGetSidetracked.Platform.RuStore",
-  "references": ["Game.Core", "Game.Services", "Game.Platform.Android", "RuStoreReview", "RuStoreUpdate"],
+  "references": [
+    "Game.Core",
+    "Game.Services",
+    "Game.Platform.Android",
+    "RuStoreReview",
+    "RuStoreUpdate",
+    "RuStoreCore"
+  ],
   "autoReferenced": true
 }
