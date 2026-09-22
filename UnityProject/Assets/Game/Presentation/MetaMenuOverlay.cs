@@ -722,15 +722,24 @@ namespace DontGetSidetracked.Presentation
             ReleaseUiKit.TextBlock(go.transform, "Description", description, 14, TextAnchor.MiddleLeft,
                 new Vector2(0.18f, 0.12f), new Vector2(0.70f, 0.50f), ReleaseUiComponents.Muted);
 
+            ReleaseUiKit.TextBlock(go.transform, "StateLabel", enabled ? "ВКЛ" : "ВЫКЛ", 13,
+                TextAnchor.MiddleRight, new Vector2(0.67f, 0.24f), new Vector2(0.775f, 0.76f),
+                enabled ? ReleaseUiComponents.Cyan : ReleaseUiComponents.Muted, FontStyle.Bold);
+
             Image track = ReleaseUiComponents.GlassCard(go.transform, "Switch",
-                new Vector2(0.76f, 0.25f), new Vector2(0.94f, 0.75f),
+                new Vector2(0.79f, 0.25f), new Vector2(0.94f, 0.75f),
                 enabled ? ReleaseUiComponents.Cyan : ReleaseUiComponents.Muted, false);
             track.color = enabled
-                ? new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.28f)
-                : new Color(0.08f, 0.11f, 0.16f, 0.96f);
-            ReleaseUiKit.TextBlock(track.transform, "State", enabled ? "ВКЛ" : "ВЫКЛ", 13,
-                TextAnchor.MiddleCenter, Vector2.zero, Vector2.one,
-                enabled ? ReleaseUiComponents.Cyan : ReleaseUiComponents.Muted, FontStyle.Bold);
+                ? new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.26f)
+                : new Color(0.07f, 0.095f, 0.14f, 0.96f);
+
+            Transform thumbRoot = ReleaseUiKit.Rect(track.transform, "Thumb",
+                enabled ? new Vector2(0.56f, 0.13f) : new Vector2(0.08f, 0.13f),
+                enabled ? new Vector2(0.92f, 0.87f) : new Vector2(0.44f, 0.87f));
+            Image thumb = thumbRoot.gameObject.AddComponent<Image>();
+            thumb.sprite = ReleaseUiKit.Circle;
+            thumb.color = enabled ? ReleaseUiComponents.Cyan : new Color(0.62f, 0.69f, 0.79f, 1f);
+            thumb.raycastTarget = false;
         }
 
         private void AddInfoRow(string glyph, string label, string value, Color accent)
@@ -757,7 +766,7 @@ namespace DontGetSidetracked.Presentation
             ReleaseUiComponents.Icon(infoWell.transform, "InfoIcon", glyph,
                 new Vector2(0.13f, 0.13f), new Vector2(0.87f, 0.87f));
             ReleaseUiKit.TextBlock(go.transform, "Label", label, 16, TextAnchor.MiddleLeft,
-                new Vector2(0.18f, 0.50f), new Vector2(0.72f, 0.88f), ReleaseUiComponents.Muted, FontStyle.Bold);
+                new Vector2(0.18f, 0.50f), new Vector2(0.56f, 0.88f), ReleaseUiComponents.Muted, FontStyle.Bold);
             ReleaseUiKit.TextBlock(go.transform, "Value", value, 22, TextAnchor.MiddleRight,
                 new Vector2(0.58f, 0.12f), new Vector2(0.94f, 0.78f), ReleaseUiComponents.Text, FontStyle.Bold);
         }
