@@ -52,7 +52,7 @@ jobs:
           grep -q 'ru.rustore.sdk:installreferrer:10.6.1' UnityProject/Assets/Game/Platform/RuStore/Editor/RuStoreNativeInstallReferrerDependencies.xml
           grep -q 'nexus-external.rustore.ru/repository/maven-rustore-exposed' UnityProject/Assets/Game/Platform/RuStore/Editor/RuStoreNativeInstallReferrerDependencies.xml
           grep -q 'ru.rustore.sdk.install.referrer.InstallReferrerClient' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
-          grep -q '"getInstallReferrerV2"' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
+          grep -Fq '_task = _client.Call<AndroidJavaObject>("getInstallReferrerV2");' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
           grep -Fq 'result.Call<string>("getInstallReferrer")' UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs
           grep -q 'FindRuStoreType("RuStoreRemoteConfigClient")' UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
           grep -q 'HasLoadedRuStoreType("RuStoreRemoteConfigClient")' UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs

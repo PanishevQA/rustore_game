@@ -83,7 +83,7 @@ for marker in (
     'ru.rustore.sdk.install.referrer.InstallReferrerClient',
     'ru.rustore.sdk.core.tasks.OnSuccessListener',
     'ru.rustore.sdk.core.tasks.OnFailureListener',
-    '"getInstallReferrerV2"',
+    '_task = _client.Call<AndroidJavaObject>("getInstallReferrerV2");',
     'result.Call<string>("getInstallReferrer")',
 ):
     if marker not in referrer_adapter_text:

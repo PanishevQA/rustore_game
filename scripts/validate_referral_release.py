@@ -79,8 +79,8 @@ referrer = REFERRER.read_text(encoding="utf-8")
 for value in [
     "new InstallReferrerResult(false, null)",
     'NativeClientClass = "ru.rustore.sdk.install.referrer.InstallReferrerClient"',
-    '"getInstallReferrerV2"',
-    '"getInstallReferrer"',
+    '_task = _client.Call<AndroidJavaObject>("getInstallReferrerV2");',
+    'referrerId = result.Call<string>("getInstallReferrer");',
     '"addOnSuccessListener"',
     '"addOnFailureListener"',
     '"ru.rustore.sdk.core.tasks.OnSuccessListener"',
