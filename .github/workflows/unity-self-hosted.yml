@@ -22,6 +22,7 @@ on:
           - Build
           - DeviceSmokeApk
           - DeviceGameplayPrepare
+          - DeviceGameplayFinish
           - AndroidIntegrationProbe
 
 permissions:
@@ -41,7 +42,7 @@ jobs:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
       # Release-readiness probe branch intentionally runs Full on push.
       # Licensed-user runner confirmed on Windows.
-      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'DeviceGameplayPrepare' }}
+      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'DeviceGameplayFinish' }}
 
     steps:
       - name: Checkout trusted agent branch
@@ -60,7 +61,7 @@ jobs:
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_unity_runner_environment.ps1
 
       - name: Run Unity agent gate
-        if: ${{ env.AGENT_CHECK_MODE != 'AndroidIntegrationProbe' && env.AGENT_CHECK_MODE != 'DeviceSmokeApk' && env.AGENT_CHECK_MODE != 'DeviceGameplayPrepare' }}
+        if: ${{ env.AGENT_CHECK_MODE != 'AndroidIntegrationProbe' && env.AGENT_CHECK_MODE != 'DeviceSmokeApk' && env.AGENT_CHECK_MODE != 'DeviceGameplayPrepare' && env.AGENT_CHECK_MODE != 'DeviceGameplayFinish' }}
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast
 
@@ -73,6 +74,11 @@ jobs:
         if: ${{ env.AGENT_CHECK_MODE == 'DeviceGameplayPrepare' }}
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\prepare_training_device_smoke.ps1
+
+      - name: Finish physical Training round
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceGameplayFinish' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\finish_training_device_smoke.ps1
 
       - name: Run Android integration and native AAR probe
         if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
