@@ -18,12 +18,12 @@ namespace DontGetSidetracked.Platform.RuStore
 
         // Current official RuStore Unity registry re-verified against the Pay / Install Referrer /
         // Remote Config / Update / Review documentation on 2026-09-22.
-        // Pay/Update/Review remain in the compile-safe Editor manifest. Install Referrer 10.6.1
-        // and Remote Config 10.5.1 are current official release targets and remain intentionally
-        // excluded from the production baseline until isolated Unity 6000.3.24f1 package probes
-        // complete successfully. Production preflight requires the client types to be loaded before
-        // release. ru.rustore.core must continue to resolve transitively.
+        // The official Install Referrer 10.6.1 and Remote Config 10.5.1 Unity packages each pass
+        // independently on Unity 6000.3.24f1, but their published .meta files contain duplicate
+        // GUIDs when installed together. Production therefore keeps Remote Config as the Unity
+        // package and consumes Install Referrer through the official Android artifact.
+        // ru.rustore.core continues to resolve transitively from feature dependencies.
         public const string NpmRegistry = "https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/";
-        public const string MavenRepository = "https://nexus-external.vkteam.ru/repository/maven-rustore-exposed";
+        public const string MavenRepository = "https://nexus-external.rustore.ru/repository/maven-rustore-exposed";
     }
 }
