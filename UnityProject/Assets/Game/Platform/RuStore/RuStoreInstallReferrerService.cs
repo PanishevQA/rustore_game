@@ -69,9 +69,9 @@ namespace DontGetSidetracked.Platform.RuStore
                 try
                 {
                     _client = new AndroidJavaObject(NativeClientClass, activity);
-                    _task = _client.Call<AndroidJavaObject>("getInstallReferrer");
+                    _task = _client.Call<AndroidJavaObject>("getInstallReferrerV2");
                     if (_task == null)
-                        throw new InvalidOperationException("InstallReferrerClient.getInstallReferrer() returned null Task.");
+                        throw new InvalidOperationException("InstallReferrerClient.getInstallReferrerV2() returned null Task.");
 
                     _successListener = new SuccessListener(this);
                     _failureListener = new FailureListener(this);
@@ -93,7 +93,7 @@ namespace DontGetSidetracked.Platform.RuStore
                 try
                 {
                     if (result != null)
-                        referrerId = result.Call<string>("getReferrerId");
+                        referrerId = result.Call<string>("getInstallReferrerV2");
                 }
                 catch (Exception error)
                 {
