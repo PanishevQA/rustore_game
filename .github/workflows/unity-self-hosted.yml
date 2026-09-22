@@ -39,7 +39,7 @@ jobs:
     timeout-minutes: 60
     env:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
-      # Release-readiness probe branch intentionally runs Full on push.
+      # One-off installed-device runtime smoke; no Unity build is required on push.
       # Licensed-user runner confirmed on Windows.
       AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'DeviceRuntimeSmoke' }}
 
