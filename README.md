@@ -102,7 +102,7 @@ Yandex Mobile Ads Unity `8.4.0` закреплён в `Packages/manifest.json`; 
 
 Проект зафиксирован на Unity `6000.3.24f1`, portrait, `UnityPlayerActivity`, IL2CPP/ARM64 release baseline.
 
-Последняя сверка RuStore targets — 2026-09-21:
+Последняя сверка RuStore targets — 2026-09-22:
 
 - Pay Unity `11.1.0`;
 - Install Referrer Unity `10.6.1`;
@@ -114,7 +114,7 @@ Yandex Mobile Ads Unity `8.4.0` закреплён в `Packages/manifest.json`; 
 - target API baseline 34 / highest installed;
 - minSdk проекта 25, потому что Unity 6.3 уже не поддерживает API 24 как рабочий baseline.
 
-Compile-safe Editor baseline подключает через официальный registry `https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/` Pay `11.1.0`, Update `10.5.1` и Review `10.5.1`. Install Referrer `10.6.1` и Remote Config `10.5.1` остаются проверенными production targets, но временно исключены из `Packages/manifest.json`: реальный Unity 6000.3.24f1 batchmode compile воспроизводит ошибки внутри обоих PackageCache и duplicate GUID между пакетами. Их adapters/cache/default остаются, а production preflight намеренно блокирует релиз до рабочей повторно проверенной SDK integration. `ru.rustore.core` напрямую не pin-ится.
+Compile-safe Editor baseline подключает через официальный registry `https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/` Pay `11.1.0`, Update `10.5.1` и Review `10.5.1`. Install Referrer `10.6.1` и Remote Config `10.5.1` остаются актуальными production targets, но временно исключены из `Packages/manifest.json` до успешных отдельных Unity 6000.3.24f1 package probes. Их adapters/cache/default остаются, а production preflight блокирует релиз, пока реальные SDK client types не загружены. `ru.rustore.core` напрямую не pin-ится.
 
 ## Remote Config
 
