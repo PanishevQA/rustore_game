@@ -93,7 +93,7 @@ namespace DontGetSidetracked.Platform.RuStore
                 try
                 {
                     if (result != null)
-                        referrerId = result.Call<string>("getInstallReferrer");
+                        referrerId = result.Call<string>("getInstallReferrerV2");
                 }
                 catch (Exception error)
                 {

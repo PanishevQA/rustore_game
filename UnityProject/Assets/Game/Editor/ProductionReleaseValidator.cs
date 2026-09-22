@@ -215,7 +215,7 @@ namespace DontGetSidetracked.EditorTools
                 ("ru.rustore.sdk.core.tasks.OnSuccessListener", "Install Referrer adapter success listener bridge is missing."),
                 ("ru.rustore.sdk.core.tasks.OnFailureListener", "Install Referrer adapter failure listener bridge is missing."),
                 ("\"getInstallReferrerV2\"", "Install Referrer adapter must request the current native V2 referrer."),
-                ("\"getInstallReferrer\"", "Install Referrer adapter must extract the current V2 referrer value from the native result."));
+                ("result.Call<string>(\"getInstallReferrerV2\")", "Install Referrer adapter must extract installReferrerV2 from the native V2 result."));
         }
 
         private static bool HasLoadedRuStoreType(string simpleName)
