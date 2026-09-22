@@ -84,7 +84,7 @@ for marker in (
     'ru.rustore.sdk.core.tasks.OnSuccessListener',
     'ru.rustore.sdk.core.tasks.OnFailureListener',
     '"getInstallReferrerV2"',
-    'result.Call<string>("getInstallReferrerV2")',
+    'result.Call<string>("getInstallReferrer")',
 ):
     if marker not in referrer_adapter_text:
         errors.append(f"Native Install Referrer Android bridge is missing {marker!r}.")
