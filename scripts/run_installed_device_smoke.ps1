@@ -140,6 +140,34 @@ Report "Launcher start: PASS (pid $appPid)"
 Assert-NoFatal -AdbPath $adb -Serial $serial -Package $PackageName
 Report "Immediate crash/ANR scan: PASS"
 
+$remoteScreenshot = "/sdcard/nesbeisya-runtime-smoke.png"
+$localScreenshot = Join-Path $artifactDir "launcher-screen.png"
+& $adb -s $serial shell screencap -p $remoteScreenshot | Out-Null
+if ($LASTEXITCODE -ne 0) { Fail "device screenshot capture failed." }
+& $adb -s $serial pull $remoteScreenshot $localScreenshot | Out-Null
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $localScreenshot -PathType Leaf)) {
+    Fail "device screenshot pull failed."
+}
+& $adb -s $serial shell rm -f $remoteScreenshot | Out-Null
+Report "Launcher screenshot captured: PASS"
+
+$remoteUi = "/sdcard/window_dump.xml"
+$localUi = Join-Path $artifactDir "launcher-ui.xml"
+& $adb -s $serial shell uiautomator dump $remoteUi | Out-Null
+if ($LASTEXITCODE -eq 0) {
+    & $adb -s $serial pull $remoteUi $localUi | Out-Null
+    & $adb -s $serial shell rm -f $remoteUi | Out-Null
+    if (Test-Path $localUi -PathType Leaf) {
+        Report "Launcher UI hierarchy captured: PASS"
+    }
+    else {
+        Report "Launcher UI hierarchy captured: SKIP (Unity surface not exposed to UIAutomator)"
+    }
+}
+else {
+    Report "Launcher UI hierarchy captured: SKIP (uiautomator unavailable for Unity surface)"
+}
+
 & $adb -s $serial shell input keyevent 3 | Out-Null
 Start-Sleep -Seconds 2
 & $adb -s $serial shell monkey -p $PackageName -c android.intent.category.LAUNCHER 1 | Out-Null
