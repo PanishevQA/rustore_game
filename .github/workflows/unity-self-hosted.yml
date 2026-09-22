@@ -102,4 +102,5 @@ jobs:
             artifacts/agent-check/**
             artifacts/release-candidate/**
             artifacts/android-integration-probe/**
+            artifacts/gameplay-cycle/**
             artifacts/gameplay-device-smoke/**
