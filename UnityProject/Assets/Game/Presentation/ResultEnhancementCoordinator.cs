@@ -533,6 +533,9 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.37f, 0.51f), new Vector2(0.96f, 0.93f),
                 InvokePrimary, 27);
             _primaryActionText = _primaryAction.GetComponentInChildren<Text>(true);
+            ReleaseUiKit.SetAnchors(_primaryActionText.rectTransform, new Vector2(0.15f, 0.05f), new Vector2(0.96f, 0.95f));
+            ReleaseUiComponents.Icon(_primaryAction.transform, "ReplayIcon", GeneratedUiAssets.ReplayIcon,
+                new Vector2(0.035f, 0.20f), new Vector2(0.14f, 0.80f));
 
             _secondaryAction = ReleaseUiComponents.SecondaryButton(actions.transform, "SecondaryAction", "ДОМОЙ",
                 new Vector2(0.04f, 0.51f), new Vector2(0.34f, 0.93f),
@@ -540,7 +543,7 @@ namespace DontGetSidetracked.Presentation
             _secondaryActionText = _secondaryAction.GetComponentInChildren<Text>(true);
 
             _cardButton = ReleaseUiComponents.SecondaryButton(actions.transform, "ShareCard", "БРОСИТЬ ВЫЗОВ",
-                new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.43f),
+                new Vector2(0.51f, 0.08f), new Vector2(0.96f, 0.43f),
                 ShareCard, 19);
             _cardButtonText = _cardButton.GetComponentInChildren<Text>(true);
             ReleaseUiKit.SetAnchors(_cardButtonText.rectTransform, new Vector2(0.17f, 0.05f), new Vector2(0.96f, 0.95f));
