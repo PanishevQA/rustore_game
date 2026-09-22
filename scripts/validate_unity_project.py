@@ -371,6 +371,7 @@ def validate_release_preflight_contract() -> None:
         'buildAppBundle': "Production preflight must require AAB output.",
         'ScriptingImplementation.IL2CPP': "Production preflight must require IL2CPP.",
         'AndroidArchitecture.ARM64': "Production preflight must require ARM64.",
+        'stripEngineCode: 0': "Production preflight must protect the physical-device engine-stripping fix.",
     }
     for needle, message in required.items():
         if needle not in text:
@@ -519,6 +520,7 @@ def validate_editor_configuration_safety() -> None:
         "PlayerSettings.GetApplicationIdentifier",
         "ShouldAssignProductionPackageName",
         "if (ShouldAssignProductionPackageName(currentPackage))",
+        "PlayerSettings.stripEngineCode = false;",
     )
     for needle in required:
         if needle not in text:

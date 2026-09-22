@@ -53,6 +53,11 @@ namespace DontGetSidetracked.EditorTools
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
 
+            // Runtime-created presentation/input components are discovered dynamically.
+            // Engine-code stripping removed required Unity classes in the signed Android player
+            // and produced a black screen on a physical device ("Could not produce class with ID 115").
+            PlayerSettings.stripEngineCode = false;
+
             EnsureScene();
         }
 
