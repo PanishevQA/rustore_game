@@ -200,11 +200,11 @@ function Resolve-CurrentGitSha {
         throw "Git is required to bind production release metadata to the current commit."
     }
 
-    $sha = (& $git.Source -C $repoRoot rev-parse HEAD).Trim()
-    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($sha)) {
+    $shaOutput = & $git.Source -c "safe.directory=$repoRoot" -C $repoRoot rev-parse HEAD
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($shaOutput)) {
         throw "Could not resolve the current Git commit SHA."
     }
-    return $sha
+    return ($shaOutput | Select-Object -First 1).Trim()
 }
 
 function Invoke-ReleaseArtifactVerification {
