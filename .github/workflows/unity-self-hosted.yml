@@ -38,7 +38,7 @@ jobs:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
       # Release-readiness probe branch intentionally runs Full on push.
       # Licensed-user runner confirmed on Windows.
-      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'Full' }}
+      AGENT_CHECK_MODE: AndroidIntegrationProbe
 
     steps:
       - name: Checkout trusted agent branch
@@ -56,9 +56,9 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_unity_runner_environment.ps1
 
-      - name: Run Unity agent gate
+      - name: Run Android integration and native AAR probe
         shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_android_integration_probe.ps1 -TimeoutSeconds 2400
 
       - name: Upload Unity diagnostics
         if: ${{ always() }}
@@ -70,3 +70,4 @@ jobs:
           path: |
             artifacts/agent-check/**
             artifacts/release-candidate/**
+            artifacts/android-integration-probe/**
