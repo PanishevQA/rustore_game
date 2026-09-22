@@ -1,5 +1,7 @@
 # Production release checklist
 
+Physical-device pass/fail protocol: `docs/DEVICE_SMOKE_TEST.md`.
+
 ## SDK / Android
 
 - [ ] Повторно сверены версии всех RuStore SDK с официальной документацией непосредственно перед production build.
