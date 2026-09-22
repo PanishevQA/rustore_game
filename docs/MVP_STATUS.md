@@ -1,4 +1,4 @@
-# Состояние проекта — 2026-09-18
+# Состояние проекта — 2026-09-23
 
 > Проект не оценивается одним процентом «готовности»: repo-side функционал, визуальная приёмка и внешняя Android/RuStore интеграция проверяются разными способами.
 
@@ -68,7 +68,7 @@
 
 ## Save / reliability
 
-- SaveData **v13** + migrations;
+- SaveData **v14** + migrations; `TotalScoredAttempts`/`TotalScoreSum` поддерживают локальную агрегированную статистику без backend;
 - current-version post-load repair нормализует отрицательные currency/counters, invalid scores, дубли purchases/Daily bests/level progress и invalid campaign entries;
 - obsolete backend `PendingAttempts` очищается даже в current-version save;
 - все runtime writers используют одну shared `SaveData` identity на save path;
@@ -89,11 +89,11 @@ Remote Config runtime также не зависит от нашего backend: 
 
 Meta/Training/Campaign overlays имеют публичные open/close state contracts для mobile Back вместо чтения их private state через reflection.
 
-Presentation layer доведён до **release visual candidate**: Home dashboard, gameplay HUD, memory grid/glow, high-fidelity Training, Campaign browser, Meta/Store/Settings, unified Result, branded share-card, notification/update surfaces и incoming Friend Challenge используют одну dark/cyan/violet систему. Старые конфликтующие Home/theme coordinators удалены; Android Back, safe area и platform/ad launch gates учитывают referral overlay.
+Presentation layer доведён до **release visual candidate**: Home dashboard, Daily Intro, gameplay HUD, memory grid/glow, high-fidelity Training, Campaign browser с generated lock/check/star assets, Meta/Store/Settings, unified Result, branded share-card, notification/update surfaces и incoming Friend Challenge используют одну dark/cyan/violet систему. Старые конфликтующие Home/theme coordinators удалены; Android Back, safe area и platform/ad launch gates учитывают referral overlay.
 
 ## Автоматические проверки
 
-В PR шесть checks:
+В PR шесть hosted checks:
 
 1. `pure-csharp-tests`;
 2. `backend-tests` — только optional future backend;
@@ -101,6 +101,8 @@ Presentation layer доведён до **release visual candidate**: Home dashbo
 4. `rustore-dependency-guard`;
 5. `unity-static-validation`;
 6. `product-flow-guard`.
+
+Для доверенных `agent/**` веток дополнительно работает Windows self-hosted `unity-self-hosted` gate с реальным Unity 6000.3.24f1 batchmode: compile, EditMode, PlayMode startup smoke и read-only serialized-project validation. Production/Android задачи могут запускаться в режимах Full/Build/DeviceSmokeApk через тот же release tooling.
 
 Pure suite покрывает deterministic routes, scoring, Daily, save migrations/repair, campaign 60-level catalog, star thresholds, unlocks, reward idempotency, coin→hint exchange и L4 checksum/legacy challenge compatibility. Guards защищают offline architecture, viral token fairness/checksum, Android manifest/share contracts, RuStore targets, shared save и видимые Campaign/Training flows.
 
@@ -124,8 +126,8 @@ Pay/Remote Config/Update/Review закреплены в `Packages/manifest.json`
 ## Release readiness tooling
 
 - `Tools → НЕ СБЕЙСЯ! → Release Readiness Report` выполняет Android/branding/Gradle/EDM preparation и объединяет version/placeholder/Android-SDK/RuStore Pay blockers в один отчёт;
-- `scripts/run_release_candidate_checks.ps1` на Windows автоматически находит Unity Hub Editor из `ProjectVersion.txt`, запускает Unity compile + EditMode tests и затем readiness report;
-- QA reset удаляет также backup Remote Config cache, поэтому clean-state regression больше не восстанавливает старую конфигурацию.
+- `scripts/run_release_candidate_checks.ps1` на Windows автоматически находит Unity Hub Editor из `ProjectVersion.txt`, запускает Unity compile + EditMode + PlayMode tests, serialized-project validation и затем readiness report;
+- `SignedDeviceSmokeBuild` собирает signed non-Development APK для физического smoke-теста отдельно от публикационного AAB; SHA-256 sidecar проверяется перед установкой;\n- QA reset удаляет также backup Remote Config cache, поэтому clean-state regression больше не восстанавливает старую конфигурацию.
 
 ## Что нельзя честно завершить только изменениями в GitHub
 
