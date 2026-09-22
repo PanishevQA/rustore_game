@@ -58,8 +58,8 @@ $serial = Resolve-Device -AdbPath $adb
 & $adb -s $serial shell input keyevent KEYCODE_WAKEUP | Out-Null
 & $adb -s $serial shell wm dismiss-keyguard | Out-Null
 
-$pid = (& $adb -s $serial shell pidof $PackageName 2>$null | Out-String).Trim()
-if ([string]::IsNullOrWhiteSpace($pid)) { Fail "game process is not alive; expected the Training result screen from the previous stage." }
+$gamePid = (& $adb -s $serial shell pidof $PackageName 2>$null | Out-String).Trim()
+if ([string]::IsNullOrWhiteSpace($gamePid)) { Fail "game process is not alive; expected the Training result screen from the previous stage." }
 
 $before = Capture -AdbPath $adb -Serial $serial -Name "01-before-share"
 $focusBefore = (& $adb -s $serial shell dumpsys window | Select-String -Pattern "mCurrentFocus|mFocusedApp" | Out-String).Trim()
@@ -89,7 +89,7 @@ if ($logs -match "(?is)FATAL EXCEPTION.*Process:\s*ru\.release\.nesbeisya|ANR in
 
 @(
     "Device: $serial",
-    "Game pid before share: $pid",
+    "Game pid before share: $gamePid",
     "Game pid after return: $pidAfter",
     "Expected artifacts: result screen -> Android share sheet -> same result screen after Back."
     "Focus before: $focusBefore",
