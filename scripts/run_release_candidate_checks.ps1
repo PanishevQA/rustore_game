@@ -251,8 +251,9 @@ if ($BuildAab) {
     if ([string]::IsNullOrWhiteSpace($env:RELEASE_GIT_SHA) -and [string]::IsNullOrWhiteSpace($env:GITHUB_SHA)) {
         $git = Get-Command git -ErrorAction SilentlyContinue
         if ($git) {
-            $resolvedSha = (& $git.Source -C $repoRoot rev-parse HEAD).Trim()
-            if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($resolvedSha)) {
+            $shaOutput = & $git.Source -c "safe.directory=$repoRoot" -C $repoRoot rev-parse HEAD
+            if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($shaOutput)) {
+                $resolvedSha = ($shaOutput | Select-Object -First 1).Trim()
                 $env:RELEASE_GIT_SHA = $resolvedSha
             }
         }
