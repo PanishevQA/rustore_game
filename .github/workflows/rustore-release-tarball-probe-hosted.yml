@@ -1,0 +1,35 @@
+name: rustore-release-tarball-probe-hosted
+
+on:
+  push:
+    branches:
+      - 'agent/probe-rustore-release-tarballs'
+    paths:
+      - 'scripts/probe_rustore_release_tarballs.py'
+      - '.github/workflows/rustore-release-tarball-probe-hosted.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Inspect official RuStore tarballs
+        run: python scripts/probe_rustore_release_tarballs.py
+      - name: Upload tarball probe diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustore-release-tarball-probe-${{ github.sha }}
+          path: artifacts/rustore-release-artifact-probe-hosted/**
+          if-no-files-found: warn
+          retention-days: 14
