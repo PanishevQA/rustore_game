@@ -2,6 +2,7 @@ param(
     [string]$UnityExe = $env:UNITY_EXE,
     [switch]$SkipReadiness,
     [switch]$BuildAab,
+    [switch]$BuildSmokeApk,
     [int]$UnityStepTimeoutSeconds = 900,
     [int]$BuildTimeoutSeconds = 1800
 )
@@ -9,6 +10,12 @@ param(
 $ErrorActionPreference = "Stop"
 if ($BuildAab -and $SkipReadiness) {
     throw "BuildAab requires release readiness; do not combine -BuildAab with -SkipReadiness."
+}
+if ($BuildSmokeApk -and $SkipReadiness) {
+    throw "BuildSmokeApk requires release readiness; do not combine -BuildSmokeApk with -SkipReadiness."
+}
+if ($BuildAab -and $BuildSmokeApk) {
+    throw "BuildAab and BuildSmokeApk are mutually exclusive."
 }
 if ($UnityStepTimeoutSeconds -lt 60) {
     throw "UnityStepTimeoutSeconds must be at least 60 seconds."
@@ -149,7 +156,7 @@ Write-Host "Unity: $unity" -ForegroundColor Cyan
 Write-Host "Project: $projectPath" -ForegroundColor Cyan
 Write-Host "Editor version: $editorVersion" -ForegroundColor Cyan
 Write-Host "Unity step timeout: $UnityStepTimeoutSeconds seconds" -ForegroundColor Cyan
-if ($BuildAab) {
+if ($BuildAab -or $BuildSmokeApk) {
     Write-Host "Android build timeout: $BuildTimeoutSeconds seconds" -ForegroundColor Cyan
 }
 Write-Host ""
@@ -161,13 +168,14 @@ $playModeLog = Join-Path $artifacts "playmode.log"
 $serializedLog = Join-Path $artifacts "serialized-validation.log"
 $serializedReport = Join-Path $repoRoot "artifacts\agent-check\unity-serialized-validation.txt"
 $productionBuildLog = Join-Path $artifacts "production-build.log"
+$deviceSmokeBuildLog = Join-Path $artifacts "device-smoke-build.log"
 $readinessLog = Join-Path $artifacts "readiness.log"
 $readinessSource = Join-Path $projectPath "Library\NesbeisyaReleaseReadiness.txt"
 $readinessCopy = Join-Path $artifacts "release-readiness.txt"
 
-Remove-Item $testResults, $testLog, $playModeResults, $playModeLog, $serializedLog, $serializedReport, $productionBuildLog, $readinessLog, $readinessCopy -Force -ErrorAction SilentlyContinue
+Remove-Item $testResults, $testLog, $playModeResults, $playModeLog, $serializedLog, $serializedReport, $productionBuildLog, $deviceSmokeBuildLog, $readinessLog, $readinessCopy -Force -ErrorAction SilentlyContinue
 
-$totalSteps = if ($BuildAab) { 5 } elseif ($SkipReadiness) { 3 } else { 4 }
+$totalSteps = if ($BuildAab -or $BuildSmokeApk) { 5 } elseif ($SkipReadiness) { 3 } else { 4 }
 Write-Host "[1/$totalSteps] Unity compile + EditMode tests..." -ForegroundColor Yellow
 $testArgs = @(
     "-batchmode",
@@ -267,6 +275,48 @@ if (-not $SkipReadiness) {
     }
 }
 
+
+if ($BuildSmokeApk) {
+    Write-Host ""
+    Write-Host "[5/$totalSteps] Build signed release APK for physical-device smoke testing..." -ForegroundColor Yellow
+
+    $smokeOutput = $env:NESBEISYA_DEVICE_SMOKE_OUTPUT
+    if ([string]::IsNullOrWhiteSpace($smokeOutput)) {
+        $smokeOutput = Join-Path $artifacts "android-device-smoke\nesbeisya-device-smoke.apk"
+        $env:NESBEISYA_DEVICE_SMOKE_OUTPUT = $smokeOutput
+    } elseif (-not [IO.Path]::IsPathRooted($smokeOutput)) {
+        $smokeOutput = [IO.Path]::GetFullPath((Join-Path $repoRoot $smokeOutput))
+        $env:NESBEISYA_DEVICE_SMOKE_OUTPUT = $smokeOutput
+    }
+
+    $smokeDirectory = Split-Path -Parent $smokeOutput
+    if ($smokeDirectory) {
+        New-Item -ItemType Directory -Force -Path $smokeDirectory | Out-Null
+    }
+
+    $smokeArgs = @(
+        "-batchmode",
+        "-nographics",
+        "-quit",
+        "-projectPath", ('"' + $projectPath + '"'),
+        "-executeMethod", "DontGetSidetracked.EditorTools.SignedDeviceSmokeBuild.BuildFromCommandLine",
+        "-logFile", ('"' + $deviceSmokeBuildLog + '"')
+    )
+    $smokeExit = Invoke-UnityProcess -Name "Unity signed device-smoke APK build" -Arguments $smokeArgs -LogPath $deviceSmokeBuildLog -TimeoutSeconds $BuildTimeoutSeconds
+    if ($smokeExit -ne 0) {
+        Write-Host "Signed device-smoke APK build FAILED (exit $smokeExit)." -ForegroundColor Red
+        Write-Host "Log: $deviceSmokeBuildLog"
+        if (Test-Path $deviceSmokeBuildLog) { Get-Content $deviceSmokeBuildLog -Tail 120 }
+        exit $smokeExit
+    }
+
+    if (-not (Test-Path $smokeOutput)) {
+        throw "Signed device-smoke build completed but APK was not created: $smokeOutput"
+    }
+
+    Write-Host "Signed release APK for device smoke created." -ForegroundColor Green
+    Write-Host "APK: $smokeOutput" -ForegroundColor Cyan
+}
 
 if ($BuildAab) {
     Write-Host ""
