@@ -49,6 +49,7 @@ required_workflow = (
     "bootstrap_portable_python.ps1",
     "verify_unity_runner_environment.ps1",
     "AGENT_CHECK_MODE",
+    "github.event_name == 'workflow_dispatch' && inputs.mode || 'Full'",
     "agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast",
     "run_release_candidate_checks.ps1 -BuildSmokeApk",
     "run_android_integration_probe.ps1",
