@@ -113,6 +113,15 @@ def validate_asmdefs() -> None:
             if isinstance(reference, str) and reference.startswith("Game.") and reference not in names:
                 fail(f"{path.relative_to(ROOT)} references missing internal assembly {reference!r}.")
 
+    rustore_asmdef = next(
+        (data for path, data in parsed if data.get("name") == "Game.Platform.RuStore"),
+        None,
+    )
+    if rustore_asmdef is None:
+        fail("Game.Platform.RuStore assembly definition is missing.")
+    elif "RuStoreCore" not in (rustore_asmdef.get("references") or []):
+        fail("Game.Platform.RuStore must reference RuStoreCore because Review/Update callback contracts expose RuStoreError from that assembly.")
+
 
 def validate_android_manifest() -> None:
     path = UNITY / "Assets/Plugins/Android/AndroidManifest.xml"
