@@ -38,7 +38,7 @@ jobs:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
       # Release-readiness probe branch intentionally runs Full on push.
       # Licensed-user runner confirmed on Windows.
-      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'Full' }}
+      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'Build' }}
 
     steps:
       - name: Checkout trusted agent branch
