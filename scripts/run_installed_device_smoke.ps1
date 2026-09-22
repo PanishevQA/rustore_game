@@ -83,6 +83,18 @@ function Get-AppPid([string]$AdbPath, [string]$Serial, [string]$Package) {
     return ""
 }
 
+function Capture-DeviceFrame([string]$AdbPath, [string]$Serial, [string]$Name) {
+    $remote = "/sdcard/" + $Name + ".png"
+    $local = Join-Path $artifactDir ($Name + ".png")
+    & $AdbPath -s $Serial shell screencap -p $remote | Out-Null
+    if ($LASTEXITCODE -ne 0) { Fail "device screenshot capture failed for $Name." }
+    & $AdbPath -s $Serial pull $remote $local | Out-Null
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $local -PathType Leaf)) {
+        Fail "device screenshot pull failed for $Name."
+    }
+    & $AdbPath -s $Serial shell rm -f $remote | Out-Null
+}
+
 function Assert-NoFatal([string]$AdbPath, [string]$Serial, [string]$Package) {
     $logs = (& $AdbPath -s $Serial logcat -d -v brief | Out-String)
     $escapedPackage = [regex]::Escape($Package)
@@ -136,7 +148,13 @@ Start-Sleep -Seconds 1
 & $adb -s $serial logcat -c | Out-Null
 & $adb -s $serial shell monkey -p $PackageName -c android.intent.category.LAUNCHER 1 | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail "launcher start failed." }
-Start-Sleep -Seconds 8
+
+Start-Sleep -Seconds 1
+Capture-DeviceFrame -AdbPath $adb -Serial $serial -Name "launcher-01s"
+Start-Sleep -Seconds 2
+Capture-DeviceFrame -AdbPath $adb -Serial $serial -Name "launcher-03s"
+Start-Sleep -Seconds 5
+Capture-DeviceFrame -AdbPath $adb -Serial $serial -Name "launcher-08s"
 
 $appPid = Get-AppPid -AdbPath $adb -Serial $serial -Package $PackageName
 if ([string]::IsNullOrWhiteSpace($appPid)) { Fail "app process is not alive after launcher start." }
@@ -152,16 +170,9 @@ if ($windowDump -notmatch [regex]::Escape($PackageName)) {
 }
 Report "Foreground package ownership: PASS"
 
-$remoteScreenshot = "/sdcard/nesbeisya-runtime-smoke.png"
 $localScreenshot = Join-Path $artifactDir "launcher-screen.png"
-& $adb -s $serial shell screencap -p $remoteScreenshot | Out-Null
-if ($LASTEXITCODE -ne 0) { Fail "device screenshot capture failed." }
-& $adb -s $serial pull $remoteScreenshot $localScreenshot | Out-Null
-if ($LASTEXITCODE -ne 0 -or -not (Test-Path $localScreenshot -PathType Leaf)) {
-    Fail "device screenshot pull failed."
-}
-& $adb -s $serial shell rm -f $remoteScreenshot | Out-Null
-Report "Launcher screenshot captured: PASS"
+Copy-Item -Path (Join-Path $artifactDir "launcher-08s.png") -Destination $localScreenshot -Force
+Report "Launcher screenshot timeline captured: PASS"
 
 $remoteUi = "/sdcard/window_dump.xml"
 $localUi = Join-Path $artifactDir "launcher-ui.xml"
