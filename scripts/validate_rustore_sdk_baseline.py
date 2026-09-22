@@ -10,7 +10,7 @@ CHECKLIST = ROOT / "docs/RUSTORE_RELEASE_CHECKLIST.md"
 README = ROOT / "README.md"
 STATUS = ROOT / "docs/MVP_STATUS.md"
 
-verified_date = "2026-09-21"
+verified_date = "2026-09-22"
 expected = {
     "Pay": "11.1.0",
     "InstallReferrer": "10.6.1",
@@ -63,7 +63,7 @@ for package, value in installed_packages.items():
 for package, value in quarantined_packages.items():
     if package in dependencies:
         errors.append(
-            f"{package} {value} is a verified release target but must remain quarantined from the Unity 6000.3.24f1 Editor baseline until its current compile regression is resolved."
+            f"{package} {value} is a current official release target but must remain outside the production Editor baseline until its isolated Unity 6000.3.24f1 package probe passes."
         )
 
 if not matrix_text.startswith(f"# RuStore SDK matrix — {verified_date}\n"):
