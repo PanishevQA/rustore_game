@@ -28,6 +28,8 @@ if ($forbidden -contains $userName.ToUpperInvariant()) {
 $runnerDirectory = [Environment]::ExpandEnvironmentVariables($RunnerDirectory)
 $runnerDirectory = [IO.Path]::GetFullPath($runnerDirectory)
 $runCmd = Join-Path $runnerDirectory "run.cmd"
+$watchdogPath = Join-Path $runnerDirectory "run-unity-runner-forever.ps1"
+$watchdogLog = Join-Path $runnerDirectory "_diag\unity-runner-watchdog.log"
 $serviceFile = Join-Path $runnerDirectory ".service"
 
 if (-not (Test-Path $runCmd)) {
@@ -51,16 +53,60 @@ if ($service) {
     Set-Service -Name $serviceName -StartupType Disabled
 }
 
-$escapedRunCmd = $runCmd.Replace("'", "''")
 $escapedRunnerDirectory = $runnerDirectory.Replace("'", "''")
-$command = "Set-Location '$escapedRunnerDirectory'; & '$escapedRunCmd'"
+$escapedWatchdogLog = $watchdogLog.Replace("'", "''")
+$watchdog = @"
+`$ErrorActionPreference = "Continue"
+`$runnerDirectory = '$escapedRunnerDirectory'
+`$runCmd = Join-Path `$runnerDirectory "run.cmd"
+`$watchdogLog = '$escapedWatchdogLog'
 
-$action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command `"$command`""
+function Write-WatchdogLog([string]`$Message) {
+    try {
+        `$directory = Split-Path -Parent `$watchdogLog
+        if (-not (Test-Path `$directory)) {
+            New-Item -ItemType Directory -Force -Path `$directory | Out-Null
+        }
+        Add-Content -Path `$watchdogLog -Value ("{0} {1}" -f [DateTime]::UtcNow.ToString("O"), `$Message)
+    }
+    catch {}
+}
+
+Write-WatchdogLog "Unity runner watchdog started."
+while (`$true) {
+    if (-not (Test-Path `$runCmd)) {
+        Write-WatchdogLog "run.cmd is missing; retrying in 30 seconds."
+        Start-Sleep -Seconds 30
+        continue
+    }
+
+    try {
+        Set-Location `$runnerDirectory
+        Write-WatchdogLog "Starting GitHub Actions runner."
+        & `$runCmd
+        `$exitCode = `$LASTEXITCODE
+        Write-WatchdogLog ("Runner exited with code {0}; restarting in 10 seconds." -f `$exitCode)
+    }
+    catch {
+        Write-WatchdogLog ("Runner crashed: {0}; restarting in 10 seconds." -f `$_.Exception.Message)
+    }
+
+    Start-Sleep -Seconds 10
+}
+"@
+Set-Content -Path $watchdogPath -Value $watchdog -Encoding UTF8
+
+$existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+if ($existingTask) {
+    Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+}
+
+$action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$watchdogPath`""
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $userName
 $principal = New-ScheduledTaskPrincipal -UserId $userName -LogonType Interactive -RunLevel Limited
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero)
 
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Starts the GitHub Actions Unity runner under the interactive Unity-licensed Windows user." -Force | Out-Null
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Keeps the GitHub Actions Unity runner alive under the interactive Unity-licensed Windows user." -Force | Out-Null
 
 Write-Host "Starting scheduled runner task now..." -ForegroundColor Cyan
 Start-ScheduledTask -TaskName $TaskName
@@ -77,5 +123,7 @@ Write-Host "Task state: $($task.State)"
 Write-Host "Last task result: $($info.LastTaskResult)"
 Write-Host "Legacy service startup: Disabled"
 Write-Host ""
-Write-Host "The runner will now start automatically after this Windows user logs in." -ForegroundColor Green
+Write-Host "Watchdog: $watchdogPath"
+Write-Host "Watchdog log: $watchdogLog"
+Write-Host "The runner will now start automatically after this Windows user logs in and restart automatically if run.cmd exits." -ForegroundColor Green
 Write-Host "Do not start the disabled GitHub runner service unless it is reconfigured to use the Unity-licensed user."
