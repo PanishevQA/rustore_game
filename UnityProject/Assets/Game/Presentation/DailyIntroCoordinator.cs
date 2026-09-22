@@ -159,8 +159,10 @@ namespace DontGetSidetracked.Presentation
 
             Image reward = ReleaseUiComponents.GlassCard(_canvas.transform, "RewardInfo",
                 new Vector2(0.07f, 0.105f), new Vector2(0.93f, 0.175f), ReleaseUiComponents.Violet, false);
+            ReleaseUiComponents.Icon(reward.transform, "ChallengeIcon", GeneratedUiAssets.ChallengeIcon,
+                new Vector2(0.035f, 0.17f), new Vector2(0.145f, 0.83f));
             ReleaseUiKit.TextBlock(reward.transform, "Copy", "Сравни точность и брось вызов другу после игры", 23,
-                TextAnchor.MiddleCenter, new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.92f),
+                TextAnchor.MiddleLeft, new Vector2(0.17f, 0.08f), new Vector2(0.95f, 0.92f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
 
             _coins = ReleaseUiComponents.CurrencyPill(_canvas.transform, "Coins", string.Empty, "0",
