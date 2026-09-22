@@ -160,7 +160,12 @@ required = {
         "StartHighestUnlocked",
         "CampaignReleaseBackdrop",
         '"LevelNumber", levelNumber.ToString(), 44',
-        '"State", stars, 22',
+        '"State", unlocked ? "ТЕКУЩИЙ" : "ЗАКРЫТ", 21',
+        "CreateStars(",
+        "GeneratedUiAssets.LockIcon",
+        "GeneratedUiAssets.CheckIcon",
+        "GeneratedUiAssets.StarFilled",
+        "GeneratedUiAssets.StarEmpty",
         '"Best", best, 19',
     ),
     "meta": (

@@ -391,10 +391,28 @@ namespace DontGetSidetracked.Presentation
                 TextAnchor.MiddleCenter, new Vector2(0.035f, 0.12f), new Vector2(0.28f, 0.88f),
                 unlocked ? ReleaseUiComponents.Text : new Color(0.58f, 0.64f, 0.74f, 0.95f), FontStyle.Bold);
 
-            string stars = !unlocked ? "ЗАКРЫТ" : current ? "ТЕКУЩИЙ" : Stars(record.Stars);
-            ReleaseUiKit.TextBlock(go.transform, "State", stars, 22,
-                TextAnchor.MiddleLeft, new Vector2(0.31f, 0.50f), new Vector2(0.95f, 0.88f),
-                accent, FontStyle.Bold);
+            string stateAsset = !unlocked
+                ? GeneratedUiAssets.LockIcon
+                : current
+                    ? GeneratedUiAssets.CampaignIcon
+                    : GeneratedUiAssets.CheckIcon;
+            Image stateWell = ReleaseUiComponents.GlassCard(go.transform, "StateIconWell",
+                new Vector2(0.31f, 0.53f), new Vector2(0.43f, 0.86f), accent, false);
+            stateWell.color = new Color(accent.r, accent.g, accent.b, unlocked ? 0.10f : 0.06f);
+            ReleaseUiComponents.Icon(stateWell.transform, "StateIcon", stateAsset,
+                new Vector2(0.16f, 0.16f), new Vector2(0.84f, 0.84f));
+
+            if (completed)
+            {
+                CreateStars(go.transform, record.Stars,
+                    new Vector2(0.46f, 0.55f), new Vector2(0.94f, 0.86f));
+            }
+            else
+            {
+                ReleaseUiKit.TextBlock(go.transform, "State", unlocked ? "ТЕКУЩИЙ" : "ЗАКРЫТ", 21,
+                    TextAnchor.MiddleLeft, new Vector2(0.46f, 0.52f), new Vector2(0.95f, 0.88f),
+                    accent, FontStyle.Bold);
+            }
 
             string best = !unlocked ? "Нужен предыдущий уровень" :
                 current ? "Твой следующий маршрут" : $"ЛУЧШИЙ  {record.BestScore:0.0}%";
@@ -403,6 +421,19 @@ namespace DontGetSidetracked.Presentation
                 unlocked ? ReleaseUiComponents.Muted : new Color(0.50f, 0.56f, 0.66f, 0.95f));
 
             return button;
+        }
+
+        private static void CreateStars(Transform parent, int count, Vector2 min, Vector2 max)
+        {
+            Transform root = ReleaseUiKit.Rect(parent, "Stars", min, max);
+            for (int i = 0; i < 3; i++)
+            {
+                float left = i / 3f + 0.04f;
+                float right = (i + 1) / 3f - 0.04f;
+                ReleaseUiComponents.Icon(root, "Star" + i,
+                    i < count ? GeneratedUiAssets.StarFilled : GeneratedUiAssets.StarEmpty,
+                    new Vector2(left, 0.12f), new Vector2(right, 0.88f));
+            }
         }
 
         private static void CreatePathRail(Transform parent)
