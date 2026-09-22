@@ -85,8 +85,10 @@ function Get-AppPid([string]$AdbPath, [string]$Serial, [string]$Package) {
 
 function Assert-NoFatal([string]$AdbPath, [string]$Serial, [string]$Package) {
     $logs = (& $AdbPath -s $Serial logcat -d -v brief | Out-String)
-    $fatalForPackage = $logs -match ("(?is)(FATAL EXCEPTION|ANR in|Process:\s*" + [regex]::Escape($Package))
-    if ($fatalForPackage) {
+    $escapedPackage = [regex]::Escape($Package)
+    $fatalException = $logs -match ("(?is)FATAL EXCEPTION.*Process:\s*" + $escapedPackage)
+    $anrForPackage = $logs -match ("(?is)ANR in\s+" + $escapedPackage)
+    if ($fatalException -or $anrForPackage) {
         $logPath = Join-Path $artifactDir "logcat-failure.txt"
         $logs | Set-Content -Path $logPath -Encoding UTF8
         Fail "fatal exception/ANR marker detected after app launch. See artifacts/device-runtime-smoke/logcat-failure.txt."
