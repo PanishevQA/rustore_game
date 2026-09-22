@@ -13,7 +13,7 @@ It only sends a job to the local runner when all of the following are true:
 - the repository is exactly `PanishevQA/rustore_game`;
 - a runner is online with labels `self-hosted`, `windows`, `x64`, and `unity`.
 
-The job has read-only repository permissions and does not consume GitHub secrets. Push events run `scripts/agent_check.ps1 -Mode Unity -SkipFast`: hosted CI owns static validators and pure C# tests, while the Windows runner owns the real Unity gate. Manual dispatch likewise uses the selected `Unity`, `Full`, or `Build` mode with `-SkipFast`; run release builds only after hosted CI for that commit is green.
+The job has read-only repository permissions and does not consume GitHub secrets. Push events run the `Full` Unity gate with `-SkipFast`: hosted CI owns static validators and pure C# tests, while the Windows runner owns real Unity compilation/tests plus release-readiness validation. Manual dispatch supports `Unity`, `Full`, `Build`, or `AndroidIntegrationProbe`. The probe mode performs a Development APK build, EDM4U resolution, and `javap` verification of the resolved RuStore native Install Referrer AAR without requiring production signing secrets. Run production `Build` only after hosted CI for that commit is green.
 
 ## One-time Windows setup
 
@@ -39,14 +39,15 @@ Repository variables are non-secret configuration. Do not put passwords, keystor
 Every subsequent push to a branch matching `agent/**` that changes Unity/project/automation files will automatically:
 
 1. check out that exact commit into the runner workspace;
-2. validate the Windows/Unity/Python/.NET environment;
-3. run repository static validators and pure C# tests;
-4. launch Unity batchmode;
-5. compile project code;
-6. run EditMode tests;
-7. open and validate enabled scenes/prefabs/serialized references without saving them;
-8. collect logs and structured diagnostics;
-9. upload `artifacts/agent-check/**` and `artifacts/release-candidate/**` as a workflow artifact even when the job fails.
+2. validate the Windows/Unity/Python environment;
+3. launch Unity batchmode in the `Full` gate;
+4. compile project code and run Unity tests;
+5. validate enabled scenes/prefabs/serialized references without saving them;
+6. run release-readiness validation;
+7. collect logs and structured diagnostics;
+8. upload `artifacts/agent-check/**`, `artifacts/release-candidate/**`, and any Android integration-probe diagnostics as workflow artifacts even when the job fails.
+
+Static validators and pure C# tests remain on hosted CI and are intentionally skipped on the self-hosted job to avoid duplicating work.
 
 This gives the coding agent a real Unity feedback loop: commit -> local Unity -> logs -> fix -> new commit.
 
@@ -63,6 +64,15 @@ Because the repository is public:
 
 The static validator `scripts/validate_self_hosted_unity_runner.py` protects the main workflow security invariants.
 
+
+
+## Android integration / native AAR probe
+
+Use **Actions -> unity-self-hosted -> Run workflow -> AndroidIntegrationProbe** when changing RuStore Android dependencies, EDM4U configuration, or the native Install Referrer bridge.
+
+This mode builds a Development APK with debug signing, forces Android dependency resolution, and then inspects the actually resolved RuStore artifacts with the JDK `javap` tool. For Install Referrer Android 10.6.1 the verified binary contract is: client method `getInstallReferrerV2()`, result type `InstallReferrerV2`, and referrer-string getter `getInstallReferrer()`. Diagnostics are stored under `artifacts/android-integration-probe/**`.
+
+A passing integration probe verifies dependency resolution and the JVM API surface, but it does not replace the physical-device install/referral smoke test.
 
 ## Production AAB from the runner
 
