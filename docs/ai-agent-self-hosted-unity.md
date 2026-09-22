@@ -72,6 +72,8 @@ Build mode first runs all normal checks, PlayMode smoke, serialized validation, 
 
 A successful Build mode still does not replace a signed physical-device smoke test of RuStore Pay, Update, Review, ads, deeplinks, and referral flows.
 
+For signed Build mode, keep the release signing passwords only on the Windows runner account as user-scoped environment variables `NESBEISYA_KEYSTORE_PASS` and `NESBEISYA_KEYALIAS_PASS`. The build entrypoint injects them into Unity at runtime and never writes them to source control or logs. Restart the scheduled runner task after changing those environment variables so the runner process inherits the new values.
+
 
 ## Unity Personal and Windows service identity
 
