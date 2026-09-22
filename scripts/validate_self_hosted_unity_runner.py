@@ -8,6 +8,7 @@ OLD_WORKFLOW = ROOT / ".github/workflows/unity-agent-gate.yml"
 PREFLIGHT = ROOT / "scripts/verify_unity_runner_environment.ps1"
 RELEASE_CHECKS = ROOT / "scripts/run_release_candidate_checks.ps1"
 LOGON_TASK = ROOT / "scripts/install_unity_runner_logon_task.ps1"
+SIGNING_SETUP = ROOT / "scripts/configure_release_signing_runner.ps1"
 PORTABLE_PYTHON = ROOT / "scripts/bootstrap_portable_python.ps1"
 errors: list[str] = []
 
@@ -23,6 +24,7 @@ workflow = read(WORKFLOW)
 preflight = read(PREFLIGHT)
 release_checks = read(RELEASE_CHECKS)
 logon_task = read(LOGON_TASK)
+signing_setup = read(SIGNING_SETUP)
 portable_python = read(PORTABLE_PYTHON)
 
 if OLD_WORKFLOW.exists():
@@ -96,6 +98,22 @@ required_logon_task = (
 for marker in required_logon_task:
     if marker not in logon_task:
         errors.append(f"Unity licensed-user logon task helper is missing: {marker!r}")
+
+required_signing_setup = (
+    'Read-Host "Production keystore password" -AsSecureString',
+    'Read-Host "Production key-alias password" -AsSecureString',
+    '[Environment]::SetEnvironmentVariable("NESBEISYA_KEYSTORE_PASS"',
+    '[Environment]::SetEnvironmentVariable("NESBEISYA_KEYALIAS_PASS"',
+    '"User"',
+    'Join-Path $unityProject "user.keystore"',
+    'Copy-Item',
+    'Get-ScheduledTask -TaskName $TaskName',
+    'Start-ScheduledTask -TaskName $TaskName',
+    'Never paste signing passwords',
+)
+for marker in required_signing_setup:
+    if marker not in signing_setup:
+        errors.append(f"Release signing setup helper is incomplete: {marker!r}")
 
 for marker in required_preflight:
     if marker not in preflight:

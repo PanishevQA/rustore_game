@@ -448,17 +448,28 @@ def validate_production_identifiers() -> None:
 
 
 def validate_production_build_signing_contract() -> None:
-    text = read(UNITY / "Assets/Game/Editor/ProductionAndroidBuild.cs")
-    required = {
-        'NESBEISYA_KEYSTORE_PASS': "Production Android build must read the keystore password from the local runner environment.",
-        'NESBEISYA_KEYALIAS_PASS': "Production Android build must read the key-alias password from the local runner environment.",
+    build = read(UNITY / "Assets/Game/Editor/ProductionAndroidBuild.cs")
+    signing = read(UNITY / "Assets/Game/Editor/ProductionSigningRuntimeValidator.cs")
+
+    build_required = {
+        'ProductionSigningRuntimeValidator.EnsureReady();': "Production Android build must fail fast through the machine-local signing preflight.",
         'Environment.GetEnvironmentVariable': "Production Android build must load signing secrets at runtime instead of source control.",
         'PlayerSettings.Android.keystorePass = keystorePassword': "Production Android build must pass the runtime keystore password to Unity.",
         'PlayerSettings.Android.keyaliasPass = keyAliasPassword': "Production Android build must pass the runtime key-alias password to Unity.",
         'Never store these values in the repository or GitHub repository variables.': "Production build must document the signing-secret boundary in its failure message.",
     }
-    for needle, message in required.items():
-        if needle not in text:
+    for needle, message in build_required.items():
+        if needle not in build:
+            fail(message)
+
+    signing_required = {
+        'NESBEISYA_KEYSTORE_PASS': "Signing runtime guard must require the keystore password from the local runner environment.",
+        'NESBEISYA_KEYALIAS_PASS': "Signing runtime guard must require the key-alias password from the local runner environment.",
+        'PlayerSettings.Android.keystoreName': "Signing runtime guard must validate the configured keystore path.",
+        'File.Exists(resolved)': "Signing runtime guard must require the keystore file to exist on the build machine.",
+    }
+    for needle, message in signing_required.items():
+        if needle not in signing:
             fail(message)
 
 
@@ -472,6 +483,7 @@ def validate_release_readiness_reporter() -> None:
         "EditorUserBuildSettings.buildAppBundle = true",
         "ProductionReleaseVersionValidator.CollectErrors()",
         "ProductionPlaceholderValidator.CollectErrors()",
+        "ProductionSigningRuntimeValidator.CollectErrors()",
         "ProductionReleaseValidator.CollectErrors()",
         "RuStorePayReleaseContractValidator.CollectErrors()",
         "READY FOR SIGNED ANDROID DEVICE SMOKE TEST",

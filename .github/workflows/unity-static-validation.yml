@@ -20,7 +20,7 @@ jobs:
         shell: pwsh
         run: |
           $failed = $false
-          foreach ($path in @("scripts/agent_check.ps1", "scripts/run_release_candidate_checks.ps1", "scripts/verify_unity_runner_environment.ps1", "scripts/bootstrap_portable_python.ps1", "scripts/install_unity_runner_logon_task.ps1", "scripts/run_android_integration_probe.ps1", "scripts/probe_rustore_native_aar.ps1")) {
+          foreach ($path in @("scripts/agent_check.ps1", "scripts/run_release_candidate_checks.ps1", "scripts/verify_unity_runner_environment.ps1", "scripts/bootstrap_portable_python.ps1", "scripts/install_unity_runner_logon_task.ps1", "scripts/configure_release_signing_runner.ps1", "scripts/run_android_integration_probe.ps1", "scripts/probe_rustore_native_aar.ps1")) {
             $tokens = $null
             $errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors) | Out-Null
@@ -45,6 +45,8 @@ jobs:
         run: python scripts/validate_build_observability.py
       - name: Validate Android production build entrypoint
         run: python scripts/validate_android_release_build_entrypoint.py
+      - name: Validate production signing runtime guard
+        run: python scripts/validate_signing_runtime.py
       - name: Test release artifact integrity verifier
         run: python scripts/test_release_artifact_verifier.py
       - name: Test Unity log diagnostics parser

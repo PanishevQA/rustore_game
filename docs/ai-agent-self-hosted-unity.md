@@ -84,6 +84,12 @@ A successful Build mode still does not replace a signed physical-device smoke te
 
 For signed Build mode, keep the release signing passwords only on the Windows runner account as user-scoped environment variables `NESBEISYA_KEYSTORE_PASS` and `NESBEISYA_KEYALIAS_PASS`. The build entrypoint injects them into Unity at runtime and never writes them to source control or logs. Restart the scheduled runner task after changing those environment variables so the runner process inherits the new values.
 
+The repository provides an interactive helper that copies an existing production keystore into the ignored runner workspace path expected by Unity and prompts for both passwords using secure PowerShell input:
+
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\configure_release_signing_runner.ps1 -KeystoreSource "D:\secure\user.keystore"`
+
+The helper never accepts passwords as command-line arguments and never prints them. It stores only the two values as **user-scoped Windows environment variables**, then restarts the existing scheduled runner task so the next Unity process inherits them. Never paste signing passwords into chat, GitHub variables, repository files, or shell command arguments.
+
 
 ## Unity Personal and Windows service identity
 
