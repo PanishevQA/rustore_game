@@ -40,7 +40,7 @@ jobs:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
       # Release-readiness probe branch intentionally runs Full on push.
       # Licensed-user runner confirmed on Windows.
-      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'Full' }}
+      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'DeviceSmokeApk' }}
 
     steps:
       - name: Checkout trusted agent branch
@@ -67,6 +67,11 @@ jobs:
         if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_release_candidate_checks.ps1 -BuildSmokeApk
+
+      - name: Install signed device-smoke APK on connected Android device
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_signed_device_smoke_apk.ps1
 
       - name: Run Android integration and native AAR probe
         if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
