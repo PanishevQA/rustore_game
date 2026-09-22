@@ -350,7 +350,7 @@ def validate_release_preflight_contract() -> None:
         r'\"ru.rustore.pay\": \"11.1.0\"': "Production preflight must enforce RuStore Pay 11.1.0.",
         'HasLoadedRuStoreType("RuStoreRemoteConfigClient")': "Production preflight must require an actually loaded Remote Config Unity integration.",
         'ru.rustore.sdk:installreferrer:10.6.1': "Production preflight must require the native Install Referrer Android dependency.",
-        '"getInstallReferrerV2"': "Production preflight must validate the current native Install Referrer V2 bridge.",
+        '\\"getInstallReferrerV2\\"': "Production preflight must validate the current native Install Referrer V2 bridge.",
         'InstallReferrer = \\"10.6.1\\"': "Production preflight must protect the current Install Referrer target version.",
         'RemoteConfig = \\"10.5.1\\"': "Production preflight must protect the current Remote Config target version.",
         'android.permission.POST_NOTIFICATIONS': "Production preflight must protect the Daily reminder permission.",
