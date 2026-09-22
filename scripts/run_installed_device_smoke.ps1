@@ -96,7 +96,7 @@ function Assert-NoFatal([string]$AdbPath, [string]$Serial, [string]$Package) {
 $adb = Resolve-Adb
 $serial = Resolve-Device -AdbPath $adb
 
-Report "НЕ СБЕЙСЯ! — INSTALLED DEVICE RUNTIME SMOKE"
+Report "NESBEISYA - INSTALLED DEVICE RUNTIME SMOKE"
 Report ("Generated UTC: " + [DateTime]::UtcNow.ToString("o"))
 Report "ADB: $adb"
 Report "Device serial: $serial"
