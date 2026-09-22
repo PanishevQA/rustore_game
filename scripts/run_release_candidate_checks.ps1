@@ -2,7 +2,7 @@ param(
     [string]$UnityExe = $env:UNITY_EXE,
     [switch]$SkipReadiness,
     [switch]$BuildAab,
-    [int]$UnityStepTimeoutSeconds = 600,
+    [int]$UnityStepTimeoutSeconds = 900,
     [int]$BuildTimeoutSeconds = 1800
 )
 
