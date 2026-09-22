@@ -108,33 +108,33 @@ $height = [int]$Matches[2]
 & $adb -s $serial shell monkey -p $PackageName -c android.intent.category.LAUNCHER 1 | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail "launcher start failed." }
 Start-Sleep -Seconds 5
-$home = Capture -AdbPath $adb -Serial $serial -Name "01-home"
+$homeScreenshot = Capture -AdbPath $adb -Serial $serial -Name "01-home"
 
 $trainingX = [int]($width * 0.50)
 $trainingY = [int]($height * 0.715)
 & $adb -s $serial shell input tap $trainingX $trainingY | Out-Null
 Start-Sleep -Seconds 2
-$menu = Capture -AdbPath $adb -Serial $serial -Name "02-training-menu"
+$menuScreenshot = Capture -AdbPath $adb -Serial $serial -Name "02-training-menu"
 
 $startButtonX = [int]($width * 0.50)
 $startButtonY = [int]($height * 0.85)
 & $adb -s $serial shell input tap $startButtonX $startButtonY | Out-Null
 Start-Sleep -Milliseconds 700
-$visible = Capture -AdbPath $adb -Serial $serial -Name "03-route-visible"
+$routeVisibleScreenshot = Capture -AdbPath $adb -Serial $serial -Name "03-route-visible"
 
 # Easy display is currently 3.5s plus the 3/2/1 countdown. Six seconds reliably lands in Drawing.
 Start-Sleep -Seconds 6
-$drawing = Capture -AdbPath $adb -Serial $serial -Name "04-drawing-ready"
+$drawingScreenshot = Capture -AdbPath $adb -Serial $serial -Name "04-drawing-ready"
 
-$cyan = Find-Marker -ImagePath $drawing -Kind "cyan"
-$yellow = Find-Marker -ImagePath $drawing -Kind "yellow"
+$cyan = Find-Marker -ImagePath $drawingScreenshot -Kind "cyan"
+$yellow = Find-Marker -ImagePath $drawingScreenshot -Kind "yellow"
 Write-Host "Detected cyan start: $($cyan.X),$($cyan.Y) pixels=$($cyan.Count)"
 Write-Host "Detected yellow end: $($yellow.X),$($yellow.Y) pixels=$($yellow.Count)"
 
 & $adb -s $serial shell input swipe $($cyan.X) $($cyan.Y) $($yellow.X) $($yellow.Y) 1200 | Out-Null
 if ($LASTEXITCODE -ne 0) { Fail "adb training swipe failed." }
 Start-Sleep -Seconds 3
-$result = Capture -AdbPath $adb -Serial $serial -Name "05-result"
+$resultScreenshot = Capture -AdbPath $adb -Serial $serial -Name "05-result"
 
 $logs = (& $adb -s $serial logcat -d -v threadtime | Out-String)
 $logs | Set-Content -Path (Join-Path $artifactDir "logcat.txt") -Encoding UTF8
