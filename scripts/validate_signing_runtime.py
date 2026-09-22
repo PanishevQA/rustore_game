@@ -44,7 +44,8 @@ if 'new Section("Production signing runtime", ProductionSigningRuntimeValidator.
 for marker in (
     "NESBEISYA_KEYSTORE_PASS",
     "NESBEISYA_KEYALIAS_PASS",
-    "secret",
+    "Секреты, keystore и пароли не коммитятся.",
+    "Значения нельзя добавлять в репозиторий, документацию или логи.",
 ):
     if marker not in doc:
         errors.append(f"Android release build documentation is missing signing-runtime guidance: {marker!r}.")
