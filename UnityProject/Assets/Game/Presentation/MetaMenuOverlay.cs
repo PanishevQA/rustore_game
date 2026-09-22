@@ -331,32 +331,65 @@ namespace DontGetSidetracked.Presentation
             bool interactable = !_storeBusy && !_catalogLoading && hasPrice && !owned;
             Color accent = owned ? ReleaseUiComponents.Success
                 : hero ? ReleaseUiComponents.Cyan : ReleaseUiComponents.Violet;
-            Transform card = AddLayoutCard(hero ? "PremiumOffer" : "StoreProduct", hero ? 192 : 176, accent, hero);
+            Transform card = AddLayoutCard(hero ? "PremiumOffer" : "StoreProduct", hero ? 204 : 182, accent, hero);
             Button button = card.gameObject.AddComponent<Button>();
             ConfigureCardButton(button, card.GetComponent<Image>(), interactable, () => Purchase(productId));
 
+            if (hero)
+            {
+                Image badge = ReleaseUiComponents.GlassCard(card, "PremiumBadge",
+                    new Vector2(0.225f, 0.755f), new Vector2(0.425f, 0.925f), ReleaseUiComponents.Cyan, false);
+                badge.color = new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.12f);
+                ReleaseUiKit.TextBlock(badge.transform, "Label", "PREMIUM", 15, TextAnchor.MiddleCenter,
+                    Vector2.zero, Vector2.one, ReleaseUiComponents.Cyan, FontStyle.Bold);
+            }
+
             Image iconWell = ReleaseUiComponents.GlassCard(card, "ProductIconWell",
-                new Vector2(0.030f, 0.19f), new Vector2(0.190f, 0.81f), accent, false);
-            iconWell.color = new Color(accent.r, accent.g, accent.b, hero ? 0.16f : 0.10f);
+                new Vector2(0.030f, hero ? 0.17f : 0.19f), new Vector2(0.190f, hero ? 0.83f : 0.81f), accent, false);
+            iconWell.color = new Color(accent.r, accent.g, accent.b, hero ? 0.17f : 0.10f);
             ReleaseUiComponents.Icon(iconWell.transform, "ProductIcon", ProductIcon(productId),
                 new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f));
-            ReleaseUiKit.TextBlock(card, "ProductTitle", ProductLabel(productId), 32, TextAnchor.MiddleLeft,
-                new Vector2(0.225f, 0.57f), new Vector2(0.72f, 0.89f), ReleaseUiComponents.Text, FontStyle.Bold);
-            Text description = ReleaseUiKit.TextBlock(card, "ProductSubtitle", ProductSubtitle(productId), 24, TextAnchor.UpperLeft,
-                new Vector2(0.225f, 0.12f), new Vector2(0.70f, 0.55f), ReleaseUiComponents.Muted);
+
+            float titleBottom = hero ? 0.50f : 0.57f;
+            float titleTop = hero ? 0.76f : 0.89f;
+            ReleaseUiKit.TextBlock(card, "ProductTitle", ProductLabel(productId), hero ? 34 : 31, TextAnchor.MiddleLeft,
+                new Vector2(0.225f, titleBottom), new Vector2(0.70f, titleTop),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+
+            Text description = ReleaseUiKit.TextBlock(card, "ProductSubtitle", ProductSubtitle(productId), hero ? 23 : 22,
+                TextAnchor.UpperLeft, new Vector2(0.225f, 0.12f), new Vector2(0.69f, hero ? 0.49f : 0.55f),
+                ReleaseUiComponents.Muted);
             description.horizontalOverflow = HorizontalWrapMode.Wrap;
+
             string price = owned ? "КУПЛЕНО" : _catalogLoading ? "Загрузка…" : !hasPrice ? "Недоступно" : product.PriceLabel;
-            ReleaseUiKit.TextBlock(card, "ProductPrice", price, owned || !hasPrice ? 24 : 30, TextAnchor.MiddleCenter,
-                new Vector2(0.73f, 0.29f), new Vector2(0.97f, 0.75f),
-                owned ? ReleaseUiComponents.Success : hasPrice ? ReleaseUiComponents.Gold : ReleaseUiComponents.Muted,
-                FontStyle.Bold);
+            Color priceAccent = owned ? ReleaseUiComponents.Success
+                : hasPrice ? ReleaseUiComponents.Gold : ReleaseUiComponents.Muted;
+            Image pricePill = ReleaseUiComponents.GlassCard(card, "ProductPricePill",
+                new Vector2(0.735f, hero ? 0.28f : 0.30f), new Vector2(0.965f, hero ? 0.74f : 0.72f),
+                priceAccent, false);
+            pricePill.color = new Color(priceAccent.r, priceAccent.g, priceAccent.b, owned ? 0.12f : 0.09f);
+            ReleaseUiKit.TextBlock(pricePill.transform, "ProductPrice", price, owned || !hasPrice ? 21 : 27,
+                TextAnchor.MiddleCenter, new Vector2(0.06f, 0.10f), new Vector2(0.94f, 0.90f),
+                priceAccent, FontStyle.Bold);
         }
 
         private void AddStoreSectionLabel(string label, Color accent)
         {
-            Transform root = AddLayoutRoot("StoreSection", 48);
-            ReleaseUiKit.TextBlock(root, "Label", label, 26, TextAnchor.MiddleLeft,
-                new Vector2(0.02f, 0.02f), new Vector2(0.98f, 0.98f), accent, FontStyle.Bold);
+            Transform root = AddLayoutRoot("StoreSection", 54);
+            Image dash = ReleaseUiKit.Rect(root, "AccentDash",
+                new Vector2(0.018f, 0.25f), new Vector2(0.030f, 0.75f)).gameObject.AddComponent<Image>();
+            dash.sprite = ReleaseUiKit.Rounded;
+            dash.type = Image.Type.Sliced;
+            dash.color = accent;
+            dash.raycastTarget = false;
+
+            ReleaseUiKit.TextBlock(root, "Label", label, 24, TextAnchor.MiddleLeft,
+                new Vector2(0.050f, 0.02f), new Vector2(0.70f, 0.98f), accent, FontStyle.Bold);
+
+            Image line = ReleaseUiKit.Rect(root, "SectionLine",
+                new Vector2(0.70f, 0.48f), new Vector2(0.98f, 0.52f)).gameObject.AddComponent<Image>();
+            line.color = new Color(accent.r, accent.g, accent.b, 0.22f);
+            line.raycastTarget = false;
         }
 
         private void AddStoreProductIfPresent(IReadOnlyList<StoreProduct> products, string productId)
@@ -769,9 +802,21 @@ namespace DontGetSidetracked.Presentation
                 ? new Color(0.035f, 0.085f, 0.145f, 0.99f)
                 : new Color(0.020f, 0.055f, 0.100f, 0.97f);
 
+            Shadow shadow = root.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, strong ? 0.38f : 0.28f);
+            shadow.effectDistance = new Vector2(0f, strong ? -8f : -5f);
+            shadow.useGraphicAlpha = true;
+
             Outline outline = root.gameObject.AddComponent<Outline>();
             outline.effectColor = new Color(accent.r, accent.g, accent.b, strong ? 0.42f : 0.22f);
             outline.effectDistance = strong ? new Vector2(3f, -3f) : new Vector2(2f, -2f);
+
+            Image rim = ReleaseUiKit.Rect(root, "TopRim",
+                new Vector2(0.035f, 0.965f), new Vector2(0.965f, 0.990f)).gameObject.AddComponent<Image>();
+            rim.sprite = ReleaseUiKit.Rounded;
+            rim.type = Image.Type.Sliced;
+            rim.color = new Color(accent.r, accent.g, accent.b, strong ? 0.34f : 0.16f);
+            rim.raycastTarget = false;
             return root;
         }
 
