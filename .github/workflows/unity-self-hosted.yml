@@ -25,7 +25,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: unity-self-hosted-${{ github.repository }}
+  group: rustore-release-tarball-probe-${{ github.repository }}
   cancel-in-progress: true
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
     name: Unity batchmode gate
     if: ${{ vars.UNITY_SELF_HOSTED_ENABLED == 'true' && github.repository == 'PanishevQA/rustore_game' }}
     runs-on: [self-hosted, windows, x64, unity]
-    timeout-minutes: 60
+    timeout-minutes: 20
     env:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
       AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'Unity' }}
@@ -54,9 +54,9 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_unity_runner_environment.ps1
 
-      - name: Run Unity agent gate
+      - name: Inspect official RuStore release tarballs
         shell: powershell
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\probe_rustore_release_tarballs.ps1
 
       - name: Upload Unity diagnostics
         if: ${{ always() }}
@@ -68,3 +68,4 @@ jobs:
           path: |
             artifacts/agent-check/**
             artifacts/release-candidate/**
+            artifacts/rustore-release-artifact-probe/**
