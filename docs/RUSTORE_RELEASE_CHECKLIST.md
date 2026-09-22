@@ -19,6 +19,7 @@
 - [ ] Release build — AAB, IL2CPP, ARM64, положительный versionCode.
 - [ ] Включён custom production keystore и выбран production key alias; debug/default signing не используется.
 - [ ] Keystore/passwords не закоммичены в репозиторий.
+- [ ] На self-hosted Windows runner заданы user-scoped environment variables `NESBEISYA_KEYSTORE_PASS` и `NESBEISYA_KEYALIAS_PASS`; после изменения переменных runner task перезапущен. Значения не добавляются в GitHub repository variables/secrets и не выводятся в лог.
 
 ## Install Referrer / Remote Config
 
