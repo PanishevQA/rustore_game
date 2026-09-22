@@ -69,6 +69,11 @@ required_preflight = (
     "UNITY_EXE",
     "10GB",
     "agent_check.ps1",
+    "UnityStepTimeoutSeconds",
+    "BuildTimeoutSeconds",
+    "taskkill.exe /PID",
+    "WaitForExit",
+    "timed out after",
 )
 
 required_logon_task = (
