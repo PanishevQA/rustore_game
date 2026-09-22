@@ -22,7 +22,7 @@ The job has read-only repository permissions and does not consume GitHub secrets
 3. Choose **Windows / x64**.
 4. Use the download and registration commands shown by GitHub on that page. Do not copy a registration token into this repository or into chat; registration tokens are temporary credentials.
 5. During runner configuration, add the custom label `unity`. The normal GitHub runner also receives the default labels `self-hosted`, `windows`, and `x64`.
-6. Configure the runner application as a Windows service so it starts with the machine. Use the service instructions shown by GitHub for the runner package you installed.
+6. Register the runner normally, but for Unity Personal do not keep it running under a built-in Windows service identity. After registration, use the repository helper described below to run it under the Unity-licensed interactive Windows user.
 7. Make sure this Windows account can start Unity `6000.3.24f1` in batchmode and that Unity licensing is already valid for that account.
 8. Make sure the machine has:
    - Unity `6000.3.24f1`;
@@ -98,8 +98,11 @@ The helper:
 - stops and disables the old GitHub Actions Windows service;
 - keeps the existing runner registration and credentials;
 - creates a Windows Scheduled Task for the current user;
-- launches the official C:\actions-runner\run.cmd at user logon;
+- writes a small watchdog beside the runner in `C:\actions-runner\run-unity-runner-forever.ps1`;
+- launches that watchdog at user logon;
+- restarts the official `run.cmd` automatically if the runner exits after a network/update interruption;
+- writes restart events to `C:\actions-runner\_diag\unity-runner-watchdog.log`;
 - starts the task immediately;
 - stores no Windows password in the repository or command line.
 
-This keeps the runner unattended after login while ensuring Unity batchmode runs in the same user profile that owns the Unity Personal entitlement.
+This keeps the runner unattended after login while ensuring Unity batchmode runs in the same user profile that owns the Unity Personal entitlement, and prevents a normal runner exit from leaving future jobs queued indefinitely.
