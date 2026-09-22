@@ -128,6 +128,10 @@ if ($dump -match "\bDEBUGGABLE\b") {
 Report "Version: $ExpectedVersionName ($ExpectedVersionCode)"
 Report "Release flag: non-debuggable PASS"
 
+& $adb -s $serial shell input keyevent KEYCODE_WAKEUP | Out-Null
+& $adb -s $serial shell wm dismiss-keyguard | Out-Null
+Start-Sleep -Seconds 1
+
 & $adb -s $serial shell am force-stop $PackageName | Out-Null
 & $adb -s $serial logcat -c | Out-Null
 & $adb -s $serial shell monkey -p $PackageName -c android.intent.category.LAUNCHER 1 | Out-Null
@@ -139,6 +143,14 @@ if ([string]::IsNullOrWhiteSpace($appPid)) { Fail "app process is not alive afte
 Report "Launcher start: PASS (pid $appPid)"
 Assert-NoFatal -AdbPath $adb -Serial $serial -Package $PackageName
 Report "Immediate crash/ANR scan: PASS"
+
+$windowDump = (& $adb -s $serial shell dumpsys window | Out-String)
+if ($windowDump -notmatch [regex]::Escape($PackageName)) {
+    $focusPath = Join-Path $artifactDir "window-focus.txt"
+    $windowDump | Set-Content -Path $focusPath -Encoding UTF8
+    Fail "game is running but is not visible in the foreground. Unlock the device and keep the screen on; see artifacts/device-runtime-smoke/window-focus.txt."
+}
+Report "Foreground package ownership: PASS"
 
 $remoteScreenshot = "/sdcard/nesbeisya-runtime-smoke.png"
 $localScreenshot = Join-Path $artifactDir "launcher-screen.png"
