@@ -23,6 +23,7 @@ on:
           - DeviceSmokeApk
           - DeviceGameplayPrepare
           - DeviceGameplayFinish
+          - DeviceGameplayCycle
           - AndroidIntegrationProbe
 
 permissions:
@@ -42,7 +43,7 @@ jobs:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
       # Release-readiness probe branch intentionally runs Full on push.
       # Licensed-user runner confirmed on Windows.
-      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'DeviceGameplayFinish' }}
+      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'DeviceGameplayCycle' }}
 
     steps:
       - name: Checkout trusted agent branch
@@ -61,7 +62,7 @@ jobs:
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_unity_runner_environment.ps1
 
       - name: Run Unity agent gate
-        if: ${{ env.AGENT_CHECK_MODE != 'AndroidIntegrationProbe' && env.AGENT_CHECK_MODE != 'DeviceSmokeApk' && env.AGENT_CHECK_MODE != 'DeviceGameplayPrepare' && env.AGENT_CHECK_MODE != 'DeviceGameplayFinish' }}
+        if: ${{ env.AGENT_CHECK_MODE != 'AndroidIntegrationProbe' && env.AGENT_CHECK_MODE != 'DeviceSmokeApk' && env.AGENT_CHECK_MODE != 'DeviceGameplayPrepare' && env.AGENT_CHECK_MODE != 'DeviceGameplayFinish' && env.AGENT_CHECK_MODE != 'DeviceGameplayCycle' }}
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast
 
@@ -79,6 +80,11 @@ jobs:
         if: ${{ env.AGENT_CHECK_MODE == 'DeviceGameplayFinish' }}
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\finish_training_device_smoke.ps1
+
+      - name: Run complete physical Training gameplay cycle
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceGameplayCycle' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_training_gameplay_cycle.ps1
 
       - name: Run Android integration and native AAR probe
         if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
