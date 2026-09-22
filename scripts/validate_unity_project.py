@@ -232,6 +232,21 @@ def validate_local_notification_contract() -> None:
             fail(message)
 
 
+def validate_mobile_safe_area_contract() -> None:
+    text = read(UNITY / "Assets/Game/Presentation/MobileUiCoordinator.cs")
+    required = {
+        "NormalizeSafeArea(rawSafe, width, height, out bool usedFallback)": "Mobile UI must normalize the raw Android safe area before applying anchors.",
+        "Mathf.Clamp(safe.xMin, 0f, width)": "Safe area xMin must be clamped to the render surface.",
+        "Mathf.Clamp(safe.xMax, 0f, width)": "Safe area xMax must be clamped to the render surface.",
+        "MinimumSafeAreaScreenFraction": "Safe area must reject implausibly small vendor/runtime rectangles.",
+        "return new Rect(0f, 0f, width, height);": "Invalid safe area must fall back to the full render surface.",
+        "Screen.safeArea was invalid or implausibly small": "Invalid safe area fallback must leave a diagnostic breadcrumb.",
+    }
+    for needle, message in required.items():
+        if needle not in text:
+            fail(message)
+
+
 def validate_required_runtime_files() -> None:
     paths = (
         "Assets/Game/Presentation/GameBootstrap.cs",
@@ -551,6 +566,7 @@ def main() -> int:
     validate_android_manifest()
     validate_share_path_alignment()
     validate_local_notification_contract()
+    validate_mobile_safe_area_contract()
     validate_required_runtime_files()
     validate_playmode_smoke_contract()
     validate_agent_serialized_project_validator()
