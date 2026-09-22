@@ -14,7 +14,7 @@
 - [ ] Цена в UI берётся только из каталога Pay SDK.
 - [ ] RuStore Pay остаётся на актуальной версии `11.1.0`; перед production/device smoke подтверждено, что SDK использует новую платежную инфраструктуру с `paymentBaseUrl = api-m.rustore.ru` согласно уведомлению RuStore от 2026-09-17.
 - [ ] Старый Billing SDK/BillingClient integration отсутствует.
-- [ ] Scoped npm registry — `https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/`; Maven registry — `https://nexus-external.vkteam.ru/repository/maven-rustore-exposed`; старые `artifactory-external.vkpartner.ru` и `nexus-external.rustore.ru` отсутствуют.
+- [ ] Unity scoped npm registry для текущего baseline — `https://nexus-external.vkteam.ru/repository/npm-unity-rustore-exposed/`; нативный Install Referrer использует официальный Maven `https://nexus-external.rustore.ru/repository/maven-rustore-exposed`; запрещён только устаревший `artifactory-external.vkpartner.ru`. Перед production build повторно сверить переходные registry URL с актуальными страницами конкретных SDK.
 - [ ] `OptionalBackendBaseUrl` остаётся пустым: production MVP не требует собственного backend/DB.
 - [ ] Production preflight проходит без placeholder package name, пустого Remote Config App ID и demo ad IDs.
 - [ ] Release build — AAB, IL2CPP, ARM64, положительный versionCode.
