@@ -1,0 +1,76 @@
+name: release-skin-screen-audit
+
+on:
+  push:
+    branches:
+      - 'agent/release-skin-screen-audit/**'
+    paths:
+      - '.github/workflows/release-skin-screen-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: [self-hosted, windows, x64, unity]
+    timeout-minutes: 15
+    steps:
+      - name: Capture installed release-skin screens
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $serial = ((& $adbExe devices) | Where-Object { $_ -match "^([^\s]+)\s+device\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
+          if ([string]::IsNullOrWhiteSpace($serial)) { throw "No authorized Android device found." }
+
+          $out = Join-Path $PWD "release-skin-audit"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          function Wake {
+            & $adbExe -s $serial shell input keyevent KEYCODE_WAKEUP | Out-Null
+            & $adbExe -s $serial shell wm dismiss-keyguard | Out-Null
+          }
+          function FreshHome {
+            Wake
+            & $adbExe -s $serial shell am force-stop ru.release.nesbeisya | Out-Null
+            & $adbExe -s $serial shell monkey -p ru.release.nesbeisya -c android.intent.category.LAUNCHER 1 | Out-Host
+            Start-Sleep -Seconds 6
+          }
+          function Shot([string]$Name) {
+            $remote = "/sdcard/nesbeisya-$Name.png"
+            & $adbExe -s $serial shell screencap -p $remote
+            & $adbExe -s $serial pull $remote (Join-Path $out "$Name.png") | Out-Host
+            & $adbExe -s $serial shell rm $remote | Out-Null
+          }
+          function OpenAndShot([string]$Name,[int]$X,[int]$Y) {
+            FreshHome
+            & $adbExe -s $serial shell input tap $X $Y
+            Start-Sleep -Seconds 3
+            Shot $Name
+          }
+
+          FreshHome
+          Shot "01-home"
+          OpenAndShot "02-daily" 540 950
+          OpenAndShot "03-campaign" 540 1330
+          OpenAndShot "04-training" 540 1510
+          OpenAndShot "05-rating" 540 1700
+          OpenAndShot "06-store" 540 1880
+
+          $appPid = ((& $adbExe -s $serial shell pidof ru.release.nesbeisya) | Out-String).Trim()
+          @(
+            "ReleaseSkinScreenAudit=PASS",
+            "Serial=$serial",
+            "Pid=$appPid"
+          ) | Set-Content -Path (Join-Path $out "report.txt") -Encoding UTF8
+
+      - name: Upload screen audit
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-skin-screen-audit-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: release-skin-audit/**
