@@ -227,8 +227,8 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.055f, 0.922f), new Vector2(0.255f, 0.972f),
                 ReleaseUiComponents.Cyan, false);
             hintPill.color = new Color(0.020f, 0.060f, 0.110f, 0.96f);
-            ReleaseUiKit.TextBlock(hintPill.transform, "Bolt", "⚡", 28, TextAnchor.MiddleCenter,
-                new Vector2(0.04f, 0.08f), new Vector2(0.30f, 0.92f), ReleaseUiComponents.Cyan, FontStyle.Bold);
+            ReleaseUiComponents.Icon(hintPill.transform, "HintIcon", GeneratedUiAssets.HintIcon,
+                new Vector2(0.055f, 0.18f), new Vector2(0.295f, 0.82f));
             _hintsValue = ReleaseUiKit.TextBlock(hintPill.transform, "Value", "0", 25, TextAnchor.MiddleCenter,
                 new Vector2(0.30f, 0.08f), new Vector2(0.66f, 0.92f), ReleaseUiComponents.Text, FontStyle.Bold);
             Button hintPlus = ReleaseUiComponents.SecondaryButton(hintPill.transform, "Plus", "+",
@@ -284,9 +284,8 @@ namespace DontGetSidetracked.Presentation
             Image streak = ReleaseUiComponents.GlassCard(parent, "StreakCard",
                 new Vector2(0.055f, 0.495f), new Vector2(0.485f, 0.600f),
                 ReleaseUiComponents.Gold, false);
-            ReleaseUiKit.TextBlock(streak.transform, "Icon", "🔥", 30, TextAnchor.MiddleCenter,
-                new Vector2(0.055f, 0.40f), new Vector2(0.28f, 0.88f),
-                ReleaseUiComponents.Gold, FontStyle.Bold);
+            ReleaseUiComponents.Icon(streak.transform, "Icon", GeneratedUiAssets.DailyIcon,
+                new Vector2(0.070f, 0.30f), new Vector2(0.255f, 0.82f));
             ReleaseUiKit.TextBlock(streak.transform, "Label", "СЕРИЯ ДНЕЙ", 17, TextAnchor.MiddleLeft,
                 new Vector2(0.30f, 0.55f), new Vector2(0.94f, 0.88f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
@@ -297,9 +296,8 @@ namespace DontGetSidetracked.Presentation
             Image best = ReleaseUiComponents.GlassCard(parent, "BestCard",
                 new Vector2(0.515f, 0.495f), new Vector2(0.945f, 0.600f),
                 ReleaseUiComponents.Cyan, false);
-            ReleaseUiKit.TextBlock(best.transform, "Icon", "🏆", 30, TextAnchor.MiddleCenter,
-                new Vector2(0.055f, 0.40f), new Vector2(0.28f, 0.88f),
-                ReleaseUiComponents.Gold, FontStyle.Bold);
+            ReleaseUiComponents.Icon(best.transform, "Icon", GeneratedUiAssets.StarFilled,
+                new Vector2(0.070f, 0.30f), new Vector2(0.255f, 0.82f));
             ReleaseUiKit.TextBlock(best.transform, "Label", "ЛУЧШИЙ РЕЗУЛЬТАТ", 16, TextAnchor.MiddleLeft,
                 new Vector2(0.30f, 0.55f), new Vector2(0.94f, 0.88f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
