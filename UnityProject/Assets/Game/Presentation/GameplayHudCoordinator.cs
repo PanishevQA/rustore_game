@@ -5,12 +5,14 @@ using UnityEngine.UI;
 namespace DontGetSidetracked.Presentation
 {
     /// <summary>
-    /// Release gameplay HUD. Mirrors the bootstrap title/status into a cleaner hierarchy
-    /// without owning round state or input.
+    /// Target release gameplay chrome. Presentation-only: GameBootstrap keeps ownership
+    /// of route generation, round state, input sampling and scoring.
     /// </summary>
     [DefaultExecutionOrder(16000)]
     public sealed class GameplayHudCoordinator : MonoBehaviour
     {
+        public static bool IsGameplayPaused { get; private set; }
+
         private GameBootstrap _bootstrap;
         private Text _legacyTitle;
         private Text _legacyStatus;
@@ -19,11 +21,23 @@ namespace DontGetSidetracked.Presentation
         private CanvasGroup _legacyStatusGroup;
 
         private CanvasGroup _hudGroup;
-        private Text _mode;
         private Text _instruction;
         private Text _hint;
         private Text _countdown;
+        private GameObject _progressRoot;
+        private Image _progressFill;
+        private Text _phaseText;
+        private Button _pauseButton;
+        private GameObject _pauseOverlay;
+        private Image _startMarker;
+        private Image _endMarker;
         private float _nextResolve;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetPauseState()
+        {
+            IsGameplayPaused = false;
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoStart()
@@ -58,10 +72,16 @@ namespace DontGetSidetracked.Presentation
             }
             else
             {
+                if (IsGameplayPaused) ResumeFromPause();
                 ApplyRestingBoardLayout(result);
                 SetHudVisible(false);
                 if (!plainHome && !result) SetLegacyVisible(true);
             }
+        }
+
+        private void OnDisable()
+        {
+            IsGameplayPaused = false;
         }
 
         private void ResolveAndBuild()
@@ -74,6 +94,8 @@ namespace DontGetSidetracked.Presentation
             _legacyTitle = Find<Text>(gameCanvas.transform, "Title");
             _legacyStatus = Find<Text>(gameCanvas.transform, "Status");
             _playArea = Find<RectTransform>(gameCanvas.transform, "PlayArea");
+            _startMarker = Find<Image>(gameCanvas.transform, "Start");
+            _endMarker = Find<Image>(gameCanvas.transform, "End");
             if (_legacyTitle == null || _legacyStatus == null || _playArea == null) return;
 
             _legacyTitleGroup = EnsureCanvasGroup(_legacyTitle.gameObject);
@@ -83,10 +105,14 @@ namespace DontGetSidetracked.Presentation
             if (existing != null)
             {
                 _hudGroup = existing.GetComponent<CanvasGroup>();
-                _mode = Find<Text>(existing, "Mode");
                 _instruction = Find<Text>(existing, "Instruction");
                 _hint = Find<Text>(existing, "Hint");
                 _countdown = Find<Text>(existing, "Countdown");
+                _phaseText = Find<Text>(existing, "Phase");
+                _progressFill = Find<Image>(existing, "ProgressFill");
+                _progressRoot = FindTransform(existing, "ProgressTrack")?.gameObject;
+                _pauseButton = Find<Button>(existing, "PauseButton");
+                _pauseOverlay = FindTransform(existing, "PauseOverlay")?.gameObject;
                 return;
             }
 
@@ -101,68 +127,175 @@ namespace DontGetSidetracked.Presentation
             root.transform.SetAsLastSibling();
             _hudGroup = root.GetComponent<CanvasGroup>();
 
-            // One compact header instead of two stacked dashboard cards. The board is the
-            // hero of this screen; chrome should explain the phase without competing with it.
-            Image header = ReleaseUiComponents.GlassCard(root.transform, "GameplayHeader",
-                new Vector2(0.055f, 0.845f), new Vector2(0.945f, 0.955f),
-                ReleaseUiComponents.Cyan, true);
+            BuildProgress(root.transform);
+            BuildPauseButton(root.transform);
 
-            _mode = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЖИМ", 26,
-                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.72f), new Vector2(0.92f, 0.94f),
-                ReleaseUiComponents.Cyan, FontStyle.Bold);
+            _instruction = ReleaseUiKit.TextBlock(
+                root.transform,
+                "Instruction",
+                "ЗАПОМНИ МАРШРУТ!",
+                42,
+                TextAnchor.MiddleCenter,
+                new Vector2(0.12f, 0.790f),
+                new Vector2(0.88f, 0.855f),
+                ReleaseUiComponents.Text,
+                FontStyle.Bold);
+            ReleaseUiKit.AddTextShadow(_instruction, 0.50f, -3f);
 
-            _instruction = ReleaseUiKit.TextBlock(header.transform, "Instruction", "ЗАПОМНИ МАРШРУТ", 46,
-                TextAnchor.MiddleCenter, new Vector2(0.05f, 0.30f), new Vector2(0.95f, 0.74f),
-                ReleaseUiComponents.Text, FontStyle.Bold);
-            ReleaseUiKit.AddTextShadow(_instruction, 0.42f, -2f);
-
-            Transform metrics = ReleaseUiKit.Rect(header.transform, "GameplayMetrics",
-                new Vector2(0.06f, 0.055f), new Vector2(0.94f, 0.30f));
-            ReleaseUiKit.TextBlock(metrics, "Memory", "ЗАПОМНИ", 22,
-                TextAnchor.MiddleLeft, new Vector2(0.00f, 0f), new Vector2(0.30f, 1f),
-                ReleaseUiComponents.Cyan, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(metrics, "Gesture", "1 ДВИЖЕНИЕ", 22,
-                TextAnchor.MiddleCenter, new Vector2(0.30f, 0f), new Vector2(0.70f, 1f),
-                ReleaseUiComponents.Muted, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(metrics, "Rule", "НЕ ОТРЫВАЙ", 22,
-                TextAnchor.MiddleRight, new Vector2(0.70f, 0f), new Vector2(1.00f, 1f),
-                ReleaseUiComponents.Muted, FontStyle.Bold);
-
-            // Instruction lives below the board, never over it.
-            Image hintCard = ReleaseUiComponents.GlassCard(root.transform, "GameplayInstruction",
-                new Vector2(0.055f, 0.050f), new Vector2(0.945f, 0.135f),
-                ReleaseUiComponents.Blue, false);
-            ReleaseUiComponents.Icon(hintCard.transform, "Eye", GeneratedUiAssets.EyeIcon,
-                new Vector2(0.035f, 0.22f), new Vector2(0.14f, 0.78f));
-            _hint = ReleaseUiKit.TextBlock(hintCard.transform, "Hint", "Запомни форму и повороты маршрута", 26,
-                TextAnchor.MiddleLeft, new Vector2(0.17f, 0.08f), new Vector2(0.95f, 0.92f),
-                ReleaseUiComponents.Text, FontStyle.Bold);
-
-            _countdown = ReleaseUiKit.TextBlock(root.transform, "Countdown", string.Empty, 132,
-                TextAnchor.MiddleCenter, new Vector2(0.34f, 0.49f), new Vector2(0.66f, 0.64f),
-                ReleaseUiComponents.Cyan, FontStyle.Bold);
+            _countdown = ReleaseUiKit.TextBlock(
+                root.transform,
+                "Countdown",
+                string.Empty,
+                94,
+                TextAnchor.MiddleCenter,
+                new Vector2(0.35f, 0.710f),
+                new Vector2(0.65f, 0.790f),
+                ReleaseUiComponents.Cyan,
+                FontStyle.Bold);
             ReleaseUiKit.AddTextShadow(_countdown, 0.64f, -5f);
 
+            _hint = ReleaseUiKit.TextBlock(
+                root.transform,
+                "Hint",
+                "Скоро он исчезнет…",
+                21,
+                TextAnchor.MiddleCenter,
+                new Vector2(0.10f, 0.105f),
+                new Vector2(0.90f, 0.155f),
+                ReleaseUiComponents.Muted,
+                FontStyle.Normal);
+
+            BuildPauseOverlay(root.transform);
             SetHudVisible(false);
+        }
+
+        private void BuildProgress(Transform parent)
+        {
+            Transform trackRoot = ReleaseUiKit.Rect(parent, "ProgressTrack",
+                new Vector2(0.30f, 0.925f), new Vector2(0.70f, 0.934f));
+            Image track = trackRoot.gameObject.AddComponent<Image>();
+            track.sprite = ReleaseUiKit.Rounded;
+            track.type = Image.Type.Sliced;
+            track.color = new Color(0.12f, 0.18f, 0.28f, 0.92f);
+            track.raycastTarget = false;
+            _progressRoot = trackRoot.gameObject;
+
+            Transform fillRoot = ReleaseUiKit.Rect(trackRoot, "ProgressFill", Vector2.zero, Vector2.one);
+            _progressFill = fillRoot.gameObject.AddComponent<Image>();
+            _progressFill.sprite = ReleaseUiKit.Rounded;
+            _progressFill.type = Image.Type.Sliced;
+            _progressFill.color = ReleaseUiComponents.Blue;
+            _progressFill.raycastTarget = false;
+            _progressFill.rectTransform.anchorMax = new Vector2(0.34f, 1f);
+
+            _phaseText = ReleaseUiKit.TextBlock(parent, "Phase", "1 / 3", 18,
+                TextAnchor.MiddleCenter, new Vector2(0.39f, 0.885f), new Vector2(0.61f, 0.920f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
+        }
+
+        private void BuildPauseButton(Transform parent)
+        {
+            _pauseButton = ReleaseUiComponents.SecondaryButton(
+                parent,
+                "PauseButton",
+                string.Empty,
+                new Vector2(0.845f, 0.875f),
+                new Vector2(0.935f, 0.945f),
+                PauseGameplay,
+                24);
+
+            Text label = _pauseButton.GetComponentInChildren<Text>(true);
+            if (label != null) label.gameObject.SetActive(false);
+
+            Image surface = _pauseButton.GetComponent<Image>();
+            if (surface != null)
+                surface.color = new Color(0.030f, 0.065f, 0.115f, 0.96f);
+
+            AddPauseBar(_pauseButton.transform, "PauseLeft", 0.31f, 0.43f);
+            AddPauseBar(_pauseButton.transform, "PauseRight", 0.57f, 0.69f);
+            _pauseButton.gameObject.SetActive(false);
+        }
+
+        private static void AddPauseBar(Transform parent, string name, float minX, float maxX)
+        {
+            Transform bar = ReleaseUiKit.Rect(parent, name,
+                new Vector2(minX, 0.28f), new Vector2(maxX, 0.72f));
+            Image image = bar.gameObject.AddComponent<Image>();
+            image.sprite = ReleaseUiKit.Rounded;
+            image.type = Image.Type.Sliced;
+            image.color = ReleaseUiComponents.Text;
+            image.raycastTarget = false;
+        }
+
+        private void BuildPauseOverlay(Transform parent)
+        {
+            var overlay = new GameObject("PauseOverlay", typeof(RectTransform), typeof(Image));
+            overlay.transform.SetParent(parent, false);
+            ReleaseUiKit.Stretch(overlay.GetComponent<RectTransform>());
+            Image dim = overlay.GetComponent<Image>();
+            dim.color = new Color(0.002f, 0.008f, 0.025f, 0.88f);
+            dim.raycastTarget = true;
+
+            Image card = ReleaseUiComponents.GlassCard(
+                overlay.transform,
+                "PauseCard",
+                new Vector2(0.14f, 0.335f),
+                new Vector2(0.86f, 0.665f),
+                ReleaseUiComponents.Cyan,
+                true);
+
+            ReleaseUiKit.TextBlock(card.transform, "PauseTitle", "ПАУЗА", 44,
+                TextAnchor.MiddleCenter, new Vector2(0.10f, 0.68f), new Vector2(0.90f, 0.88f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+
+            ReleaseUiKit.TextBlock(card.transform, "PauseHint", "Маршрут подождёт.", 21,
+                TextAnchor.MiddleCenter, new Vector2(0.10f, 0.53f), new Vector2(0.90f, 0.68f),
+                ReleaseUiComponents.Muted);
+
+            ReleaseUiComponents.PrimaryButton(card.transform, "ResumeButton", "ПРОДОЛЖИТЬ",
+                new Vector2(0.08f, 0.27f), new Vector2(0.92f, 0.47f), ResumeFromPause, 27);
+
+            ReleaseUiComponents.SecondaryButton(card.transform, "ExitButton", "ВЫЙТИ",
+                new Vector2(0.08f, 0.07f), new Vector2(0.92f, 0.22f), ExitPausedRound, 24);
+
+            _pauseOverlay = overlay;
+            _pauseOverlay.SetActive(false);
+        }
+
+        private void PauseGameplay()
+        {
+            if (_bootstrap == null || !GameBootstrapRuntimeBridge.IsActiveRound(_bootstrap)) return;
+            IsGameplayPaused = true;
+            if (_pauseOverlay != null) _pauseOverlay.SetActive(true);
+            if (_pauseButton != null) _pauseButton.gameObject.SetActive(false);
+        }
+
+        private void ResumeFromPause()
+        {
+            IsGameplayPaused = false;
+            if (_pauseOverlay != null) _pauseOverlay.SetActive(false);
+        }
+
+        private void ExitPausedRound()
+        {
+            ResumeFromPause();
+            if (_bootstrap != null) GameBootstrapRuntimeBridge.AbortToHome(_bootstrap);
         }
 
         private void ApplyGameplayBoardLayout(bool active)
         {
             if (!active || _playArea == null) return;
 
-            // Give the memory gesture most of the portrait screen. This also creates a
-            // clean visual gap between the board, compact header and instruction card.
-            ReleaseUiKit.SetAnchors(_playArea,
-                new Vector2(0.055f, 0.155f),
-                new Vector2(0.945f, 0.825f));
+            ReleaseUiKit.SetAnchors(
+                _playArea,
+                new Vector2(0.080f, 0.205f),
+                new Vector2(0.920f, 0.705f));
         }
 
         private void ApplyRestingBoardLayout(bool result)
         {
             if (_playArea == null) return;
 
-            // Match VisualThemeCoordinator exactly outside active gameplay so the two
-            // presentation layers do not fight over the same RectTransform each frame.
             ReleaseUiKit.SetAnchors(
                 _playArea,
                 result ? new Vector2(0.07f, 0.330f) : new Vector2(0.07f, 0.245f),
@@ -172,73 +305,151 @@ namespace DontGetSidetracked.Presentation
         private void Refresh()
         {
             string title = _legacyTitle.text ?? string.Empty;
-            string status = _legacyStatus.text ?? string.Empty;
-            _mode.text = CleanMode(title);
+            string compact = (_legacyStatus.text ?? string.Empty).Replace("\r", string.Empty).Trim();
 
-            string compact = status.Replace("\r", string.Empty).Trim();
-            if (compact == "3" || compact == "2" || compact == "1")
+            bool countdown = compact == "3" || compact == "2" || compact == "1";
+            bool drawing =
+                compact.IndexOf("ПОВТОРИ", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                compact.IndexOf("ВЕДИ", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                compact.IndexOf("НАЧНИ", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (!drawing)
             {
-                _countdown.text = compact;
-                _countdown.gameObject.SetActive(true);
-                _instruction.text = "МАРШРУТ ИСЧЕЗАЕТ";
-                _hint.text = "Приготовься. Начинай с голубой точки.";
+                _instruction.text = "ЗАПОМНИ МАРШРУТ!";
+                _hint.text = "Скоро он исчезнет…";
+                _countdown.text = countdown ? compact : string.Empty;
+                _countdown.gameObject.SetActive(countdown);
+                SetDrawingChrome(false, title);
+                StyleTargetMarkers(false);
                 return;
             }
 
-            _countdown.gameObject.SetActive(false);
+            _instruction.text = "ПОВТОРИ МАРШРУТ";
             _countdown.text = string.Empty;
-
-            if (compact.IndexOf("ЗАПОМНИ", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                _instruction.text = "ЗАПОМНИ МАРШРУТ";
-                _hint.text = "Запомни повороты и путь к золотой точке.";
-                return;
-            }
-
-            if (compact.IndexOf("ПОВТОРИ", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                _instruction.text = "ТВОЯ ОЧЕРЕДЬ";
-                _hint.text = "От голубой точки к золотой. Не отрывай палец.";
-                return;
-            }
-
-            if (compact.IndexOf("ВЕДИ", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                _instruction.text = "ВЕДИ ПО ПАМЯТИ";
-                _hint.text = "Продолжай одним движением к золотой точке.";
-                return;
-            }
+            _countdown.gameObject.SetActive(false);
 
             if (compact.IndexOf("НАЧНИ", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                _instruction.text = "НАЧНИ С ГОЛУБОЙ ТОЧКИ";
-                _hint.text = "Коснись голубого маркера и веди к золотому.";
-                return;
-            }
+                _hint.text = "Начни с голубой точки";
+            else
+                _hint.text = string.Empty;
 
-            string[] lines = compact.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            _instruction.text = lines.Length > 0 ? lines[0].Trim() : "НЕ СБЕЙСЯ";
-            _hint.text = lines.Length > 1 ? lines[1].Trim() : string.Empty;
+            SetDrawingChrome(true, title);
+            StyleTargetMarkers(true);
         }
 
-        private static string CleanMode(string value)
+        private void StyleTargetMarkers(bool drawing)
         {
-            if (string.IsNullOrWhiteSpace(value)) return "НЕ СБЕЙСЯ";
-            string mode = value.Trim();
-            if (mode.StartsWith("DAILY", StringComparison.OrdinalIgnoreCase)) return mode;
-            if (mode.StartsWith("ВЫЗОВ", StringComparison.OrdinalIgnoreCase)) return mode;
-            if (mode.StartsWith("УРОВЕНЬ", StringComparison.OrdinalIgnoreCase)) return mode;
-            if (mode.StartsWith("ОБУЧЕНИЕ", StringComparison.OrdinalIgnoreCase)) return "ОБУЧЕНИЕ";
-            if (mode.StartsWith("ТРЕНИРОВКА", StringComparison.OrdinalIgnoreCase)) return "ТРЕНИРОВКА";
-            return mode;
+            if (_startMarker != null)
+            {
+                if (drawing)
+                    StyleRingMarker(_startMarker, ReleaseUiComponents.Cyan, "TargetStartInner");
+                else
+                    StyleFilledMarker(_startMarker, Color.white, ReleaseUiComponents.Cyan);
+            }
+
+            if (_endMarker != null)
+            {
+                Color ring = drawing ? Color.white : new Color(0.22f, 0.62f, 1f, 1f);
+                StyleRingMarker(_endMarker, ring, "TargetEndInner");
+            }
+        }
+
+        private static void StyleFilledMarker(Image marker, Color fill, Color glow)
+        {
+            marker.sprite = ReleaseUiKit.Circle;
+            marker.type = Image.Type.Simple;
+            marker.color = fill;
+            marker.preserveAspect = false;
+            marker.rectTransform.sizeDelta = new Vector2(58f, 58f);
+
+            Transform inner = marker.transform.Find("TargetStartInner");
+            if (inner != null) inner.gameObject.SetActive(false);
+            inner = marker.transform.Find("TargetEndInner");
+            if (inner != null) inner.gameObject.SetActive(false);
+
+            Shadow shadow = marker.GetComponent<Shadow>();
+            if (shadow == null) shadow = marker.gameObject.AddComponent<Shadow>();
+            shadow.enabled = true;
+            shadow.effectColor = new Color(glow.r, glow.g, glow.b, 0.72f);
+            shadow.effectDistance = new Vector2(0f, -3f);
+            shadow.useGraphicAlpha = true;
+        }
+
+        private static void StyleRingMarker(Image marker, Color ring, string innerName)
+        {
+            marker.sprite = ReleaseUiKit.Circle;
+            marker.type = Image.Type.Simple;
+            marker.color = ring;
+            marker.preserveAspect = false;
+            marker.rectTransform.sizeDelta = new Vector2(62f, 62f);
+
+            Transform inner = marker.transform.Find(innerName);
+            Image innerImage;
+            if (inner == null)
+            {
+                inner = ReleaseUiKit.Rect(marker.transform, innerName,
+                    new Vector2(0.24f, 0.24f), new Vector2(0.76f, 0.76f));
+                innerImage = inner.gameObject.AddComponent<Image>();
+                innerImage.sprite = ReleaseUiKit.Circle;
+                innerImage.raycastTarget = false;
+            }
+            else
+            {
+                innerImage = inner.GetComponent<Image>();
+            }
+
+            inner.gameObject.SetActive(true);
+            innerImage.color = new Color(0.010f, 0.035f, 0.075f, 1f);
+
+            Shadow shadow = marker.GetComponent<Shadow>();
+            if (shadow == null) shadow = marker.gameObject.AddComponent<Shadow>();
+            shadow.enabled = true;
+            shadow.effectColor = new Color(ring.r, ring.g, ring.b, 0.64f);
+            shadow.effectDistance = new Vector2(0f, -3f);
+            shadow.useGraphicAlpha = true;
+        }
+
+        private void SetDrawingChrome(bool drawing, string title)
+        {
+            bool hasProgress = drawing && UpdateProgress(title);
+            if (_progressRoot != null) _progressRoot.SetActive(hasProgress);
+            if (_phaseText != null) _phaseText.gameObject.SetActive(hasProgress);
+
+            if (_pauseButton != null && !IsGameplayPaused)
+                _pauseButton.gameObject.SetActive(drawing);
+        }
+
+        private bool UpdateProgress(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title)) return false;
+
+            int slash = title.IndexOf('/');
+            if (slash <= 0 || slash >= title.Length - 1) return false;
+
+            int left = slash - 1;
+            while (left >= 0 && char.IsDigit(title[left])) left--;
+            left++;
+
+            int right = slash + 1;
+            while (right < title.Length && char.IsDigit(title[right])) right++;
+
+            if (!int.TryParse(title.Substring(left, slash - left), out int current)) return false;
+            if (!int.TryParse(title.Substring(slash + 1, right - slash - 1), out int total)) return false;
+            if (total <= 0) return false;
+
+            current = Mathf.Clamp(current, 1, total);
+            float ratio = Mathf.Clamp01(current / (float)total);
+            _progressFill.rectTransform.anchorMax = new Vector2(Mathf.Max(0.08f, ratio), 1f);
+            _phaseText.text = current + " / " + total;
+            return true;
         }
 
         private void SetHudVisible(bool visible)
         {
             if (_hudGroup == null) return;
             _hudGroup.alpha = visible ? 1f : 0f;
-            _hudGroup.interactable = false;
-            _hudGroup.blocksRaycasts = false;
+            _hudGroup.interactable = visible;
+            _hudGroup.blocksRaycasts = visible;
         }
 
         private void SetLegacyVisible(bool visible)
@@ -262,15 +473,18 @@ namespace DontGetSidetracked.Presentation
             return group;
         }
 
-        private static T Find<T>(Transform root, string name) where T : Component
+        private static Transform FindTransform(Transform root, string name)
         {
             Transform[] all = root.GetComponentsInChildren<Transform>(true);
             for (int i = 0; i < all.Length; i++)
-            {
-                if (!string.Equals(all[i].name, name, StringComparison.Ordinal)) continue;
-                return all[i].GetComponent<T>();
-            }
+                if (string.Equals(all[i].name, name, StringComparison.Ordinal)) return all[i];
             return null;
+        }
+
+        private static T Find<T>(Transform root, string name) where T : Component
+        {
+            Transform transform = FindTransform(root, name);
+            return transform == null ? null : transform.GetComponent<T>();
         }
     }
 }

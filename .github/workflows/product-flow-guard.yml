@@ -143,6 +143,13 @@ jobs:
           grep -q 'tutorialIntro.IsOpen' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
           grep -q 'tutorialIntro.HandleBack()' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
 
+          # Gameplay pause is functional: it must block gesture sampling and offer resume/exit.
+          grep -q 'public static bool IsGameplayPaused' UnityProject/Assets/Game/Presentation/GameplayHudCoordinator.cs
+          grep -q 'PauseButton' UnityProject/Assets/Game/Presentation/GameplayHudCoordinator.cs
+          grep -q 'ResumeButton' UnityProject/Assets/Game/Presentation/GameplayHudCoordinator.cs
+          grep -q 'ExitButton' UnityProject/Assets/Game/Presentation/GameplayHudCoordinator.cs
+          grep -q 'GameplayHudCoordinator.IsGameplayPaused' UnityProject/Assets/Game/Presentation/GameBootstrap.cs
+
           # Training must be explicit to the player instead of silently cycling difficulty.
           grep -q 'TrainingSelectCanvas' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'ЛЁГКАЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs

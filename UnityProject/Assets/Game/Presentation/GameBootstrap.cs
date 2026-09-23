@@ -92,7 +92,7 @@ namespace DontGetSidetracked.Presentation
 
         private void Update()
         {
-            if (_state != RoundState.Drawing) return;
+            if (_state != RoundState.Drawing || GameplayHudCoordinator.IsGameplayPaused) return;
             PollPointer();
         }
 
@@ -307,14 +307,16 @@ namespace DontGetSidetracked.Presentation
                 "route_index", _dailyIndex,
                 "mode", _mode.ToString()));
 
-            _status.text = "ЗАПОМНИ ЛИНИЮ";
             _state = RoundState.Showing;
             HideButtons();
 
-            yield return new WaitForSecondsRealtime(route.DisplayTimeMs / 1000f);
-            _status.text = "3"; yield return new WaitForSecondsRealtime(0.35f);
-            _status.text = "2"; yield return new WaitForSecondsRealtime(0.35f);
-            _status.text = "1"; yield return new WaitForSecondsRealtime(0.35f);
+            // The configured display time is the whole memory window. Keep the countdown
+            // inside that window so the route is not shown longer than Remote Config says.
+            float displaySeconds = Mathf.Max(1.05f, route.DisplayTimeMs / 1000f);
+            float countdownStep = displaySeconds / 3f;
+            _status.text = "3"; yield return new WaitForSecondsRealtime(countdownStep);
+            _status.text = "2"; yield return new WaitForSecondsRealtime(countdownStep);
+            _status.text = "1"; yield return new WaitForSecondsRealtime(countdownStep);
             _referenceGraphic.Clear();
             _status.text = "ТЕПЕРЬ ПОВТОРИ\nНачни с голубой точки";
             _state = RoundState.Drawing;
