@@ -338,8 +338,8 @@ namespace DontGetSidetracked.Presentation
             Image best = ReleaseUiComponents.GlassCard(parent, "BestCard",
                 new Vector2(0.515f, 0.495f), new Vector2(0.945f, 0.600f),
                 ReleaseUiComponents.Cyan, false);
-            ReleaseUiComponents.Icon(best.transform, "Icon", GeneratedUiAssets.StarFilled,
-                new Vector2(0.070f, 0.30f), new Vector2(0.255f, 0.82f));
+            ReleaseUiComponents.Icon(best.transform, "Icon", GeneratedUiAssets.MedalGold,
+                new Vector2(0.070f, 0.27f), new Vector2(0.255f, 0.84f));
             ReleaseUiKit.TextBlock(best.transform, "Label", "ЛУЧШИЙ РЕЗУЛЬТАТ", 16, TextAnchor.MiddleLeft,
                 new Vector2(0.30f, 0.55f), new Vector2(0.94f, 0.88f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
@@ -619,7 +619,7 @@ namespace DontGetSidetracked.Presentation
 
             DateTime now = DateTime.UtcNow;
             if (_dailyMeta != null)
-                _dailyMeta.text = now.ToString("dd.MM.yyyy");
+                _dailyMeta.text = FormatRussianDate(now);
 
             if (_dailyCountdown != null)
             {
@@ -642,6 +642,27 @@ namespace DontGetSidetracked.Presentation
                     : Mathf.Clamp01(completed / (float)CampaignLevelCatalog.TotalLevels);
                 _campaignProgressFill.rectTransform.anchorMax = new Vector2(Mathf.Max(0.02f, ratio), 1f);
             }
+        }
+
+        private static string FormatRussianDate(DateTime value)
+        {
+            string month;
+            switch (value.Month)
+            {
+                case 1: month = "января"; break;
+                case 2: month = "февраля"; break;
+                case 3: month = "марта"; break;
+                case 4: month = "апреля"; break;
+                case 5: month = "мая"; break;
+                case 6: month = "июня"; break;
+                case 7: month = "июля"; break;
+                case 8: month = "августа"; break;
+                case 9: month = "сентября"; break;
+                case 10: month = "октября"; break;
+                case 11: month = "ноября"; break;
+                default: month = "декабря"; break;
+            }
+            return value.Day + " " + month;
         }
 
         private void SetDashboardVisible(bool visible)
