@@ -87,7 +87,7 @@ namespace DontGetSidetracked.Presentation
 
             BuildUi();
             if (_save.TutorialCompleted) ShowHome();
-            else StartTutorial();
+            else TutorialIntroCoordinator.OpenFor(this);
         }
 
         private void Update()
