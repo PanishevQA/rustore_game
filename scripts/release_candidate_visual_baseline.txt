@@ -1,0 +1,3 @@
+Visual release-candidate trigger only.
+Runtime source baseline parent: 045122519c606fdbde928196c1657250ed6b18d3
+Validated on RMX3999 / Android 16 / API 36 before matched APK+AAB build.
