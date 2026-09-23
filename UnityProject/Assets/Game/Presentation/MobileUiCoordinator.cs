@@ -190,13 +190,25 @@ namespace DontGetSidetracked.Presentation
             for (int i = 0; i < canvasTransform.childCount; i++)
             {
                 Transform child = canvasTransform.GetChild(i);
-                if (child == safeRoot || string.Equals(child.name, FullBleedBackgroundName, StringComparison.Ordinal))
+                if (child == safeRoot || IsFullBleedChild(child.name))
                     continue;
                 if (child is RectTransform rect) toMove.Add(rect);
             }
 
             for (int i = 0; i < toMove.Count; i++)
                 toMove[i].SetParent(safeRoot, false);
+        }
+
+        private static bool IsFullBleedChild(string childName)
+        {
+            if (string.Equals(childName, FullBleedBackgroundName, StringComparison.Ordinal))
+                return true;
+
+            // Overlay dimmers/backdrops must cover the complete physical display.
+            // Reparenting them into SafeAreaRoot exposed thin strips of the canvas
+            // underneath on curved/cutout Android devices.
+            return !string.IsNullOrEmpty(childName) &&
+                   childName.EndsWith("Backdrop", StringComparison.Ordinal);
         }
 
         private void CleanupDestroyedCanvases()
