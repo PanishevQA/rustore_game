@@ -76,6 +76,40 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_release_candidate_checks.ps1 -BuildSmokeApk
 
+      - name: Install store-fix APK and capture Store
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_signed_device_smoke_apk.ps1
+
+          $adbCmd = Get-Command adb -ErrorAction SilentlyContinue
+          if ($adbCmd) {
+            $adbExe = $adbCmd.Source
+          } else {
+            $unity = [Environment]::ExpandEnvironmentVariables($env:UNITY_EXE)
+            if ([string]::IsNullOrWhiteSpace($unity) -or -not (Test-Path $unity)) {
+              $unity = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Unity.exe"
+            }
+            $adbExe = Join-Path (Split-Path -Parent $unity) "Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          }
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $serial = ((& $adbExe devices) | Where-Object { $_ -match "^([^\s]+)\s+device\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
+          if ([string]::IsNullOrWhiteSpace($serial)) { throw "No authorized device found for Store capture." }
+
+          & $adbExe -s $serial shell am force-stop ru.release.nesbeisya | Out-Null
+          & $adbExe -s $serial shell monkey -p ru.release.nesbeisya -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 6
+
+          & $adbExe -s $serial shell input tap 746 1940
+          Start-Sleep -Seconds 3
+
+          New-Item -ItemType Directory -Force -Path "artifacts\device-smoke" | Out-Null
+          & $adbExe -s $serial shell screencap -p /sdcard/nesbeisya-store-no-ads.png
+          & $adbExe -s $serial pull /sdcard/nesbeisya-store-no-ads.png "artifacts\device-smoke\store-no-ads.png" | Out-Host
+          & $adbExe -s $serial shell rm /sdcard/nesbeisya-store-no-ads.png | Out-Null
+
       - name: Run Android integration and native AAR probe
         if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
         shell: powershell
@@ -92,3 +126,4 @@ jobs:
             artifacts/agent-check/**
             artifacts/release-candidate/**
             artifacts/android-integration-probe/**
+            artifacts/device-smoke/**
