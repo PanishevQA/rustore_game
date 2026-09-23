@@ -29,6 +29,8 @@ namespace DontGetSidetracked.Presentation
         private Text _phaseText;
         private Button _pauseButton;
         private GameObject _pauseOverlay;
+        private Image _startMarker;
+        private Image _endMarker;
         private float _nextResolve;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -92,6 +94,8 @@ namespace DontGetSidetracked.Presentation
             _legacyTitle = Find<Text>(gameCanvas.transform, "Title");
             _legacyStatus = Find<Text>(gameCanvas.transform, "Status");
             _playArea = Find<RectTransform>(gameCanvas.transform, "PlayArea");
+            _startMarker = Find<Image>(gameCanvas.transform, "Start");
+            _endMarker = Find<Image>(gameCanvas.transform, "End");
             if (_legacyTitle == null || _legacyStatus == null || _playArea == null) return;
 
             _legacyTitleGroup = EnsureCanvasGroup(_legacyTitle.gameObject);
@@ -316,6 +320,7 @@ namespace DontGetSidetracked.Presentation
                 _countdown.text = countdown ? compact : string.Empty;
                 _countdown.gameObject.SetActive(countdown);
                 SetDrawingChrome(false, title);
+                StyleTargetMarkers(false);
                 return;
             }
 
@@ -329,6 +334,79 @@ namespace DontGetSidetracked.Presentation
                 _hint.text = string.Empty;
 
             SetDrawingChrome(true, title);
+            StyleTargetMarkers(true);
+        }
+
+        private void StyleTargetMarkers(bool drawing)
+        {
+            if (_startMarker != null)
+            {
+                if (drawing)
+                    StyleRingMarker(_startMarker, ReleaseUiComponents.Cyan, "TargetStartInner");
+                else
+                    StyleFilledMarker(_startMarker, Color.white, ReleaseUiComponents.Cyan);
+            }
+
+            if (_endMarker != null)
+            {
+                Color ring = drawing ? Color.white : new Color(0.22f, 0.62f, 1f, 1f);
+                StyleRingMarker(_endMarker, ring, "TargetEndInner");
+            }
+        }
+
+        private static void StyleFilledMarker(Image marker, Color fill, Color glow)
+        {
+            marker.sprite = ReleaseUiKit.Circle;
+            marker.type = Image.Type.Simple;
+            marker.color = fill;
+            marker.preserveAspect = false;
+            marker.rectTransform.sizeDelta = new Vector2(58f, 58f);
+
+            Transform inner = marker.transform.Find("TargetStartInner");
+            if (inner != null) inner.gameObject.SetActive(false);
+            inner = marker.transform.Find("TargetEndInner");
+            if (inner != null) inner.gameObject.SetActive(false);
+
+            Shadow shadow = marker.GetComponent<Shadow>();
+            if (shadow == null) shadow = marker.gameObject.AddComponent<Shadow>();
+            shadow.enabled = true;
+            shadow.effectColor = new Color(glow.r, glow.g, glow.b, 0.72f);
+            shadow.effectDistance = new Vector2(0f, -3f);
+            shadow.useGraphicAlpha = true;
+        }
+
+        private static void StyleRingMarker(Image marker, Color ring, string innerName)
+        {
+            marker.sprite = ReleaseUiKit.Circle;
+            marker.type = Image.Type.Simple;
+            marker.color = ring;
+            marker.preserveAspect = false;
+            marker.rectTransform.sizeDelta = new Vector2(62f, 62f);
+
+            Transform inner = marker.transform.Find(innerName);
+            Image innerImage;
+            if (inner == null)
+            {
+                inner = ReleaseUiKit.Rect(marker.transform, innerName,
+                    new Vector2(0.24f, 0.24f), new Vector2(0.76f, 0.76f));
+                innerImage = inner.gameObject.AddComponent<Image>();
+                innerImage.sprite = ReleaseUiKit.Circle;
+                innerImage.raycastTarget = false;
+            }
+            else
+            {
+                innerImage = inner.GetComponent<Image>();
+            }
+
+            inner.gameObject.SetActive(true);
+            innerImage.color = new Color(0.010f, 0.035f, 0.075f, 1f);
+
+            Shadow shadow = marker.GetComponent<Shadow>();
+            if (shadow == null) shadow = marker.gameObject.AddComponent<Shadow>();
+            shadow.enabled = true;
+            shadow.effectColor = new Color(ring.r, ring.g, ring.b, 0.64f);
+            shadow.effectDistance = new Vector2(0f, -3f);
+            shadow.useGraphicAlpha = true;
         }
 
         private void SetDrawingChrome(bool drawing, string title)
