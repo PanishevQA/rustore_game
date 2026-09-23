@@ -238,7 +238,7 @@ namespace DontGetSidetracked.Presentation
                     ReleaseUiComponents.Cyan.b, 0.14f);
 
             Image coinPill = ReleaseUiComponents.GlassCard(parent, "CoinsPill",
-                new Vector2(0.300f, 0.922f), new Vector2(0.725f, 0.972f),
+                new Vector2(0.295f, 0.922f), new Vector2(0.665f, 0.972f),
                 ReleaseUiComponents.Gold, false);
             coinPill.color = new Color(0.028f, 0.055f, 0.090f, 0.97f);
             Image coinOuter = CreateImage(coinPill.transform, "CoinOuter", ReleaseUiComponents.Gold,
@@ -257,7 +257,7 @@ namespace DontGetSidetracked.Presentation
                     ReleaseUiComponents.Gold.b, 0.14f);
 
             Image settingsWell = ReleaseUiComponents.GlassCard(parent, "SettingsButton",
-                new Vector2(0.825f, 0.918f), new Vector2(0.945f, 0.974f),
+                new Vector2(0.835f, 0.918f), new Vector2(0.945f, 0.974f),
                 ReleaseUiComponents.Blue, false);
             settingsWell.color = new Color(0.025f, 0.060f, 0.110f, 0.97f);
             ReleaseUiComponents.Icon(settingsWell.transform, "SettingsIcon", GeneratedUiAssets.SettingsIcon,
@@ -305,20 +305,64 @@ namespace DontGetSidetracked.Presentation
             ReleaseUiComponents.Icon(card.transform, "DailyIcon", GeneratedUiAssets.DailyIcon,
                 new Vector2(0.055f, 0.69f), new Vector2(0.155f, 0.91f));
 
-            ReleaseUiKit.TextBlock(card.transform, "DailyTitle", "СЕГОДНЯШНИЙ ВЫЗОВ", 30,
-                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.73f), new Vector2(0.90f, 0.93f),
+            ReleaseUiKit.TextBlock(card.transform, "DailyTitle", "СЕГОДНЯШНИЙ ВЫЗОВ", 28,
+                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.73f), new Vector2(0.63f, 0.93f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
 
-            _dailyMeta = ReleaseUiKit.TextBlock(card.transform, "DailyDate", "СЕГОДНЯ", 19,
-                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.57f), new Vector2(0.64f, 0.73f),
+            _dailyMeta = ReleaseUiKit.TextBlock(card.transform, "DailyDate", "СЕГОДНЯ", 18,
+                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.57f), new Vector2(0.60f, 0.73f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
 
-            _dailyCountdown = ReleaseUiKit.TextBlock(card.transform, "DailyCountdown", "Осталось: --:--:--", 17,
-                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.43f), new Vector2(0.78f, 0.59f),
+            _dailyCountdown = ReleaseUiKit.TextBlock(card.transform, "DailyCountdown", "Осталось: --:--:--", 16,
+                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.43f), new Vector2(0.60f, 0.59f),
                 ReleaseUiComponents.Muted);
+
+            BuildTargetDailyRoutePreview(card.transform);
 
             ReleaseUiComponents.PrimaryButton(card.transform, "DailyPlay", "ИГРАТЬ",
                 new Vector2(0.055f, 0.085f), new Vector2(0.945f, 0.365f), StartDailyFromHome, 31);
+        }
+
+        private static void BuildTargetDailyRoutePreview(Transform parent)
+        {
+            Transform host = CreateRect(parent, "TargetDailyRoutePreview",
+                new Vector2(0.63f, 0.42f), new Vector2(0.94f, 0.83f));
+
+            var points = new List<FixedPoint2>
+            {
+                FixedPoint2.FromNormalized(0.08, 0.24),
+                FixedPoint2.FromNormalized(0.16, 0.41),
+                FixedPoint2.FromNormalized(0.24, 0.60),
+                FixedPoint2.FromNormalized(0.34, 0.68),
+                FixedPoint2.FromNormalized(0.45, 0.57),
+                FixedPoint2.FromNormalized(0.54, 0.39),
+                FixedPoint2.FromNormalized(0.64, 0.31),
+                FixedPoint2.FromNormalized(0.73, 0.39),
+                FixedPoint2.FromNormalized(0.81, 0.58),
+                FixedPoint2.FromNormalized(0.89, 0.72),
+                FixedPoint2.FromNormalized(0.96, 0.61)
+            };
+
+            RouteGraphic glow = CreateRoute(host, "RouteGlow",
+                new Color(ReleaseUiComponents.Violet.r, ReleaseUiComponents.Violet.g,
+                    ReleaseUiComponents.Violet.b, 0.22f), 26f);
+            glow.SetPoints(points);
+
+            RouteGraphic route = CreateRoute(host, "Route",
+                new Color(0.86f, 0.40f, 1.00f, 1f), 11f);
+            route.SetPoints(points);
+
+            Image start = CreateImage(host, "RouteStart", new Color(0.70f, 0.38f, 1f, 1f),
+                new Vector2(0.035f, 0.18f), new Vector2(0.17f, 0.36f), _circle);
+            start.raycastTarget = false;
+
+            Image end = CreateImage(host, "RouteEnd", new Color(0.97f, 0.62f, 1f, 1f),
+                new Vector2(0.84f, 0.41f), new Vector2(0.98f, 0.60f), _circle);
+            end.raycastTarget = false;
+
+            Outline endGlow = end.gameObject.AddComponent<Outline>();
+            endGlow.effectColor = new Color(0.55f, 0.25f, 1f, 0.55f);
+            endGlow.effectDistance = new Vector2(3f, -3f);
         }
 
         private void BuildTargetStatCards(Transform parent)
@@ -326,8 +370,7 @@ namespace DontGetSidetracked.Presentation
             Image streak = ReleaseUiComponents.GlassCard(parent, "StreakCard",
                 new Vector2(0.055f, 0.495f), new Vector2(0.485f, 0.600f),
                 ReleaseUiComponents.Gold, false);
-            ReleaseUiComponents.Icon(streak.transform, "Icon", GeneratedUiAssets.DailyIcon,
-                new Vector2(0.070f, 0.30f), new Vector2(0.255f, 0.82f));
+            BuildFlameIcon(streak.transform, new Vector2(0.070f, 0.26f), new Vector2(0.255f, 0.84f));
             ReleaseUiKit.TextBlock(streak.transform, "Label", "СЕРИЯ ДНЕЙ", 17, TextAnchor.MiddleLeft,
                 new Vector2(0.30f, 0.55f), new Vector2(0.94f, 0.88f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
@@ -338,14 +381,67 @@ namespace DontGetSidetracked.Presentation
             Image best = ReleaseUiComponents.GlassCard(parent, "BestCard",
                 new Vector2(0.515f, 0.495f), new Vector2(0.945f, 0.600f),
                 ReleaseUiComponents.Cyan, false);
-            ReleaseUiComponents.Icon(best.transform, "Icon", GeneratedUiAssets.MedalGold,
-                new Vector2(0.070f, 0.27f), new Vector2(0.255f, 0.84f));
+            BuildTrophyIcon(best.transform, new Vector2(0.070f, 0.24f), new Vector2(0.255f, 0.84f));
             ReleaseUiKit.TextBlock(best.transform, "Label", "ЛУЧШИЙ РЕЗУЛЬТАТ", 16, TextAnchor.MiddleLeft,
                 new Vector2(0.30f, 0.55f), new Vector2(0.94f, 0.88f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
             _bestStatValue = ReleaseUiKit.TextBlock(best.transform, "Value", "—", 37, TextAnchor.MiddleLeft,
                 new Vector2(0.30f, 0.12f), new Vector2(0.94f, 0.58f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
+        }
+
+        private static void BuildFlameIcon(Transform parent, Vector2 min, Vector2 max)
+        {
+            Transform host = CreateRect(parent, "FlameIcon", min, max);
+
+            Image outer = CreateImage(host, "Outer", new Color(1.00f, 0.48f, 0.08f, 1f),
+                new Vector2(0.26f, 0.10f), new Vector2(0.74f, 0.86f), _rounded);
+            outer.raycastTarget = false;
+            outer.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -8f);
+
+            Image left = CreateImage(host, "LeftTongue", ReleaseUiComponents.Gold,
+                new Vector2(0.14f, 0.16f), new Vector2(0.46f, 0.60f), _rounded);
+            left.raycastTarget = false;
+            left.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 24f);
+
+            Image inner = CreateImage(host, "Inner", new Color(1.00f, 0.84f, 0.18f, 1f),
+                new Vector2(0.40f, 0.17f), new Vector2(0.64f, 0.55f), _rounded);
+            inner.raycastTarget = false;
+
+            Shadow glow = outer.gameObject.AddComponent<Shadow>();
+            glow.effectColor = new Color(1f, 0.42f, 0.06f, 0.28f);
+            glow.effectDistance = new Vector2(0f, -2f);
+        }
+
+        private static void BuildTrophyIcon(Transform parent, Vector2 min, Vector2 max)
+        {
+            Transform host = CreateRect(parent, "TrophyIcon", min, max);
+
+            Image cup = CreateImage(host, "Cup", ReleaseUiComponents.Gold,
+                new Vector2(0.24f, 0.46f), new Vector2(0.76f, 0.84f), _rounded);
+            cup.raycastTarget = false;
+
+            Image stem = CreateImage(host, "Stem", new Color(1.00f, 0.62f, 0.05f, 1f),
+                new Vector2(0.44f, 0.22f), new Vector2(0.56f, 0.50f), _rounded);
+            stem.raycastTarget = false;
+
+            Image baseBar = CreateImage(host, "Base", ReleaseUiComponents.Gold,
+                new Vector2(0.29f, 0.14f), new Vector2(0.71f, 0.27f), _rounded);
+            baseBar.raycastTarget = false;
+
+            Image leftHandle = CreateImage(host, "LeftHandle", ReleaseUiComponents.Gold,
+                new Vector2(0.10f, 0.50f), new Vector2(0.32f, 0.72f), _rounded);
+            leftHandle.raycastTarget = false;
+            leftHandle.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 18f);
+
+            Image rightHandle = CreateImage(host, "RightHandle", ReleaseUiComponents.Gold,
+                new Vector2(0.68f, 0.50f), new Vector2(0.90f, 0.72f), _rounded);
+            rightHandle.raycastTarget = false;
+            rightHandle.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -18f);
+
+            Shadow glow = cup.gameObject.AddComponent<Shadow>();
+            glow.effectColor = new Color(1f, 0.72f, 0.06f, 0.24f);
+            glow.effectDistance = new Vector2(0f, -2f);
         }
 
         private void CreateTargetNavRow(
