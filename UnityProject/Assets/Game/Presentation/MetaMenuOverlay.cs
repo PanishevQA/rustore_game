@@ -93,6 +93,10 @@ namespace DontGetSidetracked.Presentation
 
         private bool IsCurrentPanel(int revision) => _panelOpen && revision == _panelRevision;
 
+        public void OpenStatisticsFromHome() => OpenStatistics();
+        public void OpenSettingsFromHome() => OpenSettings();
+        public void OpenStoreFromHome() => OpenStore();
+
         private void OpenStatistics()
         {
             BeginPanelNavigation();
