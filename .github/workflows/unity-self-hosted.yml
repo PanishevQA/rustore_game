@@ -90,9 +90,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $out | Out-Null
 
           $adb = Get-Command adb -ErrorAction SilentlyContinue
-          if ($adb) {
-            $adbExe = $adb.Source
-          } else {
+          if ($adb) { $adbExe = $adb.Source } else {
             $unity = [Environment]::ExpandEnvironmentVariables($env:UNITY_EXE)
             if ([string]::IsNullOrWhiteSpace($unity) -or -not (Test-Path $unity)) {
               $unity = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Unity.exe"
@@ -107,28 +105,59 @@ jobs:
           }
           if ($devices.Count -ne 1) { throw "Expected exactly one authorized Android device; found $($devices.Count)." }
           $serial = $devices[0]
+          $package = "ru.release.nesbeisya"
+
+          function Shot([string]$Name) {
+            $remote = "/sdcard/nesbeisya-$Name.png"
+            & $adbExe -s $serial shell screencap -p $remote
+            & $adbExe -s $serial pull $remote (Join-Path $out "$Name.png") | Out-Host
+            & $adbExe -s $serial shell rm $remote | Out-Null
+          }
+          function Tap([int]$X, [int]$Y) {
+            & $adbExe -s $serial shell input tap $X $Y
+            Start-Sleep -Milliseconds 1200
+          }
+          function BackHome {
+            & $adbExe -s $serial shell input keyevent KEYCODE_BACK
+            Start-Sleep -Milliseconds 800
+          }
+
+          & $adbExe -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 2
+          Shot "01-home"
+
+          Tap 430 1380
+          Shot "02-training"
+          BackHome
+
+          Tap 565 725
+          Shot "03-daily"
+          BackHome
+
+          Tap 635 1015
+          Shot "04-campaign"
+          BackHome
+
+          Tap 600 1515
+          Shot "05-store"
+          BackHome
+
+          Tap 230 1515
+          Shot "06-statistics"
+          BackHome
+
+          (& $adbExe -s $serial logcat -d -t 3000 -v time) | Set-Content -Path (Join-Path $out "logcat.txt") -Encoding UTF8
+          (& $adbExe -s $serial shell wm size) | Set-Content -Path (Join-Path $out "wm-size.txt") -Encoding UTF8
+          (& $adbExe -s $serial shell dumpsys window) | Set-Content -Path (Join-Path $out "window-dump.txt") -Encoding UTF8
 
           $model = ((& $adbExe -s $serial shell getprop ro.product.model) | Out-String).Trim()
           $api = ((& $adbExe -s $serial shell getprop ro.build.version.sdk) | Out-String).Trim()
-          $focused = ((& $adbExe -s $serial shell dumpsys window windows | Select-String -Pattern "mCurrentFocus|mFocusedApp" | Select-Object -First 4) | Out-String).Trim()
-
-          & $adbExe -s $serial shell screencap -p /sdcard/nesbeisya-current.png
-          & $adbExe -s $serial pull /sdcard/nesbeisya-current.png (Join-Path $out "current-screen.png") | Out-Host
-          & $adbExe -s $serial shell monkey -p ru.release.nesbeisya -c android.intent.category.LAUNCHER 1 | Out-Host
-          Start-Sleep -Seconds 3
-          & $adbExe -s $serial shell screencap -p /sdcard/nesbeisya-app.png
-          & $adbExe -s $serial pull /sdcard/nesbeisya-app.png (Join-Path $out "app-screen.png") | Out-Host
-          (& $adbExe -s $serial logcat -d -t 2500 -v time) | Set-Content -Path (Join-Path $out "logcat.txt") -Encoding UTF8
-          (& $adbExe -s $serial shell wm size) | Set-Content -Path (Join-Path $out "wm-size.txt") -Encoding UTF8
-          (& $adbExe -s $serial shell dumpsys window) | Set-Content -Path (Join-Path $out "window-dump.txt") -Encoding UTF8
-          & $adbExe -s $serial shell rm /sdcard/nesbeisya-current.png /sdcard/nesbeisya-app.png | Out-Null
-
           @(
             "DeviceCapture=PASS",
             "Serial=$serial",
             "Model=$model",
             "ApiLevel=$api",
-            "FocusedBeforeCapture=$focused"
+            "Screens=01-home,02-training,03-daily,04-campaign,05-store,06-statistics"
           ) | Set-Content -Path (Join-Path $out "capture-report.txt") -Encoding UTF8
 
       - name: Upload Unity diagnostics
