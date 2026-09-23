@@ -20,6 +20,7 @@ jobs:
           test -f UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/DailyIntroCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/TutorialIntroCoordinator.cs
           test -f UnityProject/Assets/Game/Presentation/ReleaseUiComponents.cs
           test -f UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
           test -f UnityProject/Assets/Game/Presentation/ReferralRuntimePolicy.cs
@@ -134,6 +135,13 @@ jobs:
           grep -q 'OpenTrainingFromHome' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
           grep -q 'training.OpenFromHome()' UnityProject/Assets/Game/Presentation/HomeDashboardCoordinator.cs
           grep -q 'public void OpenFromHome()' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+
+          # First launch must show the approved tutorial intro before starting the route.
+          grep -q 'TutorialIntroCoordinator.OpenFor(this)' UnityProject/Assets/Game/Presentation/GameBootstrap.cs
+          grep -q 'TutorialIntroCanvas' UnityProject/Assets/Game/Presentation/TutorialIntroCoordinator.cs
+          grep -q 'GameBootstrapRuntimeBridge.RestartTutorial(_bootstrap)' UnityProject/Assets/Game/Presentation/TutorialIntroCoordinator.cs
+          grep -q 'tutorialIntro.IsOpen' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+          grep -q 'tutorialIntro.HandleBack()' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
 
           # Training must be explicit to the player instead of silently cycling difficulty.
           grep -q 'TrainingSelectCanvas' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
