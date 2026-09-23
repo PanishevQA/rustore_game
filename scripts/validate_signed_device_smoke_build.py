@@ -81,6 +81,13 @@ for marker in (
     "install -r $apk",
     "multiple Android devices are connected",
     "ru.release.nesbeisya",
+    "getprop ro.product.model",
+    "getprop ro.build.version.sdk",
+    "dumpsys package $packageName",
+    "monkey -p $packageName -c android.intent.category.LAUNCHER 1",
+    "pidof $packageName",
+    "connected-device-preflight.txt",
+    "ChallengeUri",
 ):
     if marker not in installer:
         errors.append(f"Signed device-smoke installer is incomplete: missing {marker!r}.")

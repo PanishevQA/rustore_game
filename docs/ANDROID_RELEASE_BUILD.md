@@ -66,7 +66,7 @@ AAB не устанавливается на телефон напрямую. Д
 
 `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_signed_device_smoke_apk.ps1`
 
-Helper сверяет SHA-256 sidecar, находит `adb` в PATH или embedded Android SDK установленного Unity, требует авторизованное устройство и выполняет `adb install -r`. Если подключено несколько устройств, укажите `-DeviceSerial <serial>`. Если на телефоне уже установлена сборка с другой подписью, helper намеренно не удаляет её автоматически — удаление должно быть явным, чтобы случайно не потерять локальные данные.
+Helper сверяет SHA-256 sidecar, находит `adb` в PATH или embedded Android SDK установленного Unity, требует авторизованное устройство и выполняет `adb install -r`. После установки он фиксирует модель/API Android, проверяет package/version через `dumpsys package`, запускает приложение через launcher intent и убеждается, что процесс остаётся жив. Отчёт сохраняется в `artifacts/device-smoke/connected-device-preflight.txt`. Для проверки конкретного установленного challenge deeplink можно добавить `-ChallengeUri "nesbeisya://challenge/<token>"`; `-SkipLaunchCheck` отключает автоматический запуск. Если подключено несколько устройств, укажите `-DeviceSerial <serial>`. Если на телефоне уже установлена сборка с другой подписью, helper намеренно не удаляет её автоматически — удаление должно быть явным, чтобы случайно не потерять локальные данные.
 
 ## Проверка артефакта
 

@@ -20,8 +20,8 @@
 ## 1. Install / first launch
 
 1. Удалите только предыдущую тестовую сборку с несовместимой подписью, если `adb install -r` сообщает signature mismatch.
-2. Установите APK через `scripts/install_signed_device_smoke_apk.ps1`.
-3. Запустите приложение обычным launcher icon.
+2. Установите APK через `scripts/install_signed_device_smoke_apk.ps1`. Скрипт автоматически проверит SHA-256, модель/API устройства, установленный package/version и базовый launcher start; сохраните `artifacts/device-smoke/connected-device-preflight.txt` в тестовый record.
+3. После автоматического preflight откройте приложение обычным launcher icon и продолжите ручную UX-проверку.
 
 PASS:
 - package — `ru.release.nesbeisya`;
