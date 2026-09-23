@@ -16,7 +16,7 @@ Release-клиент — **offline-first**. Для Campaign, Daily, Training, п
 - level stars/unlocks, streak, personal best и статистика;
 - coins/hints/cosmetics/settings;
 - friend Duel с self-contained challenge token;
-- versioned SaveData v13;
+- versioned SaveData v14;
 - bounded local analytics/crash log;
 - локальные Daily reminders.
 
@@ -66,11 +66,11 @@ Daily строится из UTC-даты и `generatorVersion`. Remote Config м
 
 ## Save / локальная экономика
 
-`SaveData` — v13 с миграциями и post-load repair. Основной прогресс не хранится целиком в PlayerPrefs.
+`SaveData` — v14 с миграциями и post-load repair. Основной прогресс не хранится целиком в PlayerPrefs.
 
 `JsonFileSaveRepository` использует одну process-wide runtime identity `SaveData`, поэтому independently created presentation/store/reward services не могут затереть более свежие coins/hints/purchases/settings старой копией. Shared cache сбрасывается при новом runtime, а file replacement использует temp + known-good backup с recovery при ошибке.
 
-Текущая v13 normalization также чинит отрицательные counters/currency, invalid scores, дубли purchase IDs, Daily bests и level progress, а obsolete backend pending queue удаляется при загрузке.
+Текущая v14 normalization также чинит отрицательные counters/currency, invalid scores, дубли purchase IDs, Daily bests и level progress, а obsolete backend pending queue удаляется при загрузке.
 
 Campaign coins — только внутриигровая локальная награда. Они не заменяют реальные RuStore prices и расходуются только на hints.
 
@@ -102,7 +102,7 @@ Yandex Mobile Ads Unity `8.4.0` закреплён в `Packages/manifest.json`; 
 
 Проект зафиксирован на Unity `6000.3.24f1`, portrait, `UnityPlayerActivity`, IL2CPP/ARM64 release baseline.
 
-Последняя сверка RuStore targets — 2026-09-22:
+Последняя сверка RuStore targets — 2026-09-23:
 
 - Pay Unity `11.1.0`;
 - Install Referrer Android `10.6.1`;
