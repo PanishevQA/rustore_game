@@ -248,7 +248,7 @@ required = {
         "new Vector2(0.945f, 0.145f)",
         "СМОТРИ РЕКЛАМУ",
         "ПОДСКАЗКА ПОЛУЧЕНА",
-        "GeneratedUiAssets.AdIcon",
+        '"GiftBox"',
         "ReleaseUiKit.Panel",
         "dailyIntro.IsOpen",
     ),
