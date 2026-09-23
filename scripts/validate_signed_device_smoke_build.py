@@ -5,13 +5,14 @@ ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / "UnityProject/Assets/Game/Editor/SignedDeviceSmokeBuild.cs"
 PRODUCTION_VALIDATOR = ROOT / "UnityProject/Assets/Game/Editor/ProductionReleaseValidator.cs"
 RUNNER = ROOT / "scripts/run_release_candidate_checks.ps1"
+AGENT = ROOT / "scripts/agent_check.ps1"
 WORKFLOW = ROOT / ".github/workflows/unity-self-hosted.yml"
 INSTALLER = ROOT / "scripts/install_signed_device_smoke_apk.ps1"
 DOC = ROOT / "docs/ANDROID_RELEASE_BUILD.md"
 
 errors: list[str] = []
 
-for path in (BUILD, PRODUCTION_VALIDATOR, RUNNER, WORKFLOW, INSTALLER, DOC):
+for path in (BUILD, PRODUCTION_VALIDATOR, RUNNER, AGENT, WORKFLOW, INSTALLER, DOC):
     if not path.is_file():
         errors.append(f"Missing signed device-smoke file: {path.relative_to(ROOT)}")
 
@@ -21,6 +22,7 @@ if errors:
 build = BUILD.read_text(encoding="utf-8")
 production_validator = PRODUCTION_VALIDATOR.read_text(encoding="utf-8")
 runner = RUNNER.read_text(encoding="utf-8")
+agent = AGENT.read_text(encoding="utf-8")
 workflow = WORKFLOW.read_text(encoding="utf-8")
 installer = INSTALLER.read_text(encoding="utf-8")
 doc = DOC.read_text(encoding="utf-8")
@@ -64,16 +66,28 @@ for marker in (
     "SignedDeviceSmokeBuild.BuildFromCommandLine",
     "NESBEISYA_DEVICE_SMOKE_OUTPUT",
     "device-smoke-build.log",
+    "$BuildAab -and $BuildSmokeApk",
 ):
     if marker not in runner:
         errors.append(f"Release runner is missing signed device-smoke support: {marker!r}.")
 
 for marker in (
     "- DeviceSmokeApk",
-    "run_release_candidate_checks.ps1 -BuildSmokeApk",
+    "- ReleaseCandidate",
+    "agent/release-candidate/",
 ):
     if marker not in workflow:
         errors.append(f"Self-hosted workflow is missing signed device-smoke support: {marker!r}.")
+
+for marker in (
+    '[ValidateSet("Fast", "Unity", "Full", "Build", "ReleaseCandidate")]',
+    'elseif ($Mode -eq "ReleaseCandidate")',
+    'Invoke-UnityChecks -IncludeReadiness -BuildAab -BuildSmokeApk',
+    'Invoke-SmokeArtifactVerification -SmokeOutput $smokeOutput',
+    'Invoke-ReleaseArtifactVerification -ReleaseOutput $releaseOutput -ExpectedGitSha $gitSha',
+):
+    if marker not in agent:
+        errors.append(f"Agent release-candidate mode is incomplete: missing {marker!r}.")
 
 for marker in (
     "Get-FileHash -Path $apk -Algorithm SHA256",
