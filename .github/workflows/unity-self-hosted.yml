@@ -50,6 +50,13 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Clean stale release artifacts
+        shell: powershell
+        run: |
+          foreach ($path in @("artifacts/agent-check", "artifacts/release-candidate", "artifacts/android-integration-probe")) {
+            if (Test-Path $path) { Remove-Item $path -Recurse -Force }
+          }
+
       - name: Bootstrap portable Python
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap_portable_python.ps1
