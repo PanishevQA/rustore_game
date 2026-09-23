@@ -165,10 +165,7 @@ namespace DontGetSidetracked.Presentation
             _shareFeedback.text = string.Empty;
             RefreshBest(snapshot, campaign, score);
             _comparisonLabel.text = aggregate ? "ПОСЛЕДНИЙ МАРШРУТ" : "СРАВНЕНИЕ МАРШРУТОВ";
-            // The bootstrap chooses this colour for the player's result trajectory.
-            _playerLegend.color = snapshot.LastResultScore >= 90.0
-                ? new Color(0.2f, 1f, 0.45f, 1f)
-                : new Color(1f, 0.75f, 0.15f, 1f);
+            _playerLegend.color = ReleaseUiComponents.Cyan;
             SetResultUiVisible(true);
 
             string analyticsMode = campaign ? "Campaign" : mode;
