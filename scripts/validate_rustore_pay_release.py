@@ -29,6 +29,10 @@ if missing:
 manifest = MANIFEST.read_text(encoding="utf-8")
 if 'com.unity3d.player.UnityPlayerActivity' not in manifest:
     raise SystemExit("Android manifest lost UnityPlayerActivity required by RuStore Pay.")
+if 'android:launchMode="singleTop"' not in manifest:
+    raise SystemExit("RuStore Pay requires UnityPlayerActivity launchMode=singleTop.")
+if 'android:launchMode="singleTask"' in manifest:
+    raise SystemExit("RuStore Pay 9.0.2+ forbids the legacy singleTask launch mode; use singleTop.")
 if 'android:scheme="nesbeisya"' not in manifest or 'android:host="challenge"' not in manifest:
     raise SystemExit("Gameplay challenge deeplink contract is missing from Android manifest.")
 
