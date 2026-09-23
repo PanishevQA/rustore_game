@@ -14,9 +14,6 @@ if ($BuildAab -and $SkipReadiness) {
 if ($BuildSmokeApk -and $SkipReadiness) {
     throw "BuildSmokeApk requires release readiness; do not combine -BuildSmokeApk with -SkipReadiness."
 }
-if ($BuildAab -and $BuildSmokeApk) {
-    throw "BuildAab and BuildSmokeApk are mutually exclusive."
-}
 if ($UnityStepTimeoutSeconds -lt 60) {
     throw "UnityStepTimeoutSeconds must be at least 60 seconds."
 }
@@ -175,7 +172,7 @@ $readinessCopy = Join-Path $artifacts "release-readiness.txt"
 
 Remove-Item $testResults, $testLog, $playModeResults, $playModeLog, $serializedLog, $serializedReport, $productionBuildLog, $deviceSmokeBuildLog, $readinessLog, $readinessCopy -Force -ErrorAction SilentlyContinue
 
-$totalSteps = if ($BuildAab -or $BuildSmokeApk) { 5 } elseif ($SkipReadiness) { 3 } else { 4 }
+$totalSteps = if ($BuildAab -and $BuildSmokeApk) { 6 } elseif ($BuildAab -or $BuildSmokeApk) { 5 } elseif ($SkipReadiness) { 3 } else { 4 }
 Write-Host "[1/$totalSteps] Unity compile + EditMode tests..." -ForegroundColor Yellow
 $testArgs = @(
     "-batchmode",
@@ -278,7 +275,8 @@ if (-not $SkipReadiness) {
 
 if ($BuildSmokeApk) {
     Write-Host ""
-    Write-Host "[5/$totalSteps] Build signed release APK for physical-device smoke testing..." -ForegroundColor Yellow
+    $smokeStep = 5
+    Write-Host "[$smokeStep/$totalSteps] Build signed release APK for physical-device smoke testing..." -ForegroundColor Yellow
 
     $smokeOutput = $env:NESBEISYA_DEVICE_SMOKE_OUTPUT
     if ([string]::IsNullOrWhiteSpace($smokeOutput)) {
@@ -320,7 +318,8 @@ if ($BuildSmokeApk) {
 
 if ($BuildAab) {
     Write-Host ""
-    Write-Host "[5/$totalSteps] Build production Android AAB..." -ForegroundColor Yellow
+    $aabStep = if ($BuildSmokeApk) { 6 } else { 5 }
+    Write-Host "[$aabStep/$totalSteps] Build production Android AAB..." -ForegroundColor Yellow
 
     $releaseOutput = $env:NESBEISYA_RELEASE_OUTPUT
     if ([string]::IsNullOrWhiteSpace($releaseOutput)) {

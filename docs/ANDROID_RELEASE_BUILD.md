@@ -58,7 +58,7 @@ AAB не устанавливается на телефон напрямую. Д
 
 `Tools → НЕ СБЕЙСЯ! → Build → Signed Device Smoke APK`
 
-На self-hosted runner доступен ручной режим **Actions → unity-self-hosted → DeviceSmokeApk**. Он сначала выполняет compile/EditMode/PlayMode/serialized/readiness, затем собирает APK через `SignedDeviceSmokeBuild.BuildFromCommandLine`. По умолчанию workflow кладёт файл в `artifacts/release-candidate/android-device-smoke/nesbeisya-device-smoke.apk`.
+На self-hosted runner доступны режимы **DeviceSmokeApk** и **ReleaseCandidate**. `DeviceSmokeApk` собирает только signed APK после compile/EditMode/PlayMode/serialized/readiness. `ReleaseCandidate` за один gate собирает **и signed APK, и production AAB из одного Git commit**, затем отдельно сверяет SHA-256 APK и metadata/SHA-256 AAB. Для автоматического запуска этого режима используется trusted branch prefix `agent/release-candidate/**`. APK сохраняется в `artifacts/release-candidate/android-device-smoke/nesbeisya-device-smoke.apk`, AAB — в `artifacts/release-candidate/android/nesbeisya-production.aab`.
 
 Для APK используется production custom keystore и user-scoped `NESBEISYA_KEYSTORE_PASS` / `NESBEISYA_KEYALIAS_PASS`; debug signing и `BuildOptions.Development` не используются. Рядом создаётся `.sha256` для проверки целостности. Этот APK предназначен **только для физического smoke/regression теста**. Публикационный артефакт остаётся production AAB из `ProductionAndroidBuild`.
 
@@ -73,7 +73,7 @@ Helper сверяет SHA-256 sidecar, находит `adb` в PATH или embed
 Перед загрузкой в RuStore запустите verifier на соседнем metadata-файле:
 
 ```text
-python scripts/verify_release_artifact.py UnityProject/Builds/Android/nesbeisya-1.0.0-10.release.json --package ru.panishedqa.nesbeisya --version 1.0.0 --version-code 10 --git-sha <commit>
+python scripts/verify_release_artifact.py UnityProject/Builds/Android/nesbeisya-1.0-1.release.json --package ru.release.nesbeisya --version 1.0 --version-code 1 --git-sha <commit>
 ```
 
 Verifier проверяет, что AAB существует рядом с metadata, имеет расширение `.aab`, его фактический размер и SHA-256 совпадают с данными сборки, а package/version/versionCode/Git SHA совпадают с ожидаемым релизом. Любая модификация AAB после сборки приводит к ошибке проверки.
