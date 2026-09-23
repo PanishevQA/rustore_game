@@ -55,7 +55,7 @@ def main() -> int:
         "scripts/agent_check.ps1",
         check,
         (
-            '[ValidateSet("Fast", "Unity", "Full", "Build")]',
+            '[ValidateSet("Fast", "Unity", "Full", "Build", "ReleaseCandidate")]',
             'Filter "validate_*.py"',
             'Filter "test_*.py"',
             "analyze_unity_log.py",
@@ -104,6 +104,8 @@ def main() -> int:
             "runs-on: [self-hosted, windows, x64, unity]",
             "AGENT_CHECK_MODE",
             "- Build",
+            "- ReleaseCandidate",
+            "agent/release-candidate/",
         ),
     )
 
@@ -141,6 +143,8 @@ def main() -> int:
             "ReleaseReadinessReporter.Report",
             "ProductionAndroidBuild.BuildFromCommandLine",
             "[switch]$BuildAab",
+            "[switch]$BuildSmokeApk",
+            "$BuildAab -and $BuildSmokeApk",
             "production-build.log",
             "editmode.log",
             "editmode-results.xml",
