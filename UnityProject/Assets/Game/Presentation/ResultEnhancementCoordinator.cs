@@ -27,6 +27,8 @@ namespace DontGetSidetracked.Presentation
         private Text _modeLabel;
         private Text _scoreText;
         private Text _badge;
+        private Image _scoreRing;
+        private Image _scoreGlow;
         private Image _medalIcon;
         private Text _bestLabel;
         private Text _recordLabel;
@@ -136,19 +138,19 @@ namespace DontGetSidetracked.Presentation
 
             _scoreText.text = $"{score:0.0}%";
             RefreshScoreStats(snapshot);
-            _scoreText.color = score >= 90.0
-                ? ReleaseUiKit.Green
-                : score >= 70.0
-                    ? ReleaseUiKit.Cyan
-                    : score >= 50.0
-                        ? ReleaseUiKit.Gold
-                        : ReleaseUiKit.Danger;
+            Color scoreColor = ReleaseUiComponents.Cyan;
+            _scoreText.color = ReleaseUiComponents.Text;
+            bool authoredScoreRing = ReleaseSkinAssets.ScoreRing != null;
+            if (_scoreRing != null) _scoreRing.color = authoredScoreRing ? Color.white : scoreColor;
+            if (_scoreGlow != null)
+            {
+                _scoreGlow.gameObject.SetActive(!authoredScoreRing);
+                _scoreGlow.color = new Color(scoreColor.r, scoreColor.g, scoreColor.b, 0.18f);
+            }
 
-            _modeLabel.text = campaign
-                ? $"КАМПАНИЯ  •  УРОВЕНЬ {CampaignRuntimeCoordinator.CurrentLevelNumber}"
-                : ModeLabel(mode);
+            _modeLabel.text = "РЕЗУЛЬТАТ";
 
-            _badge.text = celebration.Label;
+            _badge.text = ResultPraise(score);
             _badge.color = BadgeColor(celebration.Tier);
             string medalAsset = MedalAsset(celebration.Tier);
             if (_medalIcon != null)
@@ -160,11 +162,8 @@ namespace DontGetSidetracked.Presentation
             _recordLabel.text = string.Empty;
             _shareFeedback.text = string.Empty;
             RefreshBest(snapshot, campaign, score);
-            _comparisonLabel.text = aggregate ? "ПОСЛЕДНИЙ МАРШРУТ" : "СРАВНЕНИЕ МАРШРУТОВ";
-            // The bootstrap chooses this colour for the player's result trajectory.
-            _playerLegend.color = snapshot.LastResultScore >= 90.0
-                ? new Color(0.2f, 1f, 0.45f, 1f)
-                : new Color(1f, 0.75f, 0.15f, 1f);
+            _comparisonLabel.text = "ЭТАЛОННЫЙ МАРШРУТ";
+            _playerLegend.color = ReleaseUiComponents.Cyan;
             SetResultUiVisible(true);
 
             string analyticsMode = campaign ? "Campaign" : mode;
@@ -182,9 +181,9 @@ namespace DontGetSidetracked.Presentation
             _shareable = campaign || string.Equals(mode, "Training", StringComparison.Ordinal) || aggregate;
             _canChallenge = !campaign && aggregate;
             _cardButton.gameObject.SetActive(_shareable);
-            _imageButton.gameObject.SetActive(_canChallenge);
+            _imageButton.gameObject.SetActive(false);
             ReleaseUiKit.SetAnchors(_cardButton.GetComponent<RectTransform>(),
-                new Vector2(_canChallenge ? 0.51f : 0.04f, 0.09f), new Vector2(0.96f, 0.41f));
+                new Vector2(0.04f, 0.06f), new Vector2(0.96f, 0.40f));
             GeneratedUiAssets.TryApply(_cardIcon, _canChallenge ? GeneratedUiAssets.ChallengeIcon : GeneratedUiAssets.ShareIcon);
             _cardButtonText.text = campaign
                 ? "ПОДЕЛИТЬСЯ УРОВНЕМ"
@@ -465,109 +464,243 @@ namespace DontGetSidetracked.Presentation
 
             var flashGo = new GameObject("PerfectFlash", typeof(RectTransform), typeof(Image));
             flashGo.transform.SetParent(_canvas.transform, false);
-            ReleaseUiKit.SetAnchors(flashGo.GetComponent<RectTransform>(), new Vector2(0.06f, 0.25f), new Vector2(0.94f, 0.74f));
+            ReleaseUiKit.SetAnchors(flashGo.GetComponent<RectTransform>(), new Vector2(0.12f, 0.68f), new Vector2(0.88f, 0.94f));
             _flash = flashGo.GetComponent<Image>();
-            _flash.color = new Color(0.38f, 0.82f, 1f, 0f);
+            _flash.color = new Color(0.20f, 0.86f, 1f, 0f);
             _flash.raycastTarget = false;
 
-            Image header = ReleaseUiComponents.GlassCard(_canvas.transform, "ResultHeader",
-                new Vector2(0.07f, 0.785f), new Vector2(0.93f, 0.950f),
-                ReleaseUiComponents.Cyan, true);
+            Transform header = ReleaseUiKit.Rect(_canvas.transform, "ResultHeader",
+                new Vector2(0.08f, 0.685f), new Vector2(0.92f, 0.965f));
             _resultHeader = header.gameObject;
             _resultHeader.AddComponent<ReleasePanelMotion>();
 
-            _modeLabel = ReleaseUiKit.TextBlock(header.transform, "Mode", "РЕЗУЛЬТАТ", 24,
-                TextAnchor.MiddleCenter, new Vector2(0.06f, 0.78f), new Vector2(0.94f, 0.96f),
-                ReleaseUiComponents.Muted, FontStyle.Bold);
-
-            _medalIcon = ReleaseUiComponents.Icon(header.transform, "MedalIcon", GeneratedUiAssets.MedalGold,
-                new Vector2(0.07f, 0.28f), new Vector2(0.26f, 0.74f));
-
-            _scoreText = ReleaseUiKit.TextBlock(header.transform, "Score", "0.0%", 96,
-                TextAnchor.MiddleCenter, new Vector2(0.27f, 0.28f), new Vector2(0.91f, 0.80f),
-                ReleaseUiComponents.Success, FontStyle.Bold);
-            ReleaseUiKit.AddTextShadow(_scoreText, 0.58f, -4f);
-
-            _badge = ReleaseUiKit.TextBlock(header.transform, "Medal", string.Empty, 28,
-                TextAnchor.MiddleCenter, new Vector2(0.14f, 0.16f), new Vector2(0.86f, 0.32f),
+            _modeLabel = ReleaseUiKit.TextBlock(header, "Mode", "РЕЗУЛЬТАТ", 31,
+                TextAnchor.MiddleCenter, new Vector2(0.20f, 0.86f), new Vector2(0.80f, 0.99f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
 
-            _bestLabel = ReleaseUiKit.TextBlock(header.transform, "BestScore", string.Empty, 22,
-                TextAnchor.MiddleCenter, new Vector2(0.06f, 0.025f), new Vector2(0.94f, 0.16f),
-                ReleaseUiComponents.Muted);
+            Transform scoreHost = CenteredRect(header, "ScoreRingHost", new Vector2(0.50f, 0.49f), new Vector2(310f, 310f));
+            _scoreGlow = CircleImage(scoreHost, "ScoreGlow", Vector2.zero, Vector2.one,
+                new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.18f));
 
-            _recordLabel = ReleaseUiKit.TextBlock(_canvas.transform, "DailyRecord", string.Empty, 24,
-                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.750f), new Vector2(0.92f, 0.781f),
+            _scoreRing = CircleImage(scoreHost, "ScoreRing",
+                new Vector2(0.08f, 0.08f), new Vector2(0.92f, 0.92f), ReleaseUiComponents.Cyan);
+            Sprite authoredRing = ReleaseSkinAssets.ScoreRing;
+            if (authoredRing != null)
+            {
+                _scoreRing.sprite = authoredRing;
+                _scoreRing.type = Image.Type.Simple;
+                _scoreRing.preserveAspect = true;
+                _scoreRing.color = Color.white;
+                _scoreGlow.gameObject.SetActive(false);
+            }
+
+            Image scoreInner = CircleImage(_scoreRing.transform, "ScoreInner",
+                new Vector2(0.085f, 0.085f), new Vector2(0.915f, 0.915f),
+                new Color(0.008f, 0.030f, 0.068f, 0.995f));
+            scoreInner.raycastTarget = false;
+
+            _scoreText = ReleaseUiKit.TextBlock(scoreHost, "Score", "0.0%", 82,
+                TextAnchor.MiddleCenter, new Vector2(0.06f, 0.36f), new Vector2(0.94f, 0.73f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+            _scoreText.resizeTextForBestFit = false;
+            _scoreText.verticalOverflow = VerticalWrapMode.Overflow;
+            _scoreText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _scoreText.transform.SetAsLastSibling();
+            ReleaseUiKit.AddTextShadow(_scoreText, 0.62f, -4f);
+
+            _badge = ReleaseUiKit.TextBlock(scoreHost, "Medal", string.Empty, 23,
+                TextAnchor.MiddleCenter, new Vector2(0.10f, 0.27f), new Vector2(0.90f, 0.45f),
+                ReleaseUiComponents.Success, FontStyle.Bold);
+            _badge.transform.SetAsLastSibling();
+
+            _bestLabel = ReleaseUiKit.TextBlock(scoreHost, "BestScore", string.Empty, 14,
+                TextAnchor.MiddleCenter, new Vector2(0.20f, 0.10f), new Vector2(0.80f, 0.20f),
+                Color.clear);
+            _bestLabel.gameObject.SetActive(false);
+            _medalIcon = null;
+
+            AddConfetti(header, "ConfettiA", new Vector2(0.16f, 0.50f), new Color(0.10f, 0.90f, 1f, 0.95f), 18f);
+            AddConfetti(header, "ConfettiB", new Vector2(0.22f, 0.69f), new Color(0.57f, 0.32f, 1f, 0.95f), -22f);
+            AddConfetti(header, "ConfettiC", new Vector2(0.82f, 0.60f), new Color(0.12f, 0.88f, 1f, 0.95f), -16f);
+            AddConfetti(header, "ConfettiD", new Vector2(0.77f, 0.36f), new Color(0.64f, 0.31f, 1f, 0.95f), 28f);
+
+            _recordLabel = ReleaseUiKit.TextBlock(_canvas.transform, "DailyRecord", string.Empty, 18,
+                TextAnchor.MiddleCenter, new Vector2(0.10f, 0.668f), new Vector2(0.90f, 0.694f),
                 ReleaseUiComponents.Gold, FontStyle.Bold);
 
             Image detail = ReleaseUiComponents.GlassCard(_canvas.transform, "ResultDetail",
-                new Vector2(0.07f, 0.675f), new Vector2(0.93f, 0.744f),
-                ReleaseUiComponents.Violet, false);
+                new Vector2(0.07f, 0.325f), new Vector2(0.93f, 0.382f),
+                ReleaseUiComponents.Blue, false);
+            detail.color = new Color(0.016f, 0.043f, 0.082f, 0.96f);
             _detailCard = detail.gameObject;
-            _detailText = ReleaseUiKit.TextBlock(detail.transform, "Detail", string.Empty, 23,
-                TextAnchor.MiddleCenter, new Vector2(0.035f, 0.45f), new Vector2(0.965f, 0.98f),
-                ReleaseUiKit.Muted, FontStyle.Bold);
-            _detailText.lineSpacing = 1.05f;
 
-            _comparisonLabel = ReleaseUiKit.TextBlock(detail.transform, "ComparisonScope", "СРАВНЕНИЕ МАРШРУТОВ", 18,
-                TextAnchor.MiddleLeft, new Vector2(0.035f, 0.05f), new Vector2(0.50f, 0.40f), ReleaseUiComponents.Muted);
-            ReleaseUiKit.TextBlock(detail.transform, "ReferenceLegend", "ЭТАЛОН", 21,
-                TextAnchor.MiddleCenter, new Vector2(0.52f, 0.05f), new Vector2(0.72f, 0.40f), ReleaseUiComponents.Cyan, FontStyle.Bold);
-            _playerLegend = ReleaseUiKit.TextBlock(detail.transform, "PlayerLegend", "ТВОЯ ЛИНИЯ", 21,
-                TextAnchor.MiddleCenter, new Vector2(0.73f, 0.05f), new Vector2(0.97f, 0.40f), ReleaseUiComponents.Gold, FontStyle.Bold);
+            _detailText = ReleaseUiKit.TextBlock(detail.transform, "Detail", string.Empty, 18,
+                TextAnchor.MiddleCenter, new Vector2(0.01f, 0.01f), new Vector2(0.02f, 0.02f),
+                Color.clear);
 
-            Image metrics = ReleaseUiComponents.GlassCard(_canvas.transform, "ResultMetrics",
-                new Vector2(0.07f, 0.215f), new Vector2(0.93f, 0.315f), ReleaseUiComponents.Blue);
+            AddLegendLine(detail.transform, "PlayerLegendLine", ReleaseUiComponents.Cyan,
+                new Vector2(0.035f, 0.61f), new Vector2(0.095f, 0.70f), false);
+            _playerLegend = ReleaseUiKit.TextBlock(detail.transform, "PlayerLegend", "ТВОЙ МАРШРУТ", 15,
+                TextAnchor.MiddleLeft, new Vector2(0.105f, 0.50f), new Vector2(0.43f, 0.82f),
+                ReleaseUiComponents.Cyan, FontStyle.Bold);
+
+            AddLegendLine(detail.transform, "ReferenceLegendLine", new Color(0.72f, 0.80f, 0.90f, 0.90f),
+                new Vector2(0.48f, 0.61f), new Vector2(0.54f, 0.70f), true);
+            _comparisonLabel = ReleaseUiKit.TextBlock(detail.transform, "ComparisonScope", "ЭТАЛОННЫЙ МАРШРУТ", 14,
+                TextAnchor.MiddleLeft, new Vector2(0.55f, 0.50f), new Vector2(0.965f, 0.82f),
+                new Color(0.72f, 0.80f, 0.90f, 1f), FontStyle.Bold);
+
+            AddLegendRing(detail.transform, "StartLegend", new Vector2(0.035f, 0.15f), Color.white);
+            ReleaseUiKit.TextBlock(detail.transform, "StartLegendText", "СТАРТ", 14,
+                TextAnchor.MiddleLeft, new Vector2(0.085f, 0.08f), new Vector2(0.28f, 0.40f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
+
+            AddLegendRing(detail.transform, "FinishLegend", new Vector2(0.48f, 0.15f), Color.white);
+            ReleaseUiKit.TextBlock(detail.transform, "FinishLegendText", "ФИНИШ", 14,
+                TextAnchor.MiddleLeft, new Vector2(0.53f, 0.08f), new Vector2(0.73f, 0.40f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
+
+            Transform metrics = ReleaseUiKit.Rect(_canvas.transform, "ResultMetrics",
+                new Vector2(0.07f, 0.185f), new Vector2(0.93f, 0.315f));
             _metricsPanel = metrics.gameObject;
-            _meanValue = Metric(metrics.transform, "MeanDeviation", "Среднее\nотклонение", new Vector2(0f, 0.50f), new Vector2(0.50f, 1f));
-            _endValue = Metric(metrics.transform, "EndAccuracy", "Точность\nфиниша", new Vector2(0.50f, 0.50f), new Vector2(1f, 1f));
-            _completionValue = Metric(metrics.transform, "Completion", "Завершено", new Vector2(0f, 0f), new Vector2(0.50f, 0.50f));
-            _timeValue = Metric(metrics.transform, "GestureTime", "Время жеста", new Vector2(0.50f, 0f), new Vector2(1f, 0.50f));
+            _meanValue = Metric(metrics, "MeanDeviation", "СРЕДНЕЕ ОТКЛОНЕНИЕ",
+                new Vector2(0.00f, 0.52f), new Vector2(0.485f, 1.00f), ReleaseUiComponents.Blue);
+            _completionValue = Metric(metrics, "Completion", "ЗАВЕРШЁННОСТЬ",
+                new Vector2(0.515f, 0.52f), new Vector2(1.00f, 1.00f), ReleaseUiComponents.Cyan);
+            _endValue = Metric(metrics, "EndAccuracy", "ТОЧНОСТЬ ФИНИША",
+                new Vector2(0.00f, 0.00f), new Vector2(0.485f, 0.48f), ReleaseUiComponents.Violet);
+            _timeValue = Metric(metrics, "GestureTime", "ВРЕМЯ",
+                new Vector2(0.515f, 0.00f), new Vector2(1.00f, 0.48f), ReleaseUiComponents.Blue);
 
-            Image actions = ReleaseUiComponents.GlassCard(_canvas.transform, "ResultActions",
-                new Vector2(0.07f, 0.045f), new Vector2(0.93f, 0.195f),
-                ReleaseUiComponents.Violet, true);
+            Transform actions = ReleaseUiKit.Rect(_canvas.transform, "ResultActions",
+                new Vector2(0.07f, 0.032f), new Vector2(0.93f, 0.170f));
             _actionPanel = actions.gameObject;
 
-            _primaryAction = ReleaseUiComponents.PrimaryButton(actions.transform, "PrimaryAction", "ЕЩЁ РАЗ",
-                new Vector2(0.37f, 0.51f), new Vector2(0.96f, 0.93f),
-                InvokePrimary, 27);
-            _primaryActionText = _primaryAction.GetComponentInChildren<Text>(true);
-            ReleaseUiKit.SetAnchors(_primaryActionText.rectTransform, new Vector2(0.15f, 0.05f), new Vector2(0.96f, 0.95f));
-            ReleaseUiComponents.Icon(_primaryAction.transform, "ReplayIcon", GeneratedUiAssets.ReplayIcon,
-                new Vector2(0.035f, 0.20f), new Vector2(0.14f, 0.80f));
-
-            _secondaryAction = ReleaseUiComponents.SecondaryButton(actions.transform, "SecondaryAction", "ДОМОЙ",
-                new Vector2(0.04f, 0.51f), new Vector2(0.34f, 0.93f),
+            _secondaryAction = ReleaseUiComponents.SecondaryButton(actions, "SecondaryAction", "ДОМОЙ",
+                new Vector2(0.00f, 0.54f), new Vector2(0.48f, 0.98f),
                 InvokeSecondary, 23);
             _secondaryActionText = _secondaryAction.GetComponentInChildren<Text>(true);
 
-            _cardButton = ReleaseUiComponents.SecondaryButton(actions.transform, "ShareCard", "БРОСИТЬ ВЫЗОВ",
-                new Vector2(0.51f, 0.08f), new Vector2(0.96f, 0.43f),
-                ShareCard, 19);
+            _primaryAction = ReleaseUiComponents.PrimaryButton(actions, "PrimaryAction", "ЕЩЁ РАЗ",
+                new Vector2(0.52f, 0.54f), new Vector2(1.00f, 0.98f),
+                InvokePrimary, 23);
+            _primaryActionText = _primaryAction.GetComponentInChildren<Text>(true);
+
+            _cardButton = ReleaseUiComponents.SecondaryButton(actions, "ShareCard", "ПОДЕЛИТЬСЯ РЕЗУЛЬТАТОМ",
+                new Vector2(0.00f, 0.02f), new Vector2(1.00f, 0.43f),
+                ShareCard, 20);
             _cardButtonText = _cardButton.GetComponentInChildren<Text>(true);
-            ReleaseUiKit.SetAnchors(_cardButtonText.rectTransform, new Vector2(0.17f, 0.05f), new Vector2(0.96f, 0.95f));
-            _cardIcon = ReleaseUiComponents.Icon(_cardButton.transform, "ShareActionIcon", GeneratedUiAssets.ChallengeIcon,
-                new Vector2(0.035f, 0.20f), new Vector2(0.15f, 0.80f));
+            ReleaseUiKit.SetAnchors(_cardButtonText.rectTransform, new Vector2(0.15f, 0.05f), new Vector2(0.96f, 0.95f));
+            _cardIcon = ReleaseUiComponents.Icon(_cardButton.transform, "ShareActionIcon", GeneratedUiAssets.ShareIcon,
+                new Vector2(0.035f, 0.20f), new Vector2(0.13f, 0.80f));
 
-            _imageButton = ReleaseUiComponents.SecondaryButton(actions.transform, "ShareImage", "ПОДЕЛИТЬСЯ",
-                new Vector2(0.04f, 0.09f), new Vector2(0.48f, 0.41f), ShareImageCard, 22);
-            Text imageText = _imageButton.GetComponentInChildren<Text>(true);
-            ReleaseUiKit.SetAnchors(imageText.rectTransform, new Vector2(0.19f, 0.05f), new Vector2(0.96f, 0.95f));
-            ReleaseUiComponents.Icon(_imageButton.transform, "ShareIcon", GeneratedUiAssets.ShareIcon,
-                new Vector2(0.04f, 0.20f), new Vector2(0.16f, 0.80f));
+            _imageButton = ReleaseUiComponents.SecondaryButton(actions, "ShareImage", string.Empty,
+                new Vector2(0f, 0f), new Vector2(0.01f, 0.01f), ShareImageCard, 18);
+            _imageButton.gameObject.SetActive(false);
 
-            _shareFeedback = ReleaseUiKit.TextBlock(_canvas.transform, "ShareFeedback", string.Empty, 20,
-                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.011f), new Vector2(0.92f, 0.041f), ReleaseUiComponents.Muted);
+            _shareFeedback = ReleaseUiKit.TextBlock(_canvas.transform, "ShareFeedback", string.Empty, 17,
+                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.006f), new Vector2(0.92f, 0.030f),
+                ReleaseUiComponents.Muted);
         }
 
-        private static Text Metric(Transform parent, string name, string label, Vector2 min, Vector2 max)
+        private static Text Metric(Transform parent, string name, string label, Vector2 min, Vector2 max, Color accent)
         {
-            Transform cell = ReleaseUiKit.Rect(parent, name, min, max);
-            ReleaseUiKit.TextBlock(cell, "Caption", label, 23, TextAnchor.MiddleLeft,
-                new Vector2(0.065f, 0.10f), new Vector2(0.61f, 0.90f), ReleaseUiComponents.Muted);
-            return ReleaseUiKit.TextBlock(cell, "Value", "0.0%", 30, TextAnchor.MiddleRight,
-                new Vector2(0.62f, 0.10f), new Vector2(0.94f, 0.90f), ReleaseUiComponents.Text, FontStyle.Bold);
+            Image cell = ReleaseUiComponents.GlassCard(parent, name, min, max, accent, false);
+            cell.color = new Color(0.018f, 0.046f, 0.084f, 0.97f);
+
+            ReleaseUiKit.TextBlock(cell.transform, "Caption", label, 15, TextAnchor.UpperLeft,
+                new Vector2(0.065f, 0.45f), new Vector2(0.94f, 0.90f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
+            return ReleaseUiKit.TextBlock(cell.transform, "Value", "0.0%", 28, TextAnchor.LowerLeft,
+                new Vector2(0.065f, 0.10f), new Vector2(0.94f, 0.56f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+        }
+
+        private static string ResultPraise(double score)
+        {
+            if (score >= 99.0) return "ИДЕАЛЬНО!";
+            if (score >= 90.0) return "ОТЛИЧНО!";
+            if (score >= 75.0) return "ХОРОШО!";
+            if (score >= 50.0) return "НЕПЛОХО!";
+            return "ПОПРОБУЙ ЕЩЁ";
+        }
+
+        private static void AddLegendLine(Transform parent, string name, Color color, Vector2 min, Vector2 max, bool dashed)
+        {
+            if (!dashed)
+            {
+                Transform line = ReleaseUiKit.Rect(parent, name, min, max);
+                Image image = line.gameObject.AddComponent<Image>();
+                image.sprite = ReleaseUiKit.Rounded;
+                image.type = Image.Type.Sliced;
+                image.color = color;
+                image.raycastTarget = false;
+                return;
+            }
+
+            float width = (max.x - min.x) / 3f;
+            for (int i = 0; i < 3; i++)
+            {
+                float x0 = min.x + i * width;
+                Transform dash = ReleaseUiKit.Rect(parent, name + i,
+                    new Vector2(x0, min.y), new Vector2(x0 + width * 0.58f, max.y));
+                Image image = dash.gameObject.AddComponent<Image>();
+                image.sprite = ReleaseUiKit.Rounded;
+                image.type = Image.Type.Sliced;
+                image.color = color;
+                image.raycastTarget = false;
+            }
+        }
+
+        private static void AddLegendRing(Transform parent, string name, Vector2 anchor, Color color)
+        {
+            Transform host = CenteredRect(parent, name, anchor, new Vector2(24f, 24f));
+            Image outer = host.gameObject.AddComponent<Image>();
+            outer.sprite = ReleaseUiKit.Circle;
+            outer.color = color;
+            outer.raycastTarget = false;
+
+            Transform inner = ReleaseUiKit.Rect(host, "Inner", new Vector2(0.28f, 0.28f), new Vector2(0.72f, 0.72f));
+            Image innerImage = inner.gameObject.AddComponent<Image>();
+            innerImage.sprite = ReleaseUiKit.Circle;
+            innerImage.color = new Color(0.010f, 0.035f, 0.075f, 1f);
+            innerImage.raycastTarget = false;
+        }
+
+        private static Transform CenteredRect(Transform parent, string name, Vector2 anchor, Vector2 size)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            RectTransform rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = anchor;
+            rect.anchorMax = anchor;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = size;
+            rect.anchoredPosition = Vector2.zero;
+            return go.transform;
+        }
+
+        private static Image CircleImage(Transform parent, string name, Vector2 min, Vector2 max, Color color)
+        {
+            Transform root = ReleaseUiKit.Rect(parent, name, min, max);
+            Image image = root.gameObject.AddComponent<Image>();
+            image.sprite = ReleaseUiKit.Circle;
+            image.type = Image.Type.Simple;
+            image.color = color;
+            image.raycastTarget = false;
+            return image;
+        }
+
+        private static void AddConfetti(Transform parent, string name, Vector2 anchor, Color color, float angle)
+        {
+            Transform root = CenteredRect(parent, name, anchor, new Vector2(18f, 42f));
+            RectTransform rect = root.GetComponent<RectTransform>();
+            rect.localRotation = Quaternion.Euler(0f, 0f, angle);
+            Image image = root.gameObject.AddComponent<Image>();
+            image.sprite = ReleaseUiKit.Rounded;
+            image.type = Image.Type.Sliced;
+            image.color = color;
+            image.raycastTarget = false;
         }
 
         private void ResolveLegacyResultControls()
@@ -683,14 +816,8 @@ namespace DontGetSidetracked.Presentation
         private void RefreshResultDetail()
         {
             if (_detailText == null || _detailCard == null || _bootstrap == null) return;
-
-            Text status = GameBootstrapRuntimeBridge.Status(_bootstrap);
-            string value = status?.text?.Replace("\r", string.Empty).Trim() ?? string.Empty;
-            bool numericOnly = IsScoreOnly(value);
-
-            _detailText.text = numericOnly ? string.Empty : value;
-            bool show = !string.IsNullOrWhiteSpace(_detailText.text);
-            if (_detailCard.activeSelf != show) _detailCard.SetActive(show);
+            _detailText.text = string.Empty;
+            if (!_detailCard.activeSelf) _detailCard.SetActive(true);
         }
 
         private static bool IsScoreOnly(string value)
@@ -721,7 +848,7 @@ namespace DontGetSidetracked.Presentation
             if (_scoreText != null) _scoreText.gameObject.SetActive(visible);
             if (_badge != null) _badge.gameObject.SetActive(visible);
             if (_recordLabel != null) _recordLabel.gameObject.SetActive(visible && !string.IsNullOrWhiteSpace(_recordLabel.text));
-            if (_detailCard != null) _detailCard.SetActive(visible && _detailText != null && !string.IsNullOrWhiteSpace(_detailText.text));
+            if (_detailCard != null) _detailCard.SetActive(visible);
 
             // StatTile returns its value Text, while the visible card is its parent.
             // Keep result-only metrics completely out of Showing/Drawing/Home. Previously

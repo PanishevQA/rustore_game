@@ -9,6 +9,7 @@ FILES = {
     "home": PRESENTATION / "HomeDashboardCoordinator.cs",
     "ui_kit": PRESENTATION / "ReleaseUiKit.cs",
     "ui_components": PRESENTATION / "ReleaseUiComponents.cs",
+    "release_skin": PRESENTATION / "ReleaseSkinAssets.cs",
     "daily_intro": PRESENTATION / "DailyIntroCoordinator.cs",
     "tutorial_intro": PRESENTATION / "TutorialIntroCoordinator.cs",
     "gameplay_hud": PRESENTATION / "GameplayHudCoordinator.cs",
@@ -59,6 +60,18 @@ required = {
         "GeneratedUiAssets.CoinIcon",
         "CreateGradientRoundedSprite",
         "CreateBackdropTexture",
+    ),
+    "release_skin": (
+        'Root = "ReleaseSkin/"',
+        "Convert.FromBase64String",
+        'LoadTexture("Backdrop")',
+        'LoadSliced("Glass"',
+        'LoadSliced("Primary"',
+        'LoadSliced("Secondary"',
+        'LoadSliced("Gameplay"',
+        'LoadSimple("Route")',
+        'LoadSimple("ScoreRing")',
+        "HasCoreSkin",
     ),
     "tutorial_intro": (
         "TutorialIntroCanvas",
@@ -217,7 +230,13 @@ required = {
     ),
     "result": (
         "ResultHeader",
+        "ScoreRingHost",
+        "ScoreGlow",
+        "ScoreRing",
+        "ScoreInner",
+        "ConfettiA",
         "ResultDetail",
+        "ResultMetrics",
         "ResultActions",
         "MeanDeviation",
         "EndAccuracy",
@@ -234,16 +253,20 @@ required = {
         "_legacyTitleGroup.alpha = 1f",
         "_legacyStatusGroup.alpha = 1f",
         "_scoreText",
-        '"Score", "0.0%", 96',
+        '"Score", "0.0%", 82',
         '"ComparisonScope"',
-        '"ReferenceLegend"',
+        '"ReferenceLegendLine"',
+        '"PlayerLegendLine"',
+        '"StartLegend"',
+        '"FinishLegend"',
         '"PlayerLegend"',
-        '"MedalIcon"',
-        "MedalAsset",
         '"ShareImage"',
         '"ShareFeedback"',
         "ПОДЕЛИТЬСЯ РЕЗУЛЬТАТОМ",
         "БРОСИТЬ ВЫЗОВ",
+        "_imageButton.gameObject.SetActive(false)",
+        "CenteredRect",
+        "CircleImage",
     ),
     "share_card": (
         "ИСПЫТАНИЕ ПАМЯТИ",
@@ -310,6 +333,30 @@ if "_hudVisible == visible" in texts["gameplay_hud"]:
 
 if "RectTransform rt = playArea.rectTransform;" in texts["visual_theme"]:
     errors.append("VisualThemeCoordinator must not own PlayArea geometry; GameplayHudCoordinator is the single board layout owner.")
+
+RELEASE_SKIN = ROOT / "UnityProject/Assets/Resources/ReleaseSkin"
+for asset in (
+    "Backdrop.txt",
+    "Primary.txt",
+    "Secondary.txt",
+    "Glass.txt",
+    "Gameplay.txt",
+    "NavViolet.txt",
+    "Route.txt",
+    "ScoreRing.txt",
+):
+    path = RELEASE_SKIN / asset
+    if not path.is_file():
+        errors.append(f"Missing authored release skin asset: {asset}")
+    elif len(path.read_text(encoding="utf-8").strip()) < 512:
+        errors.append(f"Authored release skin asset looks truncated: {asset}")
+
+if "ReleaseSkinAssets.Background" not in texts["ui_components"]:
+    errors.append("ReleaseUiComponents must prefer the authored backdrop skin.")
+if "ReleaseSkinAssets.GameplayPanel" not in texts["game_bootstrap"]:
+    errors.append("GameBootstrap PlayArea must prefer the authored gameplay panel skin.")
+if "ReleaseSkinAssets.ScoreRing" not in texts["result"]:
+    errors.append("Result must prefer the authored score-ring skin.")
 
 GENERATED_UI = ROOT / "UnityProject/Assets/Resources/GeneratedUI"
 for asset in (

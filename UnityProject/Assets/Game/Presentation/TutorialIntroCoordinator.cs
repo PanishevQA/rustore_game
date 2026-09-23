@@ -138,9 +138,20 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.920f, 0.700f),
                 ReleaseUiComponents.Cyan,
                 true);
-            board.color = new Color(0.010f, 0.038f, 0.078f, 0.985f);
-            BuildGrid(board.transform);
-            BuildPreviewRoute(board.transform);
+            Sprite routeSkin = ReleaseSkinAssets.RoutePanel;
+            if (routeSkin != null)
+            {
+                board.sprite = routeSkin;
+                board.type = Image.Type.Simple;
+                board.preserveAspect = false;
+                board.color = Color.white;
+            }
+            else
+            {
+                board.color = new Color(0.010f, 0.038f, 0.078f, 0.985f);
+                BuildGrid(board.transform);
+                BuildPreviewRoute(board.transform);
+            }
 
             Text disappear = ReleaseUiKit.TextBlock(
                 _content.transform,
