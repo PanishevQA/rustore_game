@@ -692,7 +692,18 @@ namespace DontGetSidetracked.Presentation
             play.transform.SetParent(canvasGo.transform, false);
             _playArea = play.GetComponent<RectTransform>();
             SetAnchors(_playArea, new Vector2(0.06f, 0.25f), new Vector2(0.94f, 0.74f));
-            play.GetComponent<Image>().color = new Color(0.035f, 0.045f, 0.07f, 1f);
+            Image playImage = play.GetComponent<Image>();
+            Sprite gameplaySkin = ReleaseSkinAssets.GameplayPanel;
+            if (gameplaySkin != null)
+            {
+                playImage.sprite = gameplaySkin;
+                playImage.type = Image.Type.Sliced;
+                playImage.color = Color.white;
+            }
+            else
+            {
+                playImage.color = new Color(0.035f, 0.045f, 0.07f, 1f);
+            }
 
             _referenceGraphic = CreateRouteGraphic(play.transform, "Reference", new Color(0.1f, 0.9f, 1f, 1f));
             _playerGraphic = CreateRouteGraphic(play.transform, "Player", new Color(1f, 0.75f, 0.15f, 1f));
