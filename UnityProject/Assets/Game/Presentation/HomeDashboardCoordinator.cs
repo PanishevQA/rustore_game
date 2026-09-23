@@ -305,20 +305,58 @@ namespace DontGetSidetracked.Presentation
             ReleaseUiComponents.Icon(card.transform, "DailyIcon", GeneratedUiAssets.DailyIcon,
                 new Vector2(0.055f, 0.69f), new Vector2(0.155f, 0.91f));
 
-            ReleaseUiKit.TextBlock(card.transform, "DailyTitle", "СЕГОДНЯШНИЙ ВЫЗОВ", 30,
-                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.73f), new Vector2(0.90f, 0.93f),
+            ReleaseUiKit.TextBlock(card.transform, "DailyTitle", "СЕГОДНЯШНИЙ ВЫЗОВ", 28,
+                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.73f), new Vector2(0.63f, 0.93f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
 
-            _dailyMeta = ReleaseUiKit.TextBlock(card.transform, "DailyDate", "СЕГОДНЯ", 19,
-                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.57f), new Vector2(0.64f, 0.73f),
+            _dailyMeta = ReleaseUiKit.TextBlock(card.transform, "DailyDate", "СЕГОДНЯ", 18,
+                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.57f), new Vector2(0.60f, 0.73f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
 
-            _dailyCountdown = ReleaseUiKit.TextBlock(card.transform, "DailyCountdown", "Осталось: --:--:--", 17,
-                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.43f), new Vector2(0.78f, 0.59f),
+            _dailyCountdown = ReleaseUiKit.TextBlock(card.transform, "DailyCountdown", "Осталось: --:--:--", 16,
+                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.43f), new Vector2(0.60f, 0.59f),
                 ReleaseUiComponents.Muted);
+
+            BuildTargetDailyRoutePreview(card.transform);
 
             ReleaseUiComponents.PrimaryButton(card.transform, "DailyPlay", "ИГРАТЬ",
                 new Vector2(0.055f, 0.085f), new Vector2(0.945f, 0.365f), StartDailyFromHome, 31);
+        }
+
+        private static void BuildTargetDailyRoutePreview(Transform parent)
+        {
+            Transform host = CreateRect(parent, "TargetDailyRoutePreview",
+                new Vector2(0.63f, 0.42f), new Vector2(0.94f, 0.83f));
+
+            var points = new List<FixedPoint2>
+            {
+                FixedPoint2.FromNormalized(0.10, 0.26),
+                FixedPoint2.FromNormalized(0.30, 0.62),
+                FixedPoint2.FromNormalized(0.50, 0.38),
+                FixedPoint2.FromNormalized(0.70, 0.72),
+                FixedPoint2.FromNormalized(0.91, 0.49)
+            };
+
+            RouteGraphic glow = CreateRoute(host, "RouteGlow",
+                new Color(ReleaseUiComponents.Violet.r, ReleaseUiComponents.Violet.g,
+                    ReleaseUiComponents.Violet.b, 0.22f), 26f);
+            glow.SetPoints(points);
+
+            RouteGraphic route = CreateRoute(host, "Route",
+                new Color(0.86f, 0.40f, 1.00f, 1f), 11f);
+            route.SetPoints(points);
+
+            Image start = CreateImage(host, "RouteStart", new Color(0.70f, 0.38f, 1f, 1f),
+                new Vector2(0.035f, 0.18f), new Vector2(0.17f, 0.36f), _circle);
+            start.raycastTarget = false;
+
+            Image end = CreateImage(host, "RouteEnd", new Color(0.97f, 0.62f, 1f, 1f),
+                new Vector2(0.84f, 0.41f), new Vector2(0.98f, 0.60f), _circle);
+            end.raycastTarget = false;
+
+            Outline endGlow = end.gameObject.AddComponent<Outline>();
+            endGlow.effectColor = new Color(0.55f, 0.25f, 1f, 0.55f);
+            endGlow.effectDistance = new Vector2(3f, -3f);
         }
 
         private void BuildTargetStatCards(Transform parent)
