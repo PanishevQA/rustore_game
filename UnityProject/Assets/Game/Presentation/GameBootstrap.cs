@@ -86,8 +86,8 @@ namespace DontGetSidetracked.Presentation
             _duelService = new DuelSessionService(_api, _saveRepository, _save);
 
             BuildUi();
-            if (_save.TutorialCompleted) ShowHome();
-            else TutorialIntroCoordinator.OpenFor(this);
+            // Device-smoke preview branch only: force the intro without clearing local save data.
+            TutorialIntroCoordinator.OpenFor(this);
         }
 
         private void Update()
