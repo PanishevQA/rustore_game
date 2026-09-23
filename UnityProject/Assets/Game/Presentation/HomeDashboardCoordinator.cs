@@ -328,6 +328,18 @@ namespace DontGetSidetracked.Presentation
             Transform host = CreateRect(parent, "TargetDailyRoutePreview",
                 new Vector2(0.63f, 0.42f), new Vector2(0.94f, 0.83f));
 
+            Sprite routeSkin = ReleaseSkinAssets.RoutePanel;
+            if (routeSkin != null)
+            {
+                Image skin = host.gameObject.AddComponent<Image>();
+                skin.sprite = routeSkin;
+                skin.type = Image.Type.Simple;
+                skin.preserveAspect = true;
+                skin.color = Color.white;
+                skin.raycastTarget = false;
+                return;
+            }
+
             var points = new List<FixedPoint2>
             {
                 FixedPoint2.FromNormalized(0.08, 0.24),
@@ -370,6 +382,7 @@ namespace DontGetSidetracked.Presentation
             Image streak = ReleaseUiComponents.GlassCard(parent, "StreakCard",
                 new Vector2(0.055f, 0.495f), new Vector2(0.485f, 0.600f),
                 ReleaseUiComponents.Gold, false);
+            streak.color = new Color(0.055f, 0.075f, 0.115f, 0.985f);
             BuildFlameIcon(streak.transform, new Vector2(0.070f, 0.26f), new Vector2(0.255f, 0.84f));
             ReleaseUiKit.TextBlock(streak.transform, "Label", "СЕРИЯ ДНЕЙ", 17, TextAnchor.MiddleLeft,
                 new Vector2(0.30f, 0.55f), new Vector2(0.94f, 0.88f),
@@ -381,6 +394,7 @@ namespace DontGetSidetracked.Presentation
             Image best = ReleaseUiComponents.GlassCard(parent, "BestCard",
                 new Vector2(0.515f, 0.495f), new Vector2(0.945f, 0.600f),
                 ReleaseUiComponents.Cyan, false);
+            best.color = new Color(0.045f, 0.080f, 0.125f, 0.985f);
             BuildTrophyIcon(best.transform, new Vector2(0.070f, 0.24f), new Vector2(0.255f, 0.84f));
             ReleaseUiKit.TextBlock(best.transform, "Label", "ЛУЧШИЙ РЕЗУЛЬТАТ", 16, TextAnchor.MiddleLeft,
                 new Vector2(0.30f, 0.55f), new Vector2(0.94f, 0.88f),

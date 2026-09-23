@@ -13,6 +13,7 @@ namespace DontGetSidetracked.Presentation
         private static Sprite _primaryGradient;
         private static Sprite _secondaryGradient;
         private static Sprite _glassSheen;
+        private static Sprite _glassPanel;
         private static Texture2D _backdropTexture;
 
         public static readonly Color Navy = new Color(0.012f, 0.030f, 0.070f, 1f);
@@ -65,9 +66,26 @@ namespace DontGetSidetracked.Presentation
             bool strong = false)
         {
             Color fill = strong
-                ? new Color(0.025f, 0.080f, 0.135f, 0.985f)
-                : new Color(0.020f, 0.055f, 0.100f, 0.955f);
+                ? new Color(0.94f, 0.98f, 1f, 1f)
+                : new Color(0.88f, 0.94f, 1f, 1f);
             Image card = ReleaseUiKit.Panel(parent, name, min, max, fill, accent, true);
+
+            if (_glassPanel != null)
+            {
+                card.sprite = _glassPanel;
+                card.type = Image.Type.Sliced;
+                card.color = Color.Lerp(Color.white, accent, strong ? 0.10f : 0.055f);
+
+                Outline outline = card.GetComponent<Outline>();
+                if (outline != null) outline.enabled = false;
+                Shadow shadow = card.GetComponent<Shadow>();
+                if (shadow != null)
+                {
+                    shadow.effectColor = new Color(0f, 0f, 0f, 0.34f);
+                    shadow.effectDistance = new Vector2(0f, -8f);
+                }
+                return card;
+            }
 
             Transform sheenRoot = ReleaseUiKit.Rect(card.transform, "GlassSheen",
                 new Vector2(0.018f, 0.57f), new Vector2(0.982f, 0.985f));
@@ -77,19 +95,11 @@ namespace DontGetSidetracked.Presentation
             sheen.color = new Color(accent.r, accent.g, accent.b, strong ? 0.14f : 0.075f);
             sheen.raycastTarget = false;
 
-            Transform rimRoot = ReleaseUiKit.Rect(card.transform, "TopRim",
-                new Vector2(0.045f, 0.989f), new Vector2(0.955f, 0.996f));
-            Image rim = rimRoot.gameObject.AddComponent<Image>();
-            rim.sprite = ReleaseUiKit.Rounded;
-            rim.type = Image.Type.Sliced;
-            rim.color = new Color(accent.r, accent.g, accent.b, strong ? 0.20f : 0.10f);
-            rim.raycastTarget = false;
-
-            Outline outline = card.GetComponent<Outline>();
-            if (outline != null)
+            Outline fallbackOutline = card.GetComponent<Outline>();
+            if (fallbackOutline != null)
             {
-                outline.effectColor = new Color(accent.r, accent.g, accent.b, strong ? 0.34f : 0.20f);
-                outline.effectDistance = new Vector2(2f, -2f);
+                fallbackOutline.effectColor = new Color(accent.r, accent.g, accent.b, strong ? 0.34f : 0.20f);
+                fallbackOutline.effectDistance = new Vector2(2f, -2f);
             }
             return card;
         }
@@ -156,12 +166,14 @@ namespace DontGetSidetracked.Presentation
             EnsureAssets();
             Transform root = ReleaseUiKit.Rect(parent, name, min, max);
             Image image = root.gameObject.AddComponent<Image>();
-            image.sprite = ReleaseUiKit.Rounded;
+            image.sprite = _secondaryGradient ?? ReleaseUiKit.Rounded;
             image.type = Image.Type.Sliced;
-            image.color = new Color(0.025f, 0.065f, 0.115f, 0.96f);
+            image.color = Color.white;
 
             Outline outline = root.gameObject.AddComponent<Outline>();
-            outline.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, 0.42f);
+            outline.effectColor = _secondaryGradient != null
+                ? new Color(Cyan.r, Cyan.g, Cyan.b, 0.14f)
+                : new Color(Cyan.r, Cyan.g, Cyan.b, 0.42f);
             outline.effectDistance = new Vector2(2f, -2f);
 
             Button button = root.gameObject.AddComponent<Button>();
@@ -256,15 +268,19 @@ namespace DontGetSidetracked.Presentation
         private static void EnsureAssets()
         {
             if (_primaryGradient == null)
-                _primaryGradient = CreateGradientRoundedSprite(256, 80, 24, Cyan, Violet);
+                _primaryGradient = ReleaseSkinAssets.PrimaryButton ??
+                    CreateGradientRoundedSprite(256, 80, 24, Cyan, Violet);
             if (_secondaryGradient == null)
-                _secondaryGradient = CreateGradientRoundedSprite(256, 80, 24,
-                    new Color(0.02f, 0.08f, 0.16f, 1f),
-                    new Color(0.05f, 0.04f, 0.16f, 1f));
+                _secondaryGradient = ReleaseSkinAssets.SecondaryButton ??
+                    CreateGradientRoundedSprite(256, 80, 24,
+                        new Color(0.02f, 0.08f, 0.16f, 1f),
+                        new Color(0.05f, 0.04f, 0.16f, 1f));
+            if (_glassPanel == null)
+                _glassPanel = ReleaseSkinAssets.GlassPanel;
             if (_glassSheen == null)
                 _glassSheen = CreateVerticalSheenSprite(96, 64, 20);
             if (_backdropTexture == null)
-                _backdropTexture = CreateBackdropTexture(216, 384);
+                _backdropTexture = ReleaseSkinAssets.Background ?? CreateBackdropTexture(216, 384);
         }
 
         private static Sprite CreateGradientRoundedSprite(int width, int height, int radius, Color left, Color right)
