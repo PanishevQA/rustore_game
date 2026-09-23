@@ -1,0 +1,104 @@
+name: final-artifact-device-install
+
+on:
+  push:
+    branches:
+      - 'agent/final-artifact-install/**'
+    paths:
+      - '.github/workflows/final-artifact-device-install.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  install:
+    runs-on: [self-hosted, windows, x64, unity]
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ARTIFACT_ID: "10734216563"
+      EXPECTED_APK_SHA256: "dee0e8c23b9c10a614c88a3f0579b41ab35f058acbaf8bf464170f7ef7bd6702"
+      SOURCE_SHA: "4effafebcd2e27b2184aa48a9aa6c58aecf781c6"
+
+    steps:
+      - name: Download exact matched ReleaseCandidate artifact
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $zip = Join-Path $env:RUNNER_TEMP "nesbeisya-final-rc.zip"
+          $dir = Join-Path $env:RUNNER_TEMP "nesbeisya-final-rc"
+          if (Test-Path $dir) { Remove-Item $dir -Recurse -Force }
+          $headers = @{
+            Authorization = "Bearer $env:GH_TOKEN"
+            Accept = "application/vnd.github+json"
+            "X-GitHub-Api-Version" = "2022-11-28"
+          }
+          Invoke-WebRequest -Headers $headers -Uri "https://api.github.com/repos/PanishevQA/rustore_game/actions/artifacts/$env:ARTIFACT_ID/zip" -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath $dir -Force
+          $apk = Join-Path $dir "release-candidate\android-device-smoke\nesbeisya-device-smoke.apk"
+          if (-not (Test-Path $apk)) { throw "Matched APK not found in artifact." }
+          $sha = (Get-FileHash -Algorithm SHA256 -Path $apk).Hash.ToLowerInvariant()
+          if ($sha -ne $env:EXPECTED_APK_SHA256) { throw "APK SHA mismatch: $sha" }
+          "APK_PATH=$apk" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "Exact matched APK verified: $sha"
+
+      - name: Install exact matched APK and capture device
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $devices = @()
+          foreach ($line in (& $adbExe devices)) {
+            if ($line -match "^([^\s]+)\s+device\s*$") { $devices += $Matches[1] }
+          }
+          if ($devices.Count -ne 1) { throw "Expected exactly one authorized device; found $($devices.Count)." }
+          $serial = $devices[0]
+          $model = ((& $adbExe -s $serial shell getprop ro.product.model) | Out-String).Trim()
+          $android = ((& $adbExe -s $serial shell getprop ro.build.version.release) | Out-String).Trim()
+          $api = ((& $adbExe -s $serial shell getprop ro.build.version.sdk) | Out-String).Trim()
+
+          & $adbExe -s $serial install -r $env:APK_PATH | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "adb install failed." }
+
+          & $adbExe -s $serial shell am force-stop ru.release.nesbeisya | Out-Null
+          & $adbExe -s $serial shell monkey -p ru.release.nesbeisya -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 6
+          $appPid = ((& $adbExe -s $serial shell pidof ru.release.nesbeisya) | Out-String).Trim()
+          if ([string]::IsNullOrWhiteSpace($appPid)) { throw "App process is not alive after launch." }
+
+          $out = Join-Path $PWD "device-final-artifact"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          & $adbExe -s $serial shell screencap -p /sdcard/nesbeisya-final-home.png
+          & $adbExe -s $serial pull /sdcard/nesbeisya-final-home.png (Join-Path $out "home.png") | Out-Host
+
+          & $adbExe -s $serial shell input tap 746 1940
+          Start-Sleep -Seconds 3
+          & $adbExe -s $serial shell screencap -p /sdcard/nesbeisya-final-store.png
+          & $adbExe -s $serial pull /sdcard/nesbeisya-final-store.png (Join-Path $out "store.png") | Out-Host
+
+          & $adbExe -s $serial shell rm /sdcard/nesbeisya-final-home.png /sdcard/nesbeisya-final-store.png | Out-Null
+
+          @(
+            "ExactMatchedArtifactInstall=PASS",
+            "SourceGitSha=$env:SOURCE_SHA",
+            "ArtifactId=$env:ARTIFACT_ID",
+            "ApkSha256=$env:EXPECTED_APK_SHA256",
+            "Serial=$serial",
+            "Model=$model",
+            "Android=$android",
+            "ApiLevel=$api",
+            "Pid=$appPid"
+          ) | Set-Content -Path (Join-Path $out "report.txt") -Encoding UTF8
+
+      - name: Upload exact-device acceptance evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: exact-final-device-acceptance-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: device-final-artifact/**
