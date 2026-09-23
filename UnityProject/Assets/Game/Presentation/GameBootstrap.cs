@@ -92,7 +92,7 @@ namespace DontGetSidetracked.Presentation
 
         private void Update()
         {
-            if (_state != RoundState.Drawing) return;
+            if (_state != RoundState.Drawing || GameplayHudCoordinator.IsGameplayPaused) return;
             PollPointer();
         }
 
