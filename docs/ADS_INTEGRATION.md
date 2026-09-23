@@ -2,7 +2,7 @@
 
 The game does **not** need a developer-operated backend for advertising. The current provider adapter targets **Yandex Mobile Ads Unity 8.4.0** and stays behind `IAdService`.
 
-Release target rechecked against the official Yandex Mobile Ads Unity changelog on **2026-09-18**: plugin **8.4.0** was released on 2026-09-09 and is the current Unity plugin baseline. The target is mirrored by `YandexMobileAdsSettings.VerifiedPluginVersion` / `LastVerifiedUtc` so CI can detect stale release documentation.
+Release target rechecked against the official Yandex Mobile Ads Unity changelog on **2026-09-23**: plugin **8.4.0** was released on 2026-09-09 and is the current Unity plugin baseline. The target is mirrored by `YandexMobileAdsSettings.VerifiedPluginVersion` / `LastVerifiedUtc` so CI can detect stale release documentation.
 
 ## Current code
 
