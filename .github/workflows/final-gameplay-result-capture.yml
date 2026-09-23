@@ -1,0 +1,111 @@
+name: final-gameplay-result-capture
+
+on:
+  push:
+    branches:
+      - 'agent/final-gameplay-result/**'
+    paths:
+      - '.github/workflows/final-gameplay-result-capture.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: [self-hosted, windows, x64, unity]
+    timeout-minutes: 15
+    steps:
+      - name: Complete Training round on exact installed final APK
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          Add-Type -AssemblyName System.Drawing
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $devices = @()
+          foreach ($line in (& $adbExe devices)) {
+            if ($line -match "^([^\s]+)\s+device\s*$") { $devices += $Matches[1] }
+          }
+          if ($devices.Count -ne 1) { throw "Expected exactly one authorized Android device; found $($devices.Count)." }
+          $serial = $devices[0]
+          $package = "ru.release.nesbeisya"
+          $out = Join-Path $PWD "final-gameplay-result"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          function Shot([string]$Name) {
+            $remote = "/sdcard/nesbeisya-$Name.png"
+            $local = Join-Path $out "$Name.png"
+            & $adbExe -s $serial shell screencap -p $remote
+            & $adbExe -s $serial pull $remote $local | Out-Host
+            & $adbExe -s $serial shell rm $remote | Out-Null
+            return $local
+          }
+
+          & $adbExe -s $serial shell am force-stop $package | Out-Null
+          & $adbExe -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 6
+
+          & $adbExe -s $serial shell input tap 535 1795
+          Start-Sleep -Seconds 3
+          & $adbExe -s $serial shell input tap 540 2045
+          Start-Sleep -Seconds 5
+          $drawPath = Shot "01-draw-phase"
+
+          $bmp = [System.Drawing.Bitmap]::FromFile($drawPath)
+          try {
+            $cyan = New-Object System.Collections.Generic.List[System.Drawing.Point]
+            $red = New-Object System.Collections.Generic.List[System.Drawing.Point]
+
+            for ($y = 500; $y -lt 1950; $y += 2) {
+              for ($x = 90; $x -lt 990; $x += 2) {
+                $c = $bmp.GetPixel($x, $y)
+                if ($c.R -lt 95 -and $c.G -gt 170 -and $c.B -gt 175) {
+                  $cyan.Add([System.Drawing.Point]::new($x,$y))
+                }
+                if ($c.R -gt 185 -and $c.G -lt 125 -and $c.B -lt 175) {
+                  $red.Add([System.Drawing.Point]::new($x,$y))
+                }
+              }
+            }
+            if ($cyan.Count -eq 0 -or $red.Count -eq 0) {
+              throw "Could not detect gameplay start/end markers. cyan=$($cyan.Count) red=$($red.Count)"
+            }
+
+            $startY = ($cyan | Measure-Object -Property Y -Maximum).Maximum
+            $startBand = @($cyan | Where-Object { $_.Y -ge ($startY - 55) })
+            $startX = [int](($startBand | Measure-Object -Property X -Average).Average)
+            $startY2 = [int](($startBand | Measure-Object -Property Y -Average).Average)
+
+            $endY = ($red | Measure-Object -Property Y -Minimum).Minimum
+            $endBand = @($red | Where-Object { $_.Y -le ($endY + 55) })
+            $endX = [int](($endBand | Measure-Object -Property X -Average).Average)
+            $endY2 = [int](($endBand | Measure-Object -Property Y -Average).Average)
+          }
+          finally {
+            $bmp.Dispose()
+          }
+
+          Write-Host "Detected start=($startX,$startY2) end=($endX,$endY2)"
+          & $adbExe -s $serial shell input swipe $startX $startY2 $endX $endY2 1200
+          Start-Sleep -Seconds 4
+          Shot "02-result"
+
+          $appPid = ((& $adbExe -s $serial shell pidof $package) | Out-String).Trim()
+          if ([string]::IsNullOrWhiteSpace($appPid)) { throw "App process died during completed-round smoke." }
+
+          @(
+            "FinalGameplayResultCapture=PASS",
+            "Start=$startX,$startY2",
+            "End=$endX,$endY2",
+            "Pid=$appPid"
+          ) | Set-Content -Path (Join-Path $out "report.txt") -Encoding UTF8
+
+      - name: Upload completed-round evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-gameplay-result-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: final-gameplay-result/**
