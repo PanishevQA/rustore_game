@@ -125,6 +125,19 @@ namespace DontGetSidetracked.EditorTools
             string manifest = File.ReadAllText(ManifestPath);
             Require(manifest, "com.unity3d.player.UnityPlayerActivity", errors,
                 "RuStore Pay requires UnityPlayerActivity as the Android application entry point.");
+
+            bool hasSingleTopUnityActivity = Regex.IsMatch(
+                manifest,
+                "<activity(?=[^>]*android:name=\\\"com\\.unity3d\\.player\\.UnityPlayerActivity\\\")(?=[^>]*android:launchMode=\\\"singleTop\\\")[^>]*>",
+                RegexOptions.CultureInvariant | RegexOptions.Singleline);
+            if (!hasSingleTopUnityActivity)
+            {
+                errors.Add("RuStore Pay requires UnityPlayerActivity to use android:launchMode=\\\"singleTop\\\".");
+            }
+            if (manifest.IndexOf("android:launchMode=\\\"singleTask\\\"", StringComparison.Ordinal) >= 0)
+            {
+                errors.Add("RuStore Pay 9.0.2+ replaced singleTask with singleTop; remove singleTask from the production manifest.");
+            }
             Require(manifest, "@string/rustore_PayClientSettings_deeplinkScheme", errors,
                 "Run Window → RuStoreSDK → Settings → PayClient → Patch Manifest so the Pay deeplink scheme comes from generated resources.");
             Require(manifest, "console_app_id_value", errors,
