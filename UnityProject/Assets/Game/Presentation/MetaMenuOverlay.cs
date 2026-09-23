@@ -340,6 +340,8 @@ namespace DontGetSidetracked.Presentation
             iconWell.color = new Color(accent.r, accent.g, accent.b, hero ? 0.16f : 0.10f);
             ReleaseUiComponents.Icon(iconWell.transform, "ProductIcon", ProductIcon(productId),
                 new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f));
+            if (string.Equals(productId, ProductIds.RemoveAds, StringComparison.Ordinal))
+                AddNoAdsSlash(iconWell.transform, accent);
             if (hero)
             {
                 Image badge = ReleaseUiComponents.GlassCard(card, "PremiumBadge",
@@ -417,13 +419,35 @@ namespace DontGetSidetracked.Presentation
         {
             switch (productId)
             {
-                case ProductIds.RemoveAds: return GeneratedUiAssets.NoAdsIcon;
+                // item_no_ads.png has produced an opaque white fallback on real Android devices.
+                // Compose the no-ads mark from the proven AD sprite plus a runtime slash instead.
+                case ProductIds.RemoveAds: return GeneratedUiAssets.AdIcon;
                 case ProductIds.Hints10: return GeneratedUiAssets.HintIcon;
                 case ProductIds.StarterPack: return GeneratedUiAssets.StoreIcon;
                 case ProductIds.SkinNeon: return GeneratedUiAssets.CosmeticIcon;
                 case ProductIds.SkinRetro: return GeneratedUiAssets.ReplayIcon;
                 default: return GeneratedUiAssets.StoreIcon;
             }
+        }
+
+        private static void AddNoAdsSlash(Transform parent, Color accent)
+        {
+            Transform slashRoot = ReleaseUiKit.Rect(parent, "NoAdsSlash",
+                new Vector2(0.14f, 0.46f), new Vector2(0.86f, 0.54f));
+            RectTransform slashRect = slashRoot.GetComponent<RectTransform>();
+            slashRect.localRotation = Quaternion.Euler(0f, 0f, -36f);
+
+            Image slash = slashRoot.gameObject.AddComponent<Image>();
+            slash.sprite = ReleaseUiKit.Rounded;
+            slash.type = Image.Type.Sliced;
+            slash.color = new Color(ReleaseUiComponents.Danger.r, ReleaseUiComponents.Danger.g,
+                ReleaseUiComponents.Danger.b, 0.96f);
+            slash.raycastTarget = false;
+
+            Shadow glow = slashRoot.gameObject.AddComponent<Shadow>();
+            glow.effectColor = new Color(accent.r, accent.g, accent.b, 0.22f);
+            glow.effectDistance = new Vector2(0f, -2f);
+            glow.useGraphicAlpha = true;
         }
 
         private static string ProductSubtitle(string id)
