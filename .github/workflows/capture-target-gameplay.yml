@@ -1,0 +1,74 @@
+name: capture-target-gameplay-corrected
+
+on:
+  push:
+    branches:
+      - 'agent/capture-target-gameplay-corrected-*'
+    paths:
+      - '.github/workflows/capture-target-gameplay.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: [self-hosted, windows, x64, unity]
+    timeout-minutes: 15
+    steps:
+      - name: Capture installed target gameplay phases
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $serial = ((& $adbExe devices) | Where-Object { $_ -match "^([^\s]+)\s+device\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
+          if ([string]::IsNullOrWhiteSpace($serial)) { throw "No authorized Android device found." }
+
+          $out = Join-Path $PWD "gameplay-capture"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          function Shot([string]$Name) {
+            $remote = "/sdcard/nesbeisya-$Name.png"
+            & $adbExe -s $serial shell screencap -p $remote
+            & $adbExe -s $serial pull $remote (Join-Path $out "$Name.png") | Out-Host
+            & $adbExe -s $serial shell rm $remote | Out-Null
+          }
+
+          & $adbExe -s $serial shell am force-stop ru.release.nesbeisya | Out-Null
+          & $adbExe -s $serial shell monkey -p ru.release.nesbeisya -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 6
+
+          # Target Home v5: Training row center.
+          & $adbExe -s $serial shell input tap 540 1510
+          Start-Sleep -Seconds 2
+          Shot "00-training-menu"
+
+          # Start Training.
+          & $adbExe -s $serial shell input tap 540 2050
+          Start-Sleep -Milliseconds 900
+          Shot "01-route-showing"
+
+          # Easy display + countdown -> drawing.
+          Start-Sleep -Seconds 5
+          Shot "02-drawing"
+
+          # Pause button is at the upper-right of the gameplay HUD.
+          & $adbExe -s $serial shell input tap 960 300
+          Start-Sleep -Seconds 2
+          Shot "03-pause"
+
+          $pid = ((& $adbExe -s $serial shell pidof ru.release.nesbeisya) | Out-String).Trim()
+          @(
+            "CorrectedGameplayCapture=PASS",
+            "Serial=$serial",
+            "Pid=$pid"
+          ) | Set-Content -Path (Join-Path $out "report.txt") -Encoding UTF8
+
+      - name: Upload capture
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: corrected-target-gameplay-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: gameplay-capture/**
