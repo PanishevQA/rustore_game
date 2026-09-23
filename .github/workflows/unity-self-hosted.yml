@@ -121,7 +121,7 @@ jobs:
           function OpenAndShot([string]$Name, [int]$X, [int]$Y) {
             FreshHome
             & $adbExe -s $serial shell input tap $X $Y
-            Start-Sleep -Milliseconds 1400
+            Start-Sleep -Milliseconds 2200
             Shot $Name
           }
 
