@@ -76,6 +76,54 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_release_candidate_checks.ps1 -BuildSmokeApk
 
+      - name: Install visual parity APK
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_signed_device_smoke_apk.ps1 -SkipLaunchCheck
+
+      - name: Capture visual parity screens
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $out = Join-Path $PWD "artifacts\device-capture"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $unity = [Environment]::ExpandEnvironmentVariables($env:UNITY_EXE)
+          if ([string]::IsNullOrWhiteSpace($unity) -or -not (Test-Path $unity)) {
+            $unity = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Unity.exe"
+          }
+          $adb = Join-Path (Split-Path -Parent $unity) "Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          $serial = ((& $adb devices) | Where-Object { $_ -match "^([^\s]+)\s+device\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
+          if ([string]::IsNullOrWhiteSpace($serial)) { throw "No authorized device" }
+          $package = "ru.release.nesbeisya"
+
+          function Shot([string]$Name) {
+            $remote = "/sdcard/nesbeisya-$Name.png"
+            & $adb -s $serial shell screencap -p $remote
+            & $adb -s $serial pull $remote (Join-Path $out "$Name.png") | Out-Host
+            & $adb -s $serial shell rm $remote | Out-Null
+          }
+          function FreshHome {
+            & $adb -s $serial shell am force-stop $package | Out-Null
+            & $adb -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
+            Start-Sleep -Seconds 5
+          }
+          function OpenAndShot([string]$Name, [int]$X, [int]$Y) {
+            FreshHome
+            & $adb -s $serial shell input tap $X $Y
+            Start-Sleep -Milliseconds 1600
+            Shot $Name
+          }
+
+          FreshHome
+          Shot "01-home"
+          OpenAndShot "02-training" 535 1795
+          OpenAndShot "03-daily" 710 950
+          OpenAndShot "04-campaign" 795 1320
+          OpenAndShot "05-store" 745 1980
+          OpenAndShot "06-statistics" 285 1980
+          (& $adb -s $serial logcat -d -t 3500 -v time) | Set-Content -Path (Join-Path $out "logcat.txt") -Encoding UTF8
+
       - name: Run Android integration and native AAR probe
         if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
         shell: powershell
@@ -92,3 +140,4 @@ jobs:
             artifacts/agent-check/**
             artifacts/release-candidate/**
             artifacts/android-integration-probe/**
+            artifacts/device-capture/**
