@@ -227,8 +227,7 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.055f, 0.922f), new Vector2(0.255f, 0.972f),
                 ReleaseUiComponents.Cyan, false);
             hintPill.color = new Color(0.020f, 0.060f, 0.110f, 0.96f);
-            ReleaseUiComponents.Icon(hintPill.transform, "HintIcon", GeneratedUiAssets.HintIcon,
-                new Vector2(0.055f, 0.18f), new Vector2(0.295f, 0.82f));
+            BuildLightningIcon(hintPill.transform, new Vector2(0.070f, 0.20f), new Vector2(0.285f, 0.80f));
             _hintsValue = ReleaseUiKit.TextBlock(hintPill.transform, "Value", "0", 25, TextAnchor.MiddleCenter,
                 new Vector2(0.30f, 0.08f), new Vector2(0.66f, 0.92f), ReleaseUiComponents.Text, FontStyle.Bold);
             Button hintPlus = ReleaseUiComponents.SecondaryButton(hintPill.transform, "Plus", "+",
@@ -238,9 +237,24 @@ namespace DontGetSidetracked.Presentation
                 hintPlusImage.color = new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g,
                     ReleaseUiComponents.Cyan.b, 0.14f);
 
-            _coinsValue = ReleaseUiComponents.CurrencyPill(parent, "CoinsPill", "●", "0",
+            Image coinPill = ReleaseUiComponents.GlassCard(parent, "CoinsPill",
                 new Vector2(0.300f, 0.922f), new Vector2(0.725f, 0.972f),
-                ReleaseUiComponents.Gold, OpenStoreFromHome);
+                ReleaseUiComponents.Gold, false);
+            coinPill.color = new Color(0.028f, 0.055f, 0.090f, 0.97f);
+            Image coinOuter = CreateImage(coinPill.transform, "CoinOuter", ReleaseUiComponents.Gold,
+                new Vector2(0.055f, 0.18f), new Vector2(0.245f, 0.82f), _circle);
+            coinOuter.raycastTarget = false;
+            Image coinInner = CreateImage(coinOuter.transform, "CoinInner", new Color(1f, 0.55f, 0.06f, 1f),
+                new Vector2(0.18f, 0.18f), new Vector2(0.82f, 0.82f), _circle);
+            coinInner.raycastTarget = false;
+            _coinsValue = ReleaseUiKit.TextBlock(coinPill.transform, "Value", "0", 25, TextAnchor.MiddleLeft,
+                new Vector2(0.29f, 0.08f), new Vector2(0.70f, 0.92f), ReleaseUiComponents.Text, FontStyle.Bold);
+            Button coinPlus = ReleaseUiComponents.SecondaryButton(coinPill.transform, "Plus", "+",
+                new Vector2(0.76f, 0.14f), new Vector2(0.95f, 0.86f), OpenStoreFromHome, 22);
+            Image coinPlusImage = coinPlus.GetComponent<Image>();
+            if (coinPlusImage != null)
+                coinPlusImage.color = new Color(ReleaseUiComponents.Gold.r, ReleaseUiComponents.Gold.g,
+                    ReleaseUiComponents.Gold.b, 0.14f);
 
             Image settingsWell = ReleaseUiComponents.GlassCard(parent, "SettingsButton",
                 new Vector2(0.825f, 0.918f), new Vector2(0.945f, 0.974f),
@@ -251,6 +265,34 @@ namespace DontGetSidetracked.Presentation
             Button settingsButton = settingsWell.gameObject.AddComponent<Button>();
             settingsButton.targetGraphic = settingsWell;
             settingsButton.onClick.AddListener(OpenSettingsFromHome);
+        }
+
+        private static void BuildLightningIcon(Transform parent, Vector2 min, Vector2 max)
+        {
+            Transform host = CreateRect(parent, "Lightning", min, max);
+            Transform upper = CreateRect(host, "Upper", new Vector2(0.36f, 0.50f), new Vector2(0.58f, 0.98f));
+            Image upperImage = upper.gameObject.AddComponent<Image>();
+            upperImage.sprite = _rounded;
+            upperImage.type = Image.Type.Sliced;
+            upperImage.color = ReleaseUiComponents.Cyan;
+            upperImage.raycastTarget = false;
+            upper.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, -26f);
+
+            Transform middle = CreateRect(host, "Middle", new Vector2(0.28f, 0.42f), new Vector2(0.72f, 0.58f));
+            Image middleImage = middle.gameObject.AddComponent<Image>();
+            middleImage.sprite = _rounded;
+            middleImage.type = Image.Type.Sliced;
+            middleImage.color = ReleaseUiComponents.Cyan;
+            middleImage.raycastTarget = false;
+            middle.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, -10f);
+
+            Transform lower = CreateRect(host, "Lower", new Vector2(0.42f, 0.02f), new Vector2(0.64f, 0.50f));
+            Image lowerImage = lower.gameObject.AddComponent<Image>();
+            lowerImage.sprite = _rounded;
+            lowerImage.type = Image.Type.Sliced;
+            lowerImage.color = ReleaseUiComponents.Cyan;
+            lowerImage.raycastTarget = false;
+            lower.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, -26f);
         }
 
         private void BuildTargetDailyCard(Transform parent)
