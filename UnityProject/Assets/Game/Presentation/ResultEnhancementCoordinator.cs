@@ -140,9 +140,13 @@ namespace DontGetSidetracked.Presentation
             RefreshScoreStats(snapshot);
             Color scoreColor = ReleaseUiComponents.Cyan;
             _scoreText.color = ReleaseUiComponents.Text;
-            if (_scoreRing != null) _scoreRing.color = scoreColor;
+            bool authoredScoreRing = ReleaseSkinAssets.ScoreRing != null;
+            if (_scoreRing != null) _scoreRing.color = authoredScoreRing ? Color.white : scoreColor;
             if (_scoreGlow != null)
+            {
+                _scoreGlow.gameObject.SetActive(!authoredScoreRing);
                 _scoreGlow.color = new Color(scoreColor.r, scoreColor.g, scoreColor.b, 0.18f);
+            }
 
             _modeLabel.text = "РЕЗУЛЬТАТ";
 
@@ -480,6 +484,16 @@ namespace DontGetSidetracked.Presentation
 
             _scoreRing = CircleImage(scoreHost, "ScoreRing",
                 new Vector2(0.08f, 0.08f), new Vector2(0.92f, 0.92f), ReleaseUiComponents.Cyan);
+            Sprite authoredRing = ReleaseSkinAssets.ScoreRing;
+            if (authoredRing != null)
+            {
+                _scoreRing.sprite = authoredRing;
+                _scoreRing.type = Image.Type.Simple;
+                _scoreRing.preserveAspect = true;
+                _scoreRing.color = Color.white;
+                _scoreGlow.gameObject.SetActive(false);
+            }
+
             Image scoreInner = CircleImage(_scoreRing.transform, "ScoreInner",
                 new Vector2(0.085f, 0.085f), new Vector2(0.915f, 0.915f),
                 new Color(0.008f, 0.030f, 0.068f, 0.995f));
