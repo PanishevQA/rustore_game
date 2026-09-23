@@ -41,7 +41,7 @@ jobs:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
       # Trusted push branches can request a release action by prefix; all other agent/** pushes run Full.
       # workflow_dispatch remains available for explicit manual mode selection.
-      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || startsWith(github.ref_name, 'agent/release-candidate/') && 'ReleaseCandidate' || startsWith(github.ref_name, 'agent/build/') && 'Build' || startsWith(github.ref_name, 'agent/device-smoke/') && 'DeviceSmokeApk' || startsWith(github.ref_name, 'agent/android-probe/') && 'AndroidIntegrationProbe' || 'Full' }}
+      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || startsWith(github.ref_name, 'agent/release-candidate/') && 'ReleaseCandidate' || startsWith(github.ref_name, 'agent/build/') && 'Build' || startsWith(github.ref_name, 'agent/device-smoke/') && 'DeviceSmokeApk' || startsWith(github.ref_name, 'agent/android-probe/') && 'AndroidIntegrationProbe' || startsWith(github.ref_name, 'agent/device-capture/') && 'DeviceCapture' || 'Full' }}
 
     steps:
       - name: Checkout trusted agent branch
@@ -67,7 +67,7 @@ jobs:
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_unity_runner_environment.ps1
 
       - name: Run Unity agent gate
-        if: ${{ env.AGENT_CHECK_MODE != 'AndroidIntegrationProbe' && env.AGENT_CHECK_MODE != 'DeviceSmokeApk' }}
+        if: ${{ env.AGENT_CHECK_MODE != 'AndroidIntegrationProbe' && env.AGENT_CHECK_MODE != 'DeviceSmokeApk' && env.AGENT_CHECK_MODE != 'DeviceCapture' }}
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast
 
@@ -81,6 +81,53 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_android_integration_probe.ps1 -TimeoutSeconds 2400
 
+      - name: Capture connected Android screen
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceCapture' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $out = Join-Path $PWD "artifacts\device-capture"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          $adb = Get-Command adb -ErrorAction SilentlyContinue
+          if ($adb) {
+            $adbExe = $adb.Source
+          } else {
+            $unity = [Environment]::ExpandEnvironmentVariables($env:UNITY_EXE)
+            if ([string]::IsNullOrWhiteSpace($unity) -or -not (Test-Path $unity)) {
+              $unity = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Unity.exe"
+            }
+            $adbExe = Join-Path (Split-Path -Parent $unity) "Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          }
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $devices = @()
+          foreach ($line in (& $adbExe devices)) {
+            if ($line -match "^([^\s]+)\s+device\s*$") { $devices += $Matches[1] }
+          }
+          if ($devices.Count -ne 1) { throw "Expected exactly one authorized Android device; found $($devices.Count)." }
+          $serial = $devices[0]
+
+          $model = ((& $adbExe -s $serial shell getprop ro.product.model) | Out-String).Trim()
+          $api = ((& $adbExe -s $serial shell getprop ro.build.version.sdk) | Out-String).Trim()
+          $focused = ((& $adbExe -s $serial shell dumpsys window windows | Select-String -Pattern "mCurrentFocus|mFocusedApp" | Select-Object -First 4) | Out-String).Trim()
+
+          & $adbExe -s $serial shell screencap -p /sdcard/nesbeisya-current.png
+          & $adbExe -s $serial pull /sdcard/nesbeisya-current.png (Join-Path $out "current-screen.png") | Out-Host
+          & $adbExe -s $serial shell monkey -p ru.release.nesbeisya -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 3
+          & $adbExe -s $serial shell screencap -p /sdcard/nesbeisya-app.png
+          & $adbExe -s $serial pull /sdcard/nesbeisya-app.png (Join-Path $out "app-screen.png") | Out-Host
+          & $adbExe -s $serial shell rm /sdcard/nesbeisya-current.png /sdcard/nesbeisya-app.png | Out-Null
+
+          @(
+            "DeviceCapture=PASS",
+            "Serial=$serial",
+            "Model=$model",
+            "ApiLevel=$api",
+            "FocusedBeforeCapture=$focused"
+          ) | Set-Content -Path (Join-Path $out "capture-report.txt") -Encoding UTF8
+
       - name: Upload Unity diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
@@ -92,3 +139,4 @@ jobs:
             artifacts/agent-check/**
             artifacts/release-candidate/**
             artifacts/android-integration-probe/**
+            artifacts/device-capture/**
