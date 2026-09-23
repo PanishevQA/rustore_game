@@ -176,7 +176,7 @@ jobs:
           grep -q 'new Vector2(0.945f, 0.145f)' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'RewardedHintCard' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'RewardedArrow' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
-          grep -q 'GeneratedUiAssets.AdIcon' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
+          grep -q 'GiftBox' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'ReleaseUiKit.Panel' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'СМОТРИ РЕКЛАМУ' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
           grep -q 'dailyIntro.IsOpen' UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs
