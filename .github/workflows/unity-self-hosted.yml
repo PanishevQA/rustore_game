@@ -27,7 +27,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: unity-self-hosted-${{ github.repository }}
+  group: unity-self-hosted-${{ github.repository }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -38,9 +38,9 @@ jobs:
     timeout-minutes: 60
     env:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
-      # Release-readiness probe branch intentionally runs Full on push.
-      # Licensed-user runner confirmed on Windows.
-      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'Full' }}
+      # Trusted push branches can request a release action by prefix; all other agent/** pushes run Full.
+      # workflow_dispatch remains available for explicit manual mode selection.
+      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || startsWith(github.ref_name, 'agent/device-smoke/') && 'DeviceSmokeApk' || startsWith(github.ref_name, 'agent/android-probe/') && 'AndroidIntegrationProbe' || 'Full' }}
 
     steps:
       - name: Checkout trusted agent branch
