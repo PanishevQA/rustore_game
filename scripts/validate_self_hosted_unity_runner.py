@@ -49,6 +49,8 @@ required_workflow = (
     "bootstrap_portable_python.ps1",
     "verify_unity_runner_environment.ps1",
     "AGENT_CHECK_MODE",
+    "startsWith(github.ref_name, 'agent/build/')",
+    "'Build'",
     "startsWith(github.ref_name, 'agent/device-smoke/')",
     "'DeviceSmokeApk'",
     "startsWith(github.ref_name, 'agent/android-probe/')",
