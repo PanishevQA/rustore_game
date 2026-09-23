@@ -78,11 +78,11 @@ namespace DontGetSidetracked.Presentation
             sheen.raycastTarget = false;
 
             Transform rimRoot = ReleaseUiKit.Rect(card.transform, "TopRim",
-                new Vector2(0.035f, 0.968f), new Vector2(0.965f, 0.992f));
+                new Vector2(0.045f, 0.989f), new Vector2(0.955f, 0.996f));
             Image rim = rimRoot.gameObject.AddComponent<Image>();
             rim.sprite = ReleaseUiKit.Rounded;
             rim.type = Image.Type.Sliced;
-            rim.color = new Color(accent.r, accent.g, accent.b, strong ? 0.34f : 0.18f);
+            rim.color = new Color(accent.r, accent.g, accent.b, strong ? 0.20f : 0.10f);
             rim.raycastTarget = false;
 
             Outline outline = card.GetComponent<Outline>();
