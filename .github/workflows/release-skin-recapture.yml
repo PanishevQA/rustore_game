@@ -1,0 +1,63 @@
+name: release-skin-recapture
+
+on:
+  push:
+    branches:
+      - 'agent/release-skin-recapture/**'
+    paths:
+      - '.github/workflows/release-skin-recapture.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: [self-hosted, windows, x64, unity]
+    timeout-minutes: 15
+    steps:
+      - name: Wake device and capture installed texture-skin APK
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $serial = ((& $adbExe devices) | Where-Object { $_ -match "^([^\s]+)\s+device\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
+          if ([string]::IsNullOrWhiteSpace($serial)) { throw "No authorized Android device found." }
+
+          $out = Join-Path $PWD "release-skin-recapture"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          & $adbExe -s $serial shell input keyevent KEYCODE_WAKEUP | Out-Null
+          & $adbExe -s $serial shell wm dismiss-keyguard | Out-Null
+          & $adbExe -s $serial shell input keyevent KEYCODE_HOME | Out-Null
+          Start-Sleep -Seconds 1
+          & $adbExe -s $serial shell am force-stop ru.release.nesbeisya | Out-Null
+          & $adbExe -s $serial shell monkey -p ru.release.nesbeisya -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 8
+
+          & $adbExe -s $serial shell screencap -p /sdcard/nesbeisya-release-skin-home.png
+          & $adbExe -s $serial pull /sdcard/nesbeisya-release-skin-home.png (Join-Path $out "home.png") | Out-Host
+          & $adbExe -s $serial shell rm /sdcard/nesbeisya-release-skin-home.png | Out-Null
+
+          (& $adbExe -s $serial logcat -d -t 3500 -v time) | Set-Content -Path (Join-Path $out "logcat.txt") -Encoding UTF8
+          (& $adbExe -s $serial shell dumpsys window) | Set-Content -Path (Join-Path $out "window-dump.txt") -Encoding UTF8
+          (& $adbExe -s $serial shell dumpsys power) | Set-Content -Path (Join-Path $out "power-dump.txt") -Encoding UTF8
+
+          $appPid = ((& $adbExe -s $serial shell pidof ru.release.nesbeisya) | Out-String).Trim()
+          @(
+            "ReleaseSkinRecapture=PASS",
+            "Serial=$serial",
+            "Pid=$appPid",
+            "Model=$(((& $adbExe -s $serial shell getprop ro.product.model) | Out-String).Trim())",
+            "ApiLevel=$(((& $adbExe -s $serial shell getprop ro.build.version.sdk) | Out-String).Trim())"
+          ) | Set-Content -Path (Join-Path $out "report.txt") -Encoding UTF8
+
+      - name: Upload release skin recapture
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-skin-recapture-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: release-skin-recapture/**
