@@ -76,6 +76,34 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_release_candidate_checks.ps1 -BuildSmokeApk
 
+      - name: Install visual smoke APK
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_signed_device_smoke_apk.ps1 -SkipLaunchCheck
+
+      - name: Capture Campaign on connected device
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $out = Join-Path $PWD "artifacts\device-capture"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $unity = [Environment]::ExpandEnvironmentVariables($env:UNITY_EXE)
+          if ([string]::IsNullOrWhiteSpace($unity) -or -not (Test-Path $unity)) {
+            $unity = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Unity.exe"
+          }
+          $adb = Join-Path (Split-Path -Parent $unity) "Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          $serial = ((& $adb devices) | Where-Object { $_ -match "^([^\s]+)\s+device\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
+          if ([string]::IsNullOrWhiteSpace($serial)) { throw "No authorized device" }
+          & $adb -s $serial shell am force-stop ru.release.nesbeisya | Out-Null
+          & $adb -s $serial shell monkey -p ru.release.nesbeisya -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 5
+          & $adb -s $serial shell input tap 795 1320
+          Start-Sleep -Seconds 2
+          & $adb -s $serial shell screencap -p /sdcard/campaign-parity.png
+          & $adb -s $serial pull /sdcard/campaign-parity.png (Join-Path $out "campaign-parity.png") | Out-Host
+          & $adb -s $serial shell rm /sdcard/campaign-parity.png | Out-Null
+
       - name: Run Android integration and native AAR probe
         if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
         shell: powershell
@@ -92,3 +120,4 @@ jobs:
             artifacts/agent-check/**
             artifacts/release-candidate/**
             artifacts/android-integration-probe/**
+            artifacts/device-capture/**
