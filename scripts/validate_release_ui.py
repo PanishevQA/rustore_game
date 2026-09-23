@@ -69,7 +69,7 @@ required = {
         "TutorialStartMarker",
         "TutorialEndMarker",
         "Повтори его по памяти",
-        "TutorialDot0",
+        "TutorialDot",
         "TutorialStart",
         "НАЧАТЬ",
         "GameBootstrapRuntimeBridge.RestartTutorial",
