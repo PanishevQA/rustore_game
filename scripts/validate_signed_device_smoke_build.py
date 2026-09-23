@@ -84,10 +84,14 @@ for marker in (
     'elseif ($Mode -eq "ReleaseCandidate")',
     'Invoke-UnityChecks -IncludeReadiness -BuildAab -BuildSmokeApk',
     'Invoke-SmokeArtifactVerification -SmokeOutput $smokeOutput',
+    '($line -split "\\s+")[0]',
     'Invoke-ReleaseArtifactVerification -ReleaseOutput $releaseOutput -ExpectedGitSha $gitSha',
 ):
     if marker not in agent:
         errors.append(f"Agent release-candidate mode is incomplete: missing {marker!r}.")
+
+if '($line -split "\\\\s+")[0]' in agent:
+    errors.append("Agent release-candidate SHA sidecar parser must use PowerShell regex \\s+, not a double-backslash literal.")
 
 for marker in (
     "Get-FileHash -Path $apk -Algorithm SHA256",

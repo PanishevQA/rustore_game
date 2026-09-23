@@ -212,7 +212,7 @@ function Invoke-SmokeArtifactVerification {
     }
 
     $line = (Get-Content $sidecar | Select-Object -First 1).Trim()
-    $expected = ($line -split "\\s+")[0].ToLowerInvariant()
+    $expected = ($line -split "\s+")[0].ToLowerInvariant()
     if ($expected -notmatch "^[0-9a-f]{64}$") {
         throw "Signed device-smoke SHA-256 sidecar is malformed: $sidecar"
     }
