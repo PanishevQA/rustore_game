@@ -20,6 +20,7 @@ on:
           - Unity
           - Full
           - Build
+          - ReleaseCandidate
           - DeviceSmokeApk
           - AndroidIntegrationProbe
 
@@ -40,7 +41,7 @@ jobs:
       UNITY_EXE: ${{ vars.UNITY_EXE }}
       # Trusted push branches can request a release action by prefix; all other agent/** pushes run Full.
       # workflow_dispatch remains available for explicit manual mode selection.
-      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || startsWith(github.ref_name, 'agent/build/') && 'Build' || startsWith(github.ref_name, 'agent/device-smoke/') && 'DeviceSmokeApk' || startsWith(github.ref_name, 'agent/android-probe/') && 'AndroidIntegrationProbe' || 'Full' }}
+      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || startsWith(github.ref_name, 'agent/release-candidate/') && 'ReleaseCandidate' || startsWith(github.ref_name, 'agent/build/') && 'Build' || startsWith(github.ref_name, 'agent/device-smoke/') && 'DeviceSmokeApk' || startsWith(github.ref_name, 'agent/android-probe/') && 'AndroidIntegrationProbe' || 'Full' }}
 
     steps:
       - name: Checkout trusted agent branch
