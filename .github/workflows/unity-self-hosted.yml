@@ -118,6 +118,9 @@ jobs:
           Start-Sleep -Seconds 3
           & $adbExe -s $serial shell screencap -p /sdcard/nesbeisya-app.png
           & $adbExe -s $serial pull /sdcard/nesbeisya-app.png (Join-Path $out "app-screen.png") | Out-Host
+          (& $adbExe -s $serial logcat -d -t 2500 -v time) | Set-Content -Path (Join-Path $out "logcat.txt") -Encoding UTF8
+          (& $adbExe -s $serial shell wm size) | Set-Content -Path (Join-Path $out "wm-size.txt") -Encoding UTF8
+          (& $adbExe -s $serial shell dumpsys window) | Set-Content -Path (Join-Path $out "window-dump.txt") -Encoding UTF8
           & $adbExe -s $serial shell rm /sdcard/nesbeisya-current.png /sdcard/nesbeisya-app.png | Out-Null
 
           @(
