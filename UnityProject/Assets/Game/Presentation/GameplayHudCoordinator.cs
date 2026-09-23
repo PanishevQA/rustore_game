@@ -74,6 +74,7 @@ namespace DontGetSidetracked.Presentation
             {
                 if (IsGameplayPaused) ResumeFromPause();
                 ApplyRestingBoardLayout(result);
+                if (result) StyleResultMarkers();
                 SetHudVisible(false);
                 if (!plainHome && !result) SetLegacyVisible(true);
             }
@@ -298,8 +299,8 @@ namespace DontGetSidetracked.Presentation
 
             ReleaseUiKit.SetAnchors(
                 _playArea,
-                result ? new Vector2(0.07f, 0.330f) : new Vector2(0.07f, 0.245f),
-                result ? new Vector2(0.93f, 0.665f) : new Vector2(0.93f, 0.760f));
+                result ? new Vector2(0.07f, 0.392f) : new Vector2(0.07f, 0.245f),
+                result ? new Vector2(0.93f, 0.650f) : new Vector2(0.93f, 0.760f));
         }
 
         private void Refresh()
@@ -407,6 +408,14 @@ namespace DontGetSidetracked.Presentation
             shadow.effectColor = new Color(ring.r, ring.g, ring.b, 0.64f);
             shadow.effectDistance = new Vector2(0f, -3f);
             shadow.useGraphicAlpha = true;
+        }
+
+        private void StyleResultMarkers()
+        {
+            if (_startMarker != null)
+                StyleRingMarker(_startMarker, Color.white, "TargetStartInner");
+            if (_endMarker != null)
+                StyleRingMarker(_endMarker, Color.white, "TargetEndInner");
         }
 
         private void SetDrawingChrome(bool drawing, string title)
