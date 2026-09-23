@@ -342,9 +342,9 @@ namespace DontGetSidetracked.Presentation
                 hideFlags = HideFlags.HideAndDontSave
             };
 
-            Color top = new Color(0.012f, 0.050f, 0.115f, 1f);
-            Color middle = new Color(0.009f, 0.028f, 0.070f, 1f);
-            Color bottom = new Color(0.002f, 0.008f, 0.024f, 1f);
+            Color top = new Color(0.014f, 0.066f, 0.145f, 1f);
+            Color middle = new Color(0.008f, 0.032f, 0.078f, 1f);
+            Color bottom = new Color(0.001f, 0.007f, 0.022f, 1f);
             Color[] pixels = new Color[width * height];
 
             for (int y = 0; y < height; y++)
@@ -359,18 +359,18 @@ namespace DontGetSidetracked.Presentation
                     float nx = x / (float)Math.Max(1, width - 1);
                     Color color = baseColor;
 
-                    float cyanGlow = Mathf.Clamp01(1f - Vector2.Distance(
-                        new Vector2(nx, ny), new Vector2(0.22f, 0.82f)) / 0.40f);
-                    float violetGlow = Mathf.Clamp01(1f - Vector2.Distance(
-                        new Vector2(nx, ny), new Vector2(0.84f, 0.58f)) / 0.44f);
-                    color += new Color(0.008f, 0.042f, 0.070f, 0f) * cyanGlow;
-                    color += new Color(0.028f, 0.010f, 0.072f, 0f) * violetGlow;
+                    float cyanGlow = Mathf.Pow(Mathf.Clamp01(1f - Vector2.Distance(
+                        new Vector2(nx, ny), new Vector2(0.18f, 0.84f)) / 0.48f), 1.55f);
+                    float violetGlow = Mathf.Pow(Mathf.Clamp01(1f - Vector2.Distance(
+                        new Vector2(nx, ny), new Vector2(0.86f, 0.60f)) / 0.50f), 1.65f);
+                    color += new Color(0.012f, 0.060f, 0.100f, 0f) * cyanGlow;
+                    color += new Color(0.050f, 0.020f, 0.105f, 0f) * violetGlow;
 
-                    int starHash = (x * 43 + y * 79 + x * y * 5) % 521;
-                    if (ny > 0.26f && starHash == 0)
+                    int starHash = (x * 43 + y * 79 + x * y * 5) % 431;
+                    if (ny > 0.22f && starHash == 0)
                     {
-                        float sparkle = ((x + y) % 3 == 0) ? 0.74f : 0.48f;
-                        color = Color.Lerp(color, new Color(0.42f, 0.78f, 1f, 1f), sparkle);
+                        float sparkle = ((x + y) % 3 == 0) ? 0.78f : 0.52f;
+                        color = Color.Lerp(color, new Color(0.46f, 0.82f, 1f, 1f), sparkle);
                     }
 
                     float horizon = 0.095f + 0.026f * Mathf.Sin(nx * 10.5f)
@@ -379,9 +379,9 @@ namespace DontGetSidetracked.Presentation
                         color = Color.Lerp(color, new Color(0.002f, 0.015f, 0.038f, 1f), 0.92f);
 
                     float horizontalEdge = Mathf.Min(nx, 1f - nx);
-                    float vignette = Mathf.SmoothStep(0f, 0.11f, horizontalEdge);
-                    float bottomDark = Mathf.SmoothStep(0.12f, 0.48f, ny);
-                    float mask = Mathf.Clamp01(vignette * (0.72f + 0.28f * bottomDark));
+                    float vignette = Mathf.SmoothStep(0f, 0.085f, horizontalEdge);
+                    float bottomDark = Mathf.SmoothStep(0.10f, 0.44f, ny);
+                    float mask = Mathf.Clamp01(vignette * (0.78f + 0.22f * bottomDark));
                     color = Color.Lerp(new Color(0.001f, 0.004f, 0.014f, 1f), color, mask);
 
                     pixels[y * width + x] = color;

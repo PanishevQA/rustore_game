@@ -373,9 +373,24 @@ namespace DontGetSidetracked.Presentation
 
         private void AddStoreSectionLabel(string label, Color accent)
         {
-            Transform root = AddLayoutRoot("StoreSection", 48);
-            ReleaseUiKit.TextBlock(root, "Label", label, 26, TextAnchor.MiddleLeft,
-                new Vector2(0.02f, 0.02f), new Vector2(0.98f, 0.98f), accent, FontStyle.Bold);
+            Transform root = AddLayoutRoot("StoreSection", 58);
+
+            Transform dash = ReleaseUiKit.Rect(root, "AccentDash",
+                new Vector2(0.015f, 0.22f), new Vector2(0.026f, 0.78f));
+            Image dashImage = dash.gameObject.AddComponent<Image>();
+            dashImage.sprite = ReleaseUiKit.Rounded;
+            dashImage.type = Image.Type.Sliced;
+            dashImage.color = accent;
+            dashImage.raycastTarget = false;
+
+            ReleaseUiKit.TextBlock(root, "Label", label, 25, TextAnchor.MiddleLeft,
+                new Vector2(0.055f, 0.05f), new Vector2(0.93f, 0.95f), accent, FontStyle.Bold);
+
+            Transform rule = ReleaseUiKit.Rect(root, "Rule",
+                new Vector2(0.055f, 0.08f), new Vector2(0.98f, 0.105f));
+            Image ruleImage = rule.gameObject.AddComponent<Image>();
+            ruleImage.color = new Color(accent.r, accent.g, accent.b, 0.15f);
+            ruleImage.raycastTarget = false;
         }
 
         private void AddStoreProductIfPresent(IReadOnlyList<StoreProduct> products, string productId)
@@ -735,31 +750,20 @@ namespace DontGetSidetracked.Presentation
 
         private void AddInfoRow(string glyph, string label, string value, Color accent)
         {
-            var go = new GameObject("InfoRow", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
-            go.transform.SetParent(_actionsRoot, false);
+            Transform row = AddLayoutCard("InfoRow", 82f, accent, false);
 
-            Image image = go.GetComponent<Image>();
-            image.sprite = ReleaseUiKit.Rounded;
-            image.type = Image.Type.Sliced;
-            image.color = new Color(0.020f, 0.055f, 0.100f, 0.96f);
-
-            Outline outline = go.AddComponent<Outline>();
-            outline.effectColor = new Color(accent.r, accent.g, accent.b, 0.18f);
-            outline.effectDistance = new Vector2(2f, -2f);
-
-            LayoutElement element = go.GetComponent<LayoutElement>();
-            element.preferredHeight = 72;
-            element.minHeight = 66;
-
-            Image infoWell = ReleaseUiComponents.GlassCard(go.transform, "InfoIconWell",
-                new Vector2(0.035f, 0.14f), new Vector2(0.175f, 0.86f), accent, false);
-            infoWell.color = new Color(accent.r, accent.g, accent.b, 0.09f);
+            Image infoWell = ReleaseUiComponents.GlassCard(row, "InfoIconWell",
+                new Vector2(0.025f, 0.15f), new Vector2(0.155f, 0.85f), accent, false);
+            infoWell.color = new Color(accent.r, accent.g, accent.b, 0.11f);
             ReleaseUiComponents.Icon(infoWell.transform, "InfoIcon", glyph,
-                new Vector2(0.13f, 0.13f), new Vector2(0.87f, 0.87f));
-            ReleaseUiKit.TextBlock(go.transform, "Label", label, 16, TextAnchor.MiddleLeft,
-                new Vector2(0.18f, 0.50f), new Vector2(0.72f, 0.88f), ReleaseUiComponents.Muted, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(go.transform, "Value", value, 22, TextAnchor.MiddleRight,
-                new Vector2(0.58f, 0.12f), new Vector2(0.94f, 0.78f), ReleaseUiComponents.Text, FontStyle.Bold);
+                new Vector2(0.15f, 0.15f), new Vector2(0.85f, 0.85f));
+
+            ReleaseUiKit.TextBlock(row, "Label", label, 17, TextAnchor.MiddleLeft,
+                new Vector2(0.18f, 0.50f), new Vector2(0.70f, 0.88f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
+            ReleaseUiKit.TextBlock(row, "Value", value, 25, TextAnchor.MiddleRight,
+                new Vector2(0.52f, 0.12f), new Vector2(0.94f, 0.78f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
         }
 
         private void AddAction(string label, UnityEngine.Events.UnityAction action, bool interactable = true)
@@ -785,12 +789,35 @@ namespace DontGetSidetracked.Presentation
             image.sprite = ReleaseUiKit.Rounded;
             image.type = Image.Type.Sliced;
             image.color = strong
-                ? new Color(0.035f, 0.085f, 0.145f, 0.99f)
-                : new Color(0.020f, 0.055f, 0.100f, 0.97f);
+                ? new Color(0.030f, 0.090f, 0.150f, 0.995f)
+                : new Color(0.018f, 0.050f, 0.092f, 0.98f);
 
             Outline outline = root.gameObject.AddComponent<Outline>();
-            outline.effectColor = new Color(accent.r, accent.g, accent.b, strong ? 0.42f : 0.22f);
+            outline.effectColor = new Color(accent.r, accent.g, accent.b, strong ? 0.48f : 0.25f);
             outline.effectDistance = strong ? new Vector2(3f, -3f) : new Vector2(2f, -2f);
+            outline.useGraphicAlpha = true;
+
+            Shadow shadow = root.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, strong ? 0.44f : 0.30f);
+            shadow.effectDistance = new Vector2(0f, strong ? -9f : -6f);
+            shadow.useGraphicAlpha = true;
+
+            Transform sheenRoot = ReleaseUiKit.Rect(root, "GlassSheen",
+                new Vector2(0.018f, 0.60f), new Vector2(0.982f, 0.985f));
+            Image sheen = sheenRoot.gameObject.AddComponent<Image>();
+            sheen.sprite = ReleaseUiKit.Rounded;
+            sheen.type = Image.Type.Sliced;
+            sheen.color = new Color(accent.r, accent.g, accent.b, strong ? 0.11f : 0.055f);
+            sheen.raycastTarget = false;
+
+            Transform rimRoot = ReleaseUiKit.Rect(root, "TopRim",
+                new Vector2(0.035f, 0.968f), new Vector2(0.965f, 0.992f));
+            Image rim = rimRoot.gameObject.AddComponent<Image>();
+            rim.sprite = ReleaseUiKit.Rounded;
+            rim.type = Image.Type.Sliced;
+            rim.color = new Color(accent.r, accent.g, accent.b, strong ? 0.40f : 0.22f);
+            rim.raycastTarget = false;
+
             return root;
         }
 
@@ -805,6 +832,12 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.53f, 0.54f), new Vector2(0.945f, 0.86f), ReleaseUiComponents.Muted, FontStyle.Bold);
             ReleaseUiKit.TextBlock(card, "RightValue", rightValue, 30, TextAnchor.MiddleRight,
                 new Vector2(0.53f, 0.13f), new Vector2(0.945f, 0.56f), ReleaseUiComponents.Text, FontStyle.Bold);
+
+            Transform divider = ReleaseUiKit.Rect(card, "Divider",
+                new Vector2(0.499f, 0.18f), new Vector2(0.501f, 0.82f));
+            Image dividerImage = divider.gameObject.AddComponent<Image>();
+            dividerImage.color = new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.18f);
+            dividerImage.raycastTarget = false;
         }
 
         private static void ConfigureCardButton(
@@ -851,27 +884,40 @@ namespace DontGetSidetracked.Presentation
             Image image = go.GetComponent<Image>();
             image.sprite = ReleaseUiKit.Rounded;
             image.type = Image.Type.Sliced;
-            image.color = new Color(0.025f, 0.070f, 0.120f, 0.98f);
+            image.color = new Color(0.022f, 0.070f, 0.122f, 0.99f);
 
             LayoutElement element = go.GetComponent<LayoutElement>();
-            element.preferredHeight = 72;
-            element.minHeight = 64;
+            element.preferredHeight = 78;
+            element.minHeight = 70;
+
+            Outline outline = go.AddComponent<Outline>();
+            outline.effectColor = new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.20f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            Shadow shadow = go.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.28f);
+            shadow.effectDistance = new Vector2(0f, -5f);
+            shadow.useGraphicAlpha = true;
 
             Button button = go.GetComponent<Button>();
             button.targetGraphic = image;
             button.onClick.AddListener(action);
             ColorBlock colors = button.colors;
-            colors.normalColor = image.color;
-            colors.highlightedColor = ReleaseUiKit.Lighten(image.color, 0.05f);
-            colors.pressedColor = ReleaseUiKit.Darken(image.color, 0.06f);
-            colors.disabledColor = new Color(0.07f, 0.08f, 0.12f, 0.68f);
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.10f, 1.10f, 1.10f, 1f);
+            colors.pressedColor = new Color(0.70f, 0.82f, 0.95f, 1f);
+            colors.disabledColor = new Color(0.60f, 0.66f, 0.76f, 0.70f);
             colors.fadeDuration = 0.08f;
             button.colors = colors;
 
-            Text text = ReleaseUiKit.TextBlock(go.transform, "Label", label, 25,
-                TextAnchor.MiddleLeft, new Vector2(0.055f, 0f), new Vector2(0.945f, 1f),
+            Text text = ReleaseUiKit.TextBlock(go.transform, "Label", label, 24,
+                TextAnchor.MiddleLeft, new Vector2(0.055f, 0f), new Vector2(0.84f, 1f),
                 ReleaseUiKit.Text, FontStyle.Bold);
             text.raycastTarget = false;
+            Text arrow = ReleaseUiKit.TextBlock(go.transform, "Arrow", "›", 34,
+                TextAnchor.MiddleCenter, new Vector2(0.87f, 0.08f), new Vector2(0.96f, 0.92f),
+                ReleaseUiComponents.Cyan, FontStyle.Bold);
+            arrow.raycastTarget = false;
 
             return button;
         }

@@ -325,7 +325,7 @@ namespace DontGetSidetracked.Presentation
                     ? new Color(ReleaseUiComponents.Success.r, ReleaseUiComponents.Success.g, ReleaseUiComponents.Success.b, 0.72f)
                     : new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g, ReleaseUiComponents.Cyan.b, 0.78f);
 
-            CreatePathSegment(parent, "PathProgress", LevelCenter(slot), LevelCenter(slot + 1), accent, 0.012f);
+            CreatePathSegment(parent, "PathProgress", LevelCenter(slot), LevelCenter(slot + 1), accent, 0.016f);
         }
 
         private static Button CreateLevelButton(
@@ -339,86 +339,88 @@ namespace DontGetSidetracked.Presentation
             bool completed = record != null && record.Stars > 0;
             bool current = unlocked && !completed;
             Color accent = !unlocked
-                ? new Color(0.38f, 0.47f, 0.60f, 0.88f)
+                ? new Color(0.38f, 0.47f, 0.60f, 0.82f)
                 : completed
                     ? ReleaseUiComponents.Success
                     : ReleaseUiComponents.Cyan;
 
             Vector2 center = LevelCenter(slot);
-            var go = new GameObject("LevelNode", typeof(RectTransform), typeof(Image), typeof(Button));
-            go.transform.SetParent(parent, false);
-            RectTransform rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(center.x - 0.205f, center.y - 0.070f);
-            rect.anchorMax = new Vector2(center.x + 0.205f, center.y + 0.070f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
 
-            Image image = go.GetComponent<Image>();
-            image.sprite = ReleaseUiKit.Rounded;
-            image.type = Image.Type.Sliced;
-            image.color = !unlocked
-                ? new Color(0.025f, 0.038f, 0.068f, 0.96f)
+            // A campaign level is a node on a route, not a dashboard card. Keep the
+            // hit target generous while the visible face stays compact so the snake
+            // rail remains readable on a portrait phone.
+            Transform root = ReleaseUiKit.Rect(
+                parent,
+                "LevelNode",
+                new Vector2(center.x - 0.145f, center.y - 0.082f),
+                new Vector2(center.x + 0.145f, center.y + 0.082f));
+
+            var faceGo = new GameObject("NodeFace", typeof(RectTransform), typeof(Image), typeof(Button));
+            faceGo.transform.SetParent(root, false);
+            RectTransform faceRect = faceGo.GetComponent<RectTransform>();
+            ReleaseUiKit.SetAnchors(faceRect, new Vector2(0.28f, 0.20f), new Vector2(0.72f, 0.98f));
+
+            Image face = faceGo.GetComponent<Image>();
+            face.sprite = ReleaseUiKit.Circle;
+            face.type = Image.Type.Simple;
+            face.color = !unlocked
+                ? new Color(0.025f, 0.038f, 0.068f, 0.99f)
                 : current
-                    ? new Color(0.020f, 0.110f, 0.170f, 0.995f)
-                    : new Color(0.022f, 0.070f, 0.115f, 0.985f);
+                    ? new Color(0.018f, 0.135f, 0.205f, 1f)
+                    : new Color(0.020f, 0.095f, 0.120f, 0.995f);
 
-            Outline outline = go.AddComponent<Outline>();
-            outline.effectColor = new Color(accent.r, accent.g, accent.b, current ? 0.58f : unlocked ? 0.28f : 0.10f);
-            outline.effectDistance = new Vector2(current ? 3f : 2f, current ? -3f : -2f);
+            Outline outline = faceGo.AddComponent<Outline>();
+            outline.effectColor = new Color(accent.r, accent.g, accent.b, current ? 0.78f : unlocked ? 0.50f : 0.18f);
+            outline.effectDistance = new Vector2(current ? 4f : 3f, current ? -4f : -3f);
+            outline.useGraphicAlpha = true;
 
-            if (current)
-            {
-                Shadow glow = go.AddComponent<Shadow>();
-                glow.effectColor = new Color(accent.r, accent.g, accent.b, 0.26f);
-                glow.effectDistance = new Vector2(0f, -7f);
-                glow.useGraphicAlpha = true;
-            }
+            Shadow glow = faceGo.AddComponent<Shadow>();
+            glow.effectColor = new Color(accent.r, accent.g, accent.b, current ? 0.34f : completed ? 0.18f : 0.08f);
+            glow.effectDistance = new Vector2(0f, -6f);
+            glow.useGraphicAlpha = true;
 
-            Button button = go.GetComponent<Button>();
+            Button button = faceGo.GetComponent<Button>();
             button.interactable = unlocked;
             button.onClick.AddListener(action);
-            button.targetGraphic = image;
-
+            button.targetGraphic = face;
             ColorBlock block = button.colors;
-            block.normalColor = image.color;
-            block.highlightedColor = unlocked ? ReleaseUiKit.Lighten(image.color, 0.05f) : image.color;
-            block.pressedColor = unlocked ? ReleaseUiKit.Darken(image.color, 0.08f) : image.color;
-            block.disabledColor = image.color;
+            block.normalColor = Color.white;
+            block.highlightedColor = unlocked ? new Color(1.12f, 1.12f, 1.12f, 1f) : Color.white;
+            block.pressedColor = unlocked ? new Color(0.72f, 0.80f, 0.90f, 1f) : Color.white;
+            block.disabledColor = Color.white;
             block.fadeDuration = 0.08f;
             button.colors = block;
 
-            ReleaseUiKit.TextBlock(go.transform, "LevelNumber", levelNumber.ToString(), 44,
-                TextAnchor.MiddleCenter, new Vector2(0.035f, 0.12f), new Vector2(0.28f, 0.88f),
-                unlocked ? ReleaseUiComponents.Text : new Color(0.58f, 0.64f, 0.74f, 0.95f), FontStyle.Bold);
+            Text number = ReleaseUiKit.TextBlock(faceGo.transform, "LevelNumber", levelNumber.ToString(), 43,
+                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.08f), new Vector2(0.92f, 0.92f),
+                unlocked ? ReleaseUiComponents.Text : new Color(0.58f, 0.64f, 0.74f, 0.94f), FontStyle.Bold);
+            ReleaseUiKit.AddTextShadow(number, 0.42f, -2f);
 
             string stateAsset = !unlocked
                 ? GeneratedUiAssets.LockIcon
                 : current
                     ? GeneratedUiAssets.CampaignIcon
                     : GeneratedUiAssets.CheckIcon;
-            Image stateWell = ReleaseUiComponents.GlassCard(go.transform, "StateIconWell",
-                new Vector2(0.31f, 0.53f), new Vector2(0.43f, 0.86f), accent, false);
-            stateWell.color = new Color(accent.r, accent.g, accent.b, unlocked ? 0.10f : 0.06f);
-            ReleaseUiComponents.Icon(stateWell.transform, "StateIcon", stateAsset,
-                new Vector2(0.16f, 0.16f), new Vector2(0.84f, 0.84f));
+            Image badge = ReleaseUiComponents.GlassCard(root, "StateBadge",
+                new Vector2(0.67f, 0.62f), new Vector2(0.91f, 0.90f), accent, false);
+            badge.color = new Color(accent.r, accent.g, accent.b, unlocked ? 0.16f : 0.09f);
+            badge.raycastTarget = false;
+            Image stateIcon = ReleaseUiComponents.Icon(badge.transform, "StateIcon", stateAsset,
+                new Vector2(0.18f, 0.18f), new Vector2(0.82f, 0.82f));
+            if (stateIcon != null) stateIcon.raycastTarget = false;
 
             if (completed)
             {
-                CreateStars(go.transform, record.Stars,
-                    new Vector2(0.46f, 0.55f), new Vector2(0.94f, 0.86f));
+                CreateStars(root, record.Stars,
+                    new Vector2(0.18f, -0.04f), new Vector2(0.82f, 0.18f));
             }
             else
             {
-                ReleaseUiKit.TextBlock(go.transform, "State", unlocked ? "ТЕКУЩИЙ" : "ЗАКРЫТ", 21,
-                    TextAnchor.MiddleLeft, new Vector2(0.46f, 0.52f), new Vector2(0.95f, 0.88f),
+                string state = current ? "ТЕКУЩИЙ" : "ЗАКРЫТ";
+                ReleaseUiKit.TextBlock(root, "State", state, 17,
+                    TextAnchor.MiddleCenter, new Vector2(0.05f, -0.04f), new Vector2(0.95f, 0.18f),
                     accent, FontStyle.Bold);
             }
-
-            string best = !unlocked ? "Нужен предыдущий уровень" :
-                current ? "Твой следующий маршрут" : $"ЛУЧШИЙ  {record.BestScore:0.0}%";
-            ReleaseUiKit.TextBlock(go.transform, "Best", best, 19,
-                TextAnchor.MiddleLeft, new Vector2(0.31f, 0.11f), new Vector2(0.95f, 0.50f),
-                unlocked ? ReleaseUiComponents.Muted : new Color(0.50f, 0.56f, 0.66f, 0.95f));
 
             return button;
         }
@@ -455,8 +457,8 @@ namespace DontGetSidetracked.Presentation
             int row = slot / 2;
             bool firstInRow = slot % 2 == 0;
             bool left = row % 2 == 0 ? firstInRow : !firstInRow;
-            float x = left ? 0.24f : 0.76f;
-            float y = 0.885f - row * 0.192f;
+            float x = left ? 0.22f : 0.78f;
+            float y = 0.890f - row * 0.195f;
             return new Vector2(x, y);
         }
 
