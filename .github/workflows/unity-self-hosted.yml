@@ -76,6 +76,98 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_release_candidate_checks.ps1 -BuildSmokeApk
 
+      - name: Install texture-skin APK and capture Home plus Result
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          Add-Type -AssemblyName System.Drawing
+          powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_signed_device_smoke_apk.ps1
+
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+          $serial = ((& $adbExe devices) | Where-Object { $_ -match "^([^\s]+)\s+device\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
+          if ([string]::IsNullOrWhiteSpace($serial)) { throw "No authorized Android device found." }
+
+          $out = Join-Path $PWD "artifacts\device-smoke"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          function Shot([string]$Name) {
+            $remote = "/sdcard/nesbeisya-$Name.png"
+            $local = Join-Path $out "$Name.png"
+            & $adbExe -s $serial shell screencap -p $remote
+            & $adbExe -s $serial pull $remote $local | Out-Host
+            & $adbExe -s $serial shell rm $remote | Out-Null
+            return $local
+          }
+
+          & $adbExe -s $serial shell am force-stop ru.release.nesbeisya | Out-Null
+          & $adbExe -s $serial shell monkey -p ru.release.nesbeisya -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 6
+          Shot "00-texture-home"
+
+          & $adbExe -s $serial shell input tap 540 1510
+          Start-Sleep -Seconds 2
+          & $adbExe -s $serial shell input tap 540 2050
+          Start-Sleep -Seconds 5
+
+          $drawPath = Shot "01-result-smoke-draw"
+          $bmp = [System.Drawing.Bitmap]::FromFile($drawPath)
+          try {
+            $cyan = New-Object System.Collections.Generic.List[System.Drawing.Point]
+            $white = New-Object System.Collections.Generic.List[System.Drawing.Point]
+
+            for ($y = 680; $y -lt 1850; $y += 2) {
+              for ($x = 70; $x -lt 1010; $x += 2) {
+                $px = $bmp.GetPixel($x, $y)
+                if ($px.R -lt 90 -and $px.G -gt 175 -and $px.B -gt 180) {
+                  $cyan.Add([System.Drawing.Point]::new($x,$y))
+                }
+                if ($px.R -gt 220 -and $px.G -gt 220 -and $px.B -gt 220) {
+                  $white.Add([System.Drawing.Point]::new($x,$y))
+                }
+              }
+            }
+
+            if ($cyan.Count -eq 0 -or $white.Count -eq 0) {
+              throw "Could not detect target gameplay markers. cyan=$($cyan.Count) white=$($white.Count)"
+            }
+
+            $startX = [int](($cyan | Measure-Object -Property X -Average).Average)
+            $startY = [int](($cyan | Measure-Object -Property Y -Average).Average)
+
+            # White pixels include grid/text only weakly inside the board; choose the tight
+            # cluster furthest from the detected cyan start to identify the finish ring.
+            $candidates = @($white | Where-Object {
+              $dx = $_.X - $startX
+              $dy = $_.Y - $startY
+              ($dx*$dx + $dy*$dy) -gt 40000
+            })
+            if ($candidates.Count -eq 0) { throw "Could not isolate white finish marker." }
+
+            $endX = [int](($candidates | Measure-Object -Property X -Average).Average)
+            $endY = [int](($candidates | Measure-Object -Property Y -Average).Average)
+          }
+          finally {
+            $bmp.Dispose()
+          }
+
+          Write-Host "Detected gesture start=($startX,$startY) end=($endX,$endY)"
+          & $adbExe -s $serial shell input swipe $startX $startY $endX $endY 1250
+          Start-Sleep -Seconds 4
+          Shot "02-target-result"
+
+          $appPid = ((& $adbExe -s $serial shell pidof ru.release.nesbeisya) | Out-String).Trim()
+          if ([string]::IsNullOrWhiteSpace($appPid)) { throw "App process died during Result smoke." }
+
+          @(
+            "TextureSkinDeviceSmoke=PASS",
+            "Serial=$serial",
+            "Start=$startX,$startY",
+            "End=$endX,$endY",
+            "Pid=$appPid"
+          ) | Set-Content -Path (Join-Path $out "target-result-report.txt") -Encoding UTF8
+
       - name: Run Android integration and native AAR probe
         if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
         shell: powershell
@@ -92,3 +184,4 @@ jobs:
             artifacts/agent-check/**
             artifacts/release-candidate/**
             artifacts/android-integration-probe/**
+            artifacts/device-smoke/**
