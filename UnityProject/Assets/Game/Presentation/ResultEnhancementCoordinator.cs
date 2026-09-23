@@ -138,13 +138,7 @@ namespace DontGetSidetracked.Presentation
 
             _scoreText.text = $"{score:0.0}%";
             RefreshScoreStats(snapshot);
-            Color scoreColor = score >= 90.0
-                ? ReleaseUiKit.Cyan
-                : score >= 70.0
-                    ? new Color(0.22f, 0.76f, 1f, 1f)
-                    : score >= 50.0
-                        ? ReleaseUiKit.Gold
-                        : ReleaseUiKit.Danger;
+            Color scoreColor = ReleaseUiComponents.Cyan;
             _scoreText.color = ReleaseUiComponents.Text;
             if (_scoreRing != null) _scoreRing.color = scoreColor;
             if (_scoreGlow != null)
@@ -492,8 +486,11 @@ namespace DontGetSidetracked.Presentation
             scoreInner.raycastTarget = false;
 
             _scoreText = ReleaseUiKit.TextBlock(scoreHost, "Score", "0.0%", 82,
-                TextAnchor.MiddleCenter, new Vector2(0.10f, 0.44f), new Vector2(0.90f, 0.70f),
+                TextAnchor.MiddleCenter, new Vector2(0.06f, 0.36f), new Vector2(0.94f, 0.73f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
+            _scoreText.resizeTextForBestFit = false;
+            _scoreText.verticalOverflow = VerticalWrapMode.Overflow;
+            _scoreText.horizontalOverflow = HorizontalWrapMode.Overflow;
             _scoreText.transform.SetAsLastSibling();
             ReleaseUiKit.AddTextShadow(_scoreText, 0.62f, -4f);
 
