@@ -111,8 +111,8 @@ namespace DontGetSidetracked.Presentation
             if (_label == null || _rewardLabel == null || _balanceLabel == null) return;
             SaveData save = _saveRepository.Load();
             bool feedback = Time.unscaledTime < _feedbackUntil;
-            _label.text = feedback ? "ПОДСКАЗКА ПОЛУЧЕНА" : "СМОТРЕТЬ РЕКЛАМУ";
-            _rewardLabel.text = feedback ? "Награда добавлена" : "+1 ПОДСКАЗКА";
+            _label.text = feedback ? "ПОДСКАЗКА ПОЛУЧЕНА" : "СМОТРИ РЕКЛАМУ →";
+            _rewardLabel.text = feedback ? "Награда добавлена" : "ПОЛУЧИ ПОДСКАЗКУ!";
             _balanceLabel.text = "›";
             if (_iconLabel != null)
             {
@@ -194,8 +194,7 @@ namespace DontGetSidetracked.Presentation
                 ReleaseUiKit.Violet,
                 true);
             iconWell.raycastTarget = false;
-            ReleaseUiComponents.Icon(iconWell.transform, "RewardedAsset", GeneratedUiAssets.AdIcon,
-                new Vector2(0.18f, 0.18f), new Vector2(0.82f, 0.82f));
+            BuildGiftIcon(iconWell.transform);
             _iconLabel = ReleaseUiKit.TextBlock(iconWell.transform, "RewardedFeedback", string.Empty, 20,
                 TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, ReleaseUiKit.Green, FontStyle.Bold);
 
@@ -210,6 +209,46 @@ namespace DontGetSidetracked.Presentation
                 new Color(0.86f, 0.55f, 1f, 1f), FontStyle.Bold);
 
             RefreshLabel();
+        }
+
+        private static void BuildGiftIcon(Transform parent)
+        {
+            Image box = ReleaseUiKit.Panel(parent, "GiftBox",
+                new Vector2(0.22f, 0.20f), new Vector2(0.78f, 0.62f),
+                new Color(0.48f, 0.20f, 0.86f, 1f), ReleaseUiKit.Violet, false);
+            box.raycastTarget = false;
+
+            Transform lidRoot = ReleaseUiKit.Rect(parent, "GiftLid",
+                new Vector2(0.17f, 0.57f), new Vector2(0.83f, 0.73f));
+            Image lid = lidRoot.gameObject.AddComponent<Image>();
+            lid.sprite = ReleaseUiKit.Rounded;
+            lid.type = Image.Type.Sliced;
+            lid.color = new Color(0.66f, 0.31f, 1f, 1f);
+            lid.raycastTarget = false;
+
+            Transform ribbonVRoot = ReleaseUiKit.Rect(parent, "GiftRibbonV",
+                new Vector2(0.46f, 0.20f), new Vector2(0.54f, 0.73f));
+            Image ribbonV = ribbonVRoot.gameObject.AddComponent<Image>();
+            ribbonV.color = new Color(0.18f, 0.90f, 1f, 1f);
+            ribbonV.raycastTarget = false;
+
+            Transform ribbonHRoot = ReleaseUiKit.Rect(parent, "GiftRibbonH",
+                new Vector2(0.22f, 0.43f), new Vector2(0.78f, 0.51f));
+            Image ribbonH = ribbonHRoot.gameObject.AddComponent<Image>();
+            ribbonH.color = new Color(0.18f, 0.90f, 1f, 1f);
+            ribbonH.raycastTarget = false;
+
+            Image bowLeft = ReleaseUiKit.Panel(parent, "GiftBowLeft",
+                new Vector2(0.30f, 0.70f), new Vector2(0.49f, 0.88f),
+                new Color(0.66f, 0.31f, 1f, 1f), ReleaseUiKit.Violet, false);
+            bowLeft.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 28f);
+            bowLeft.raycastTarget = false;
+
+            Image bowRight = ReleaseUiKit.Panel(parent, "GiftBowRight",
+                new Vector2(0.51f, 0.70f), new Vector2(0.70f, 0.88f),
+                new Color(0.66f, 0.31f, 1f, 1f), ReleaseUiKit.Violet, false);
+            bowRight.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -28f);
+            bowRight.raycastTarget = false;
         }
 
         private void SetVisible(bool visible)
