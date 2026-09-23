@@ -152,7 +152,7 @@ namespace DontGetSidetracked.Presentation
 
             _modeLabel.text = "РЕЗУЛЬТАТ";
 
-            _badge.text = celebration.Label;
+            _badge.text = ResultPraise(score);
             _badge.color = BadgeColor(celebration.Tier);
             string medalAsset = MedalAsset(celebration.Tier);
             if (_medalIcon != null)
@@ -164,7 +164,7 @@ namespace DontGetSidetracked.Presentation
             _recordLabel.text = string.Empty;
             _shareFeedback.text = string.Empty;
             RefreshBest(snapshot, campaign, score);
-            _comparisonLabel.text = aggregate ? "ПОСЛЕДНИЙ МАРШРУТ" : "СРАВНЕНИЕ МАРШРУТОВ";
+            _comparisonLabel.text = "ЭТАЛОННЫЙ МАРШРУТ";
             _playerLegend.color = ReleaseUiComponents.Cyan;
             SetResultUiVisible(true);
 
@@ -491,18 +491,21 @@ namespace DontGetSidetracked.Presentation
                 new Color(0.008f, 0.030f, 0.068f, 0.995f));
             scoreInner.raycastTarget = false;
 
-            _scoreText = ReleaseUiKit.TextBlock(scoreInner.transform, "Score", "0.0%", 72,
-                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.43f), new Vector2(0.92f, 0.72f),
+            _scoreText = ReleaseUiKit.TextBlock(scoreHost, "Score", "0.0%", 82,
+                TextAnchor.MiddleCenter, new Vector2(0.10f, 0.44f), new Vector2(0.90f, 0.70f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
-            ReleaseUiKit.AddTextShadow(_scoreText, 0.58f, -4f);
+            _scoreText.transform.SetAsLastSibling();
+            ReleaseUiKit.AddTextShadow(_scoreText, 0.62f, -4f);
 
-            _badge = ReleaseUiKit.TextBlock(scoreInner.transform, "Medal", string.Empty, 24,
-                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.27f), new Vector2(0.92f, 0.46f),
+            _badge = ReleaseUiKit.TextBlock(scoreHost, "Medal", string.Empty, 23,
+                TextAnchor.MiddleCenter, new Vector2(0.10f, 0.27f), new Vector2(0.90f, 0.45f),
                 ReleaseUiComponents.Success, FontStyle.Bold);
+            _badge.transform.SetAsLastSibling();
 
-            _bestLabel = ReleaseUiKit.TextBlock(scoreInner.transform, "BestScore", string.Empty, 17,
-                TextAnchor.MiddleCenter, new Vector2(0.08f, 0.10f), new Vector2(0.92f, 0.27f),
-                ReleaseUiComponents.Muted);
+            _bestLabel = ReleaseUiKit.TextBlock(scoreHost, "BestScore", string.Empty, 14,
+                TextAnchor.MiddleCenter, new Vector2(0.20f, 0.10f), new Vector2(0.80f, 0.20f),
+                Color.clear);
+            _bestLabel.gameObject.SetActive(false);
             _medalIcon = null;
 
             AddConfetti(header, "ConfettiA", new Vector2(0.16f, 0.50f), new Color(0.10f, 0.90f, 1f, 0.95f), 18f);
@@ -524,15 +527,27 @@ namespace DontGetSidetracked.Presentation
                 TextAnchor.MiddleCenter, new Vector2(0.01f, 0.01f), new Vector2(0.02f, 0.02f),
                 Color.clear);
 
-            _comparisonLabel = ReleaseUiKit.TextBlock(detail.transform, "ComparisonScope", "СРАВНЕНИЕ МАРШРУТОВ", 16,
-                TextAnchor.MiddleLeft, new Vector2(0.035f, 0.10f), new Vector2(0.38f, 0.90f),
-                ReleaseUiComponents.Muted, FontStyle.Bold);
-            ReleaseUiKit.TextBlock(detail.transform, "ReferenceLegend", "ЭТАЛОН", 17,
-                TextAnchor.MiddleCenter, new Vector2(0.40f, 0.10f), new Vector2(0.62f, 0.90f),
-                new Color(0.72f, 0.80f, 0.90f, 1f), FontStyle.Bold);
-            _playerLegend = ReleaseUiKit.TextBlock(detail.transform, "PlayerLegend", "ТВОЙ МАРШРУТ", 17,
-                TextAnchor.MiddleCenter, new Vector2(0.64f, 0.10f), new Vector2(0.965f, 0.90f),
+            AddLegendLine(detail.transform, "PlayerLegendLine", ReleaseUiComponents.Cyan,
+                new Vector2(0.035f, 0.61f), new Vector2(0.095f, 0.70f), false);
+            _playerLegend = ReleaseUiKit.TextBlock(detail.transform, "PlayerLegend", "ТВОЙ МАРШРУТ", 15,
+                TextAnchor.MiddleLeft, new Vector2(0.105f, 0.50f), new Vector2(0.43f, 0.82f),
                 ReleaseUiComponents.Cyan, FontStyle.Bold);
+
+            AddLegendLine(detail.transform, "ReferenceLegendLine", new Color(0.72f, 0.80f, 0.90f, 0.90f),
+                new Vector2(0.48f, 0.61f), new Vector2(0.54f, 0.70f), true);
+            _comparisonLabel = ReleaseUiKit.TextBlock(detail.transform, "ComparisonScope", "ЭТАЛОННЫЙ МАРШРУТ", 14,
+                TextAnchor.MiddleLeft, new Vector2(0.55f, 0.50f), new Vector2(0.965f, 0.82f),
+                new Color(0.72f, 0.80f, 0.90f, 1f), FontStyle.Bold);
+
+            AddLegendRing(detail.transform, "StartLegend", new Vector2(0.035f, 0.15f), Color.white);
+            ReleaseUiKit.TextBlock(detail.transform, "StartLegendText", "СТАРТ", 14,
+                TextAnchor.MiddleLeft, new Vector2(0.085f, 0.08f), new Vector2(0.28f, 0.40f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
+
+            AddLegendRing(detail.transform, "FinishLegend", new Vector2(0.48f, 0.15f), Color.white);
+            ReleaseUiKit.TextBlock(detail.transform, "FinishLegendText", "ФИНИШ", 14,
+                TextAnchor.MiddleLeft, new Vector2(0.53f, 0.08f), new Vector2(0.73f, 0.40f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
 
             Transform metrics = ReleaseUiKit.Rect(_canvas.transform, "ResultMetrics",
                 new Vector2(0.07f, 0.185f), new Vector2(0.93f, 0.315f));
@@ -588,6 +603,57 @@ namespace DontGetSidetracked.Presentation
             return ReleaseUiKit.TextBlock(cell.transform, "Value", "0.0%", 28, TextAnchor.LowerLeft,
                 new Vector2(0.065f, 0.10f), new Vector2(0.94f, 0.56f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
+        }
+
+        private static string ResultPraise(double score)
+        {
+            if (score >= 99.0) return "ИДЕАЛЬНО!";
+            if (score >= 90.0) return "ОТЛИЧНО!";
+            if (score >= 75.0) return "ХОРОШО!";
+            if (score >= 50.0) return "НЕПЛОХО!";
+            return "ПОПРОБУЙ ЕЩЁ";
+        }
+
+        private static void AddLegendLine(Transform parent, string name, Color color, Vector2 min, Vector2 max, bool dashed)
+        {
+            if (!dashed)
+            {
+                Transform line = ReleaseUiKit.Rect(parent, name, min, max);
+                Image image = line.gameObject.AddComponent<Image>();
+                image.sprite = ReleaseUiKit.Rounded;
+                image.type = Image.Type.Sliced;
+                image.color = color;
+                image.raycastTarget = false;
+                return;
+            }
+
+            float width = (max.x - min.x) / 3f;
+            for (int i = 0; i < 3; i++)
+            {
+                float x0 = min.x + i * width;
+                Transform dash = ReleaseUiKit.Rect(parent, name + i,
+                    new Vector2(x0, min.y), new Vector2(x0 + width * 0.58f, max.y));
+                Image image = dash.gameObject.AddComponent<Image>();
+                image.sprite = ReleaseUiKit.Rounded;
+                image.type = Image.Type.Sliced;
+                image.color = color;
+                image.raycastTarget = false;
+            }
+        }
+
+        private static void AddLegendRing(Transform parent, string name, Vector2 anchor, Color color)
+        {
+            Transform host = CenteredRect(parent, name, anchor, new Vector2(24f, 24f));
+            Image outer = host.gameObject.AddComponent<Image>();
+            outer.sprite = ReleaseUiKit.Circle;
+            outer.color = color;
+            outer.raycastTarget = false;
+
+            Transform inner = ReleaseUiKit.Rect(host, "Inner", new Vector2(0.28f, 0.28f), new Vector2(0.72f, 0.72f));
+            Image innerImage = inner.gameObject.AddComponent<Image>();
+            innerImage.sprite = ReleaseUiKit.Circle;
+            innerImage.color = new Color(0.010f, 0.035f, 0.075f, 1f);
+            innerImage.raycastTarget = false;
         }
 
         private static Transform CenteredRect(Transform parent, string name, Vector2 anchor, Vector2 size)
