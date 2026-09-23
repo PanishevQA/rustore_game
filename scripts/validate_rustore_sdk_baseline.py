@@ -12,7 +12,7 @@ STATUS = ROOT / "docs/MVP_STATUS.md"
 NATIVE_REFERRER_DEPENDENCY = ROOT / "UnityProject/Assets/Game/Platform/RuStore/Editor/RuStoreNativeInstallReferrerDependencies.xml"
 REFERRER_ADAPTER = ROOT / "UnityProject/Assets/Game/Platform/RuStore/RuStoreInstallReferrerService.cs"
 
-verified_date = "2026-09-22"
+verified_date = "2026-09-23"
 expected = {
     "Pay": "11.1.0",
     "InstallReferrer": "10.6.1",
