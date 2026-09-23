@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("Fast", "Unity", "Full", "Build")]
+    [ValidateSet("Fast", "Unity", "Full", "Build", "ReleaseCandidate")]
     [string]$Mode = "Unity",
     [string]$UnityExe = $env:UNITY_EXE,
     [switch]$SkipFast
@@ -152,7 +152,8 @@ function Invoke-UnityDiagnostics {
 function Invoke-UnityChecks {
     param(
         [switch]$IncludeReadiness,
-        [switch]$BuildAab
+        [switch]$BuildAab,
+        [switch]$BuildSmokeApk
     )
 
     $runner = Join-Path $repoRoot "scripts\run_release_candidate_checks.ps1"
@@ -178,21 +179,57 @@ function Invoke-UnityChecks {
     if ($BuildAab) {
         $args += "-BuildAab"
     }
-    elseif (-not $IncludeReadiness) {
+    if ($BuildSmokeApk) {
+        $args += "-BuildSmokeApk"
+    }
+    if (-not $BuildAab -and -not $BuildSmokeApk -and -not $IncludeReadiness) {
         $args += "-SkipReadiness"
     }
 
-    $name = if ($BuildAab) { "Unity production Android build gate" } elseif ($IncludeReadiness) { "Unity + release readiness" } else { "Unity compile + tests + serialized validation" }
-    $logName = if ($BuildAab) { "unity-build.log" } elseif ($IncludeReadiness) { "unity-full.log" } else { "unity.log" }
+    $name = if ($BuildAab -and $BuildSmokeApk) { "Unity matched release-candidate APK + AAB gate" } elseif ($BuildAab) { "Unity production Android build gate" } elseif ($BuildSmokeApk) { "Unity signed device-smoke build gate" } elseif ($IncludeReadiness) { "Unity + release readiness" } else { "Unity compile + tests + serialized validation" }
+    $logName = if ($BuildAab -and $BuildSmokeApk) { "unity-release-candidate.log" } elseif ($BuildAab) { "unity-build.log" } elseif ($BuildSmokeApk) { "unity-device-smoke.log" } elseif ($IncludeReadiness) { "unity-full.log" } else { "unity.log" }
 
     try {
         Invoke-LoggedExternal -Name $name -Executable $powershell.Source -Arguments $args -LogPath (Join-Path $artifactRoot $logName)
     }
     catch {
-        Invoke-UnityDiagnostics -IncludeReadiness:($IncludeReadiness -or $BuildAab) -IncludeBuild:$BuildAab
+        Invoke-UnityDiagnostics -IncludeReadiness:($IncludeReadiness -or $BuildAab -or $BuildSmokeApk) -IncludeBuild:$BuildAab
         throw
     }
 }
+
+function Invoke-SmokeArtifactVerification {
+    param(
+        [Parameter(Mandatory = $true)][string]$SmokeOutput
+    )
+
+    $sidecar = $SmokeOutput + ".sha256"
+    if (-not (Test-Path $SmokeOutput -PathType Leaf)) {
+        throw "Signed device-smoke APK is missing: $SmokeOutput"
+    }
+    if (-not (Test-Path $sidecar -PathType Leaf)) {
+        throw "Signed device-smoke SHA-256 sidecar is missing: $sidecar"
+    }
+
+    $line = (Get-Content $sidecar | Select-Object -First 1).Trim()
+    $expected = ($line -split "\\s+")[0].ToLowerInvariant()
+    if ($expected -notmatch "^[0-9a-f]{64}$") {
+        throw "Signed device-smoke SHA-256 sidecar is malformed: $sidecar"
+    }
+
+    $actual = (Get-FileHash -Path $SmokeOutput -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actual -ne $expected) {
+        throw "Signed device-smoke APK SHA-256 mismatch. Expected $expected, got $actual."
+    }
+
+    @(
+        "Signed device-smoke artifact verification: PASS",
+        "Apk=$SmokeOutput",
+        "Sha256=$actual"
+    ) | Set-Content (Join-Path $artifactRoot "verify-device-smoke-artifact.log")
+    Write-Host "Verified signed device-smoke APK SHA-256: $actual" -ForegroundColor Green
+}
+
 
 function Resolve-CurrentGitSha {
     $git = Get-Command git -ErrorAction SilentlyContinue
@@ -255,6 +292,17 @@ elseif ($Mode -eq "Build") {
     $env:NESBEISYA_RELEASE_OUTPUT = $releaseOutput
     $env:RELEASE_GIT_SHA = $gitSha
     Invoke-UnityChecks -IncludeReadiness -BuildAab
+    Invoke-ReleaseArtifactVerification -ReleaseOutput $releaseOutput -ExpectedGitSha $gitSha
+}
+elseif ($Mode -eq "ReleaseCandidate") {
+    $releaseOutput = Join-Path $repoRoot "artifacts\release-candidate\android\nesbeisya-production.aab"
+    $smokeOutput = Join-Path $repoRoot "artifacts\release-candidate\android-device-smoke\nesbeisya-device-smoke.apk"
+    $gitSha = Resolve-CurrentGitSha
+    $env:NESBEISYA_RELEASE_OUTPUT = $releaseOutput
+    $env:NESBEISYA_DEVICE_SMOKE_OUTPUT = $smokeOutput
+    $env:RELEASE_GIT_SHA = $gitSha
+    Invoke-UnityChecks -IncludeReadiness -BuildAab -BuildSmokeApk
+    Invoke-SmokeArtifactVerification -SmokeOutput $smokeOutput
     Invoke-ReleaseArtifactVerification -ReleaseOutput $releaseOutput -ExpectedGitSha $gitSha
 }
 
