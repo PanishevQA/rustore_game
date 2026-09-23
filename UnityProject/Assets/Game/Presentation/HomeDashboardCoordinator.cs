@@ -51,6 +51,8 @@ namespace DontGetSidetracked.Presentation
         private Text _streakValue;
         private Text _starsValue;
         private Text _coinsValue;
+        private Text _hintsValue;
+        private Text _dailyCountdown;
         private Text _bestStatValue;
         private Text _dailyCountValue;
         private Text _dailyMeta;
@@ -188,27 +190,226 @@ namespace DontGetSidetracked.Presentation
 
             ReleaseUiComponents.Backdrop(root.transform, "HomeBackdrop");
 
-            Text logo = ReleaseUiKit.TextBlock(root.transform, "Logo", "НЕ СБЕЙСЯ!", 64, TextAnchor.MiddleLeft,
-                new Vector2(0.07f, 0.902f), new Vector2(0.61f, 0.968f), ReleaseUiComponents.Text, FontStyle.Bold);
-            ReleaseUiKit.AddTextShadow(logo, 0.55f, -3f);
+            BuildTargetTopBar(root.transform);
 
-            Text tagline = ReleaseUiKit.TextBlock(root.transform, "Tagline", "Простой принцип. Сложно забыть.", 22,
-                TextAnchor.MiddleLeft, new Vector2(0.07f, 0.865f), new Vector2(0.56f, 0.905f), ReleaseUiComponents.Muted);
-            CreateAccentDash(root.transform, new Vector2(0.07f, 0.852f), new Vector2(0.31f, 0.859f));
+            Text logo = ReleaseUiKit.TextBlock(root.transform, "Logo", "НЕ СБЕЙСЯ!", 66,
+                TextAnchor.MiddleCenter, new Vector2(0.12f, 0.825f), new Vector2(0.88f, 0.895f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+            ReleaseUiKit.AddTextShadow(logo, 0.58f, -3f);
+            Outline logoGlow = logo.gameObject.AddComponent<Outline>();
+            logoGlow.effectColor = new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g,
+                ReleaseUiComponents.Cyan.b, 0.28f);
+            logoGlow.effectDistance = new Vector2(2f, -2f);
 
-            _coinsValue = ReleaseUiComponents.CurrencyPill(root.transform, "CoinsPill", "●", "0",
-                new Vector2(0.69f, 0.900f), new Vector2(0.93f, 0.954f), ReleaseUiComponents.Gold,
-                () => InvokeLegacy(_legacyStore));
+            BuildTargetDailyCard(root.transform);
+            BuildTargetStatCards(root.transform);
 
-            BuildDailyCard(root.transform);
-            BuildCampaignCard(root.transform);
-            BuildStatRow(root.transform);
-            BuildQuickActions(root.transform);
+            CreateTargetNavRow(root.transform, "CampaignRow", "КАМПАНИЯ", "Пройдено: 0/60",
+                GeneratedUiAssets.CampaignIcon, ReleaseUiComponents.Blue,
+                new Vector2(0.055f, 0.405f), new Vector2(0.945f, 0.472f), OpenCampaignFromHome, out _campaignMeta);
 
-            Text footer = ReleaseUiKit.TextBlock(root.transform, "Footer", "ЗАПОМИНАЙ  •  РИСУЙ  •  СОРЕВНУЙСЯ  •  ДЕЛИСЬ", 16,
-                TextAnchor.MiddleCenter, new Vector2(0.12f, 0.040f), new Vector2(0.88f, 0.062f),
+            CreateTargetNavRow(root.transform, "TrainingRow", "ТРЕНИРОВКА", "Без ограничений",
+                GeneratedUiAssets.TrainingIcon, ReleaseUiComponents.Cyan,
+                new Vector2(0.055f, 0.329f), new Vector2(0.945f, 0.396f), OpenTrainingFromHome, out _);
+
+            CreateTargetNavRow(root.transform, "RatingRow", "РЕЙТИНГ", "Топ игроков",
+                GeneratedUiAssets.StatisticsIcon, ReleaseUiComponents.Violet,
+                new Vector2(0.055f, 0.253f), new Vector2(0.945f, 0.320f), OpenStatisticsFromHome, out _);
+
+            CreateTargetNavRow(root.transform, "StoreRow", "МАГАЗИН", "Скины, подсказки, без рекламы",
+                GeneratedUiAssets.StoreIcon, new Color(0.83f, 0.38f, 1f, 1f),
+                new Vector2(0.055f, 0.177f), new Vector2(0.945f, 0.244f), OpenStoreFromHome, out _);
+        }
+
+        private void BuildTargetTopBar(Transform parent)
+        {
+            Image hintPill = ReleaseUiComponents.GlassCard(parent, "HintPill",
+                new Vector2(0.055f, 0.922f), new Vector2(0.255f, 0.972f),
+                ReleaseUiComponents.Cyan, false);
+            hintPill.color = new Color(0.020f, 0.060f, 0.110f, 0.96f);
+            BuildLightningIcon(hintPill.transform, new Vector2(0.070f, 0.20f), new Vector2(0.285f, 0.80f));
+            _hintsValue = ReleaseUiKit.TextBlock(hintPill.transform, "Value", "0", 25, TextAnchor.MiddleCenter,
+                new Vector2(0.30f, 0.08f), new Vector2(0.66f, 0.92f), ReleaseUiComponents.Text, FontStyle.Bold);
+            Button hintPlus = ReleaseUiComponents.SecondaryButton(hintPill.transform, "Plus", "+",
+                new Vector2(0.70f, 0.14f), new Vector2(0.95f, 0.86f), OpenStoreFromHome, 22);
+            Image hintPlusImage = hintPlus.GetComponent<Image>();
+            if (hintPlusImage != null)
+                hintPlusImage.color = new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g,
+                    ReleaseUiComponents.Cyan.b, 0.14f);
+
+            Image coinPill = ReleaseUiComponents.GlassCard(parent, "CoinsPill",
+                new Vector2(0.300f, 0.922f), new Vector2(0.725f, 0.972f),
+                ReleaseUiComponents.Gold, false);
+            coinPill.color = new Color(0.028f, 0.055f, 0.090f, 0.97f);
+            Image coinOuter = CreateImage(coinPill.transform, "CoinOuter", ReleaseUiComponents.Gold,
+                new Vector2(0.055f, 0.18f), new Vector2(0.245f, 0.82f), _circle);
+            coinOuter.raycastTarget = false;
+            Image coinInner = CreateImage(coinOuter.transform, "CoinInner", new Color(1f, 0.55f, 0.06f, 1f),
+                new Vector2(0.18f, 0.18f), new Vector2(0.82f, 0.82f), _circle);
+            coinInner.raycastTarget = false;
+            _coinsValue = ReleaseUiKit.TextBlock(coinPill.transform, "Value", "0", 25, TextAnchor.MiddleLeft,
+                new Vector2(0.29f, 0.08f), new Vector2(0.70f, 0.92f), ReleaseUiComponents.Text, FontStyle.Bold);
+            Button coinPlus = ReleaseUiComponents.SecondaryButton(coinPill.transform, "Plus", "+",
+                new Vector2(0.76f, 0.14f), new Vector2(0.95f, 0.86f), OpenStoreFromHome, 22);
+            Image coinPlusImage = coinPlus.GetComponent<Image>();
+            if (coinPlusImage != null)
+                coinPlusImage.color = new Color(ReleaseUiComponents.Gold.r, ReleaseUiComponents.Gold.g,
+                    ReleaseUiComponents.Gold.b, 0.14f);
+
+            Image settingsWell = ReleaseUiComponents.GlassCard(parent, "SettingsButton",
+                new Vector2(0.825f, 0.918f), new Vector2(0.945f, 0.974f),
+                ReleaseUiComponents.Blue, false);
+            settingsWell.color = new Color(0.025f, 0.060f, 0.110f, 0.97f);
+            ReleaseUiComponents.Icon(settingsWell.transform, "SettingsIcon", GeneratedUiAssets.SettingsIcon,
+                new Vector2(0.22f, 0.18f), new Vector2(0.78f, 0.82f));
+            Button settingsButton = settingsWell.gameObject.AddComponent<Button>();
+            settingsButton.targetGraphic = settingsWell;
+            settingsButton.onClick.AddListener(OpenSettingsFromHome);
+        }
+
+        private static void BuildLightningIcon(Transform parent, Vector2 min, Vector2 max)
+        {
+            Transform host = CreateRect(parent, "Lightning", min, max);
+            Transform upper = CreateRect(host, "Upper", new Vector2(0.36f, 0.50f), new Vector2(0.58f, 0.98f));
+            Image upperImage = upper.gameObject.AddComponent<Image>();
+            upperImage.sprite = _rounded;
+            upperImage.type = Image.Type.Sliced;
+            upperImage.color = ReleaseUiComponents.Cyan;
+            upperImage.raycastTarget = false;
+            upper.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, -26f);
+
+            Transform middle = CreateRect(host, "Middle", new Vector2(0.28f, 0.42f), new Vector2(0.72f, 0.58f));
+            Image middleImage = middle.gameObject.AddComponent<Image>();
+            middleImage.sprite = _rounded;
+            middleImage.type = Image.Type.Sliced;
+            middleImage.color = ReleaseUiComponents.Cyan;
+            middleImage.raycastTarget = false;
+            middle.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, -10f);
+
+            Transform lower = CreateRect(host, "Lower", new Vector2(0.42f, 0.02f), new Vector2(0.64f, 0.50f));
+            Image lowerImage = lower.gameObject.AddComponent<Image>();
+            lowerImage.sprite = _rounded;
+            lowerImage.type = Image.Type.Sliced;
+            lowerImage.color = ReleaseUiComponents.Cyan;
+            lowerImage.raycastTarget = false;
+            lower.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, -26f);
+        }
+
+        private void BuildTargetDailyCard(Transform parent)
+        {
+            Image card = ReleaseUiComponents.GlassCard(parent, "DailyCard",
+                new Vector2(0.055f, 0.620f), new Vector2(0.945f, 0.805f),
+                ReleaseUiComponents.Violet, true);
+            card.color = new Color(0.018f, 0.052f, 0.105f, 0.985f);
+
+            ReleaseUiComponents.Icon(card.transform, "DailyIcon", GeneratedUiAssets.DailyIcon,
+                new Vector2(0.055f, 0.69f), new Vector2(0.155f, 0.91f));
+
+            ReleaseUiKit.TextBlock(card.transform, "DailyTitle", "СЕГОДНЯШНИЙ ВЫЗОВ", 30,
+                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.73f), new Vector2(0.90f, 0.93f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+
+            _dailyMeta = ReleaseUiKit.TextBlock(card.transform, "DailyDate", "СЕГОДНЯ", 19,
+                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.57f), new Vector2(0.64f, 0.73f),
                 ReleaseUiComponents.Muted, FontStyle.Bold);
-            footer.alignment = TextAnchor.MiddleCenter;
+
+            _dailyCountdown = ReleaseUiKit.TextBlock(card.transform, "DailyCountdown", "Осталось: --:--:--", 17,
+                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.43f), new Vector2(0.78f, 0.59f),
+                ReleaseUiComponents.Muted);
+
+            ReleaseUiComponents.PrimaryButton(card.transform, "DailyPlay", "ИГРАТЬ",
+                new Vector2(0.055f, 0.085f), new Vector2(0.945f, 0.365f), StartDailyFromHome, 31);
+        }
+
+        private void BuildTargetStatCards(Transform parent)
+        {
+            Image streak = ReleaseUiComponents.GlassCard(parent, "StreakCard",
+                new Vector2(0.055f, 0.495f), new Vector2(0.485f, 0.600f),
+                ReleaseUiComponents.Gold, false);
+            ReleaseUiComponents.Icon(streak.transform, "Icon", GeneratedUiAssets.DailyIcon,
+                new Vector2(0.070f, 0.30f), new Vector2(0.255f, 0.82f));
+            ReleaseUiKit.TextBlock(streak.transform, "Label", "СЕРИЯ ДНЕЙ", 17, TextAnchor.MiddleLeft,
+                new Vector2(0.30f, 0.55f), new Vector2(0.94f, 0.88f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
+            _streakValue = ReleaseUiKit.TextBlock(streak.transform, "Value", "0", 38, TextAnchor.MiddleLeft,
+                new Vector2(0.30f, 0.12f), new Vector2(0.94f, 0.58f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+
+            Image best = ReleaseUiComponents.GlassCard(parent, "BestCard",
+                new Vector2(0.515f, 0.495f), new Vector2(0.945f, 0.600f),
+                ReleaseUiComponents.Cyan, false);
+            ReleaseUiComponents.Icon(best.transform, "Icon", GeneratedUiAssets.MedalGold,
+                new Vector2(0.070f, 0.27f), new Vector2(0.255f, 0.84f));
+            ReleaseUiKit.TextBlock(best.transform, "Label", "ЛУЧШИЙ РЕЗУЛЬТАТ", 16, TextAnchor.MiddleLeft,
+                new Vector2(0.30f, 0.55f), new Vector2(0.94f, 0.88f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
+            _bestStatValue = ReleaseUiKit.TextBlock(best.transform, "Value", "—", 37, TextAnchor.MiddleLeft,
+                new Vector2(0.30f, 0.12f), new Vector2(0.94f, 0.58f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+        }
+
+        private void CreateTargetNavRow(
+            Transform parent,
+            string name,
+            string title,
+            string subtitle,
+            string iconAsset,
+            Color accent,
+            Vector2 min,
+            Vector2 max,
+            UnityEngine.Events.UnityAction action,
+            out Text subtitleText)
+        {
+            Image card = ReleaseUiComponents.GlassCard(parent, name, min, max, accent, false);
+            card.color = new Color(0.018f, 0.050f, 0.095f, 0.975f);
+
+            Image iconWell = ReleaseUiKit.Panel(card.transform, "IconWell",
+                new Vector2(0.030f, 0.15f), new Vector2(0.160f, 0.85f),
+                new Color(accent.r, accent.g, accent.b, 0.14f), accent, false);
+            iconWell.raycastTarget = false;
+            ReleaseUiComponents.Icon(iconWell.transform, "Icon", iconAsset,
+                new Vector2(0.16f, 0.16f), new Vector2(0.84f, 0.84f));
+
+            ReleaseUiKit.TextBlock(card.transform, "Title", title, 24, TextAnchor.MiddleLeft,
+                new Vector2(0.195f, 0.48f), new Vector2(0.80f, 0.86f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+            subtitleText = ReleaseUiKit.TextBlock(card.transform, "Subtitle", subtitle, 16,
+                TextAnchor.MiddleLeft, new Vector2(0.195f, 0.10f), new Vector2(0.82f, 0.51f),
+                ReleaseUiComponents.Muted);
+
+            ReleaseUiKit.TextBlock(card.transform, "Arrow", "›", 36, TextAnchor.MiddleCenter,
+                new Vector2(0.87f, 0.16f), new Vector2(0.96f, 0.84f), accent, FontStyle.Bold);
+
+            Button button = card.gameObject.AddComponent<Button>();
+            button.targetGraphic = card;
+            button.onClick.AddListener(action);
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.08f, 1.08f, 1.08f, 1f);
+            colors.pressedColor = new Color(0.72f, 0.82f, 0.95f, 1f);
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+        }
+
+        private void OpenStatisticsFromHome()
+        {
+            MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
+            if (meta != null) meta.OpenStatisticsFromHome();
+            else InvokeLegacy(_legacyStats);
+        }
+
+        private void OpenStoreFromHome()
+        {
+            MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
+            if (meta != null) meta.OpenStoreFromHome();
+            else InvokeLegacy(_legacyStore);
+        }
+
+        private void OpenSettingsFromHome()
+        {
+            MetaMenuOverlay meta = FindFirstObjectByType<MetaMenuOverlay>();
+            if (meta != null) meta.OpenSettingsFromHome();
+            else OpenStatisticsFromHome();
         }
 
         private void BuildDailyCard(Transform parent)
@@ -408,17 +609,22 @@ namespace DontGetSidetracked.Presentation
             int completed = progress.CompletedLevels();
             int totalStars = progress.TotalStars();
 
-            if (_streakValue != null) _streakValue.text = save.Streak + " ДН";
+            if (_streakValue != null) _streakValue.text = save.Streak.ToString();
             if (_starsValue != null) _starsValue.text = totalStars.ToString();
             if (_coinsValue != null) _coinsValue.text = save.Coins.ToString();
+            if (_hintsValue != null) _hintsValue.text = save.Hints.ToString();
             if (_bestStatValue != null)
                 _bestStatValue.text = save.PersonalBest > 0.0 ? save.PersonalBest.ToString("0.0") + "%" : "—";
             if (_dailyCountValue != null) _dailyCountValue.text = save.CompletedDailyCount.ToString();
 
+            DateTime now = DateTime.UtcNow;
             if (_dailyMeta != null)
+                _dailyMeta.text = FormatRussianDate(now);
+
+            if (_dailyCountdown != null)
             {
-                string date = DateTime.UtcNow.ToString("dd.MM");
-                _dailyMeta.text = date + "  •  СЕРИЯ " + save.Streak + "Д";
+                TimeSpan remaining = now.Date.AddDays(1) - now;
+                _dailyCountdown.text = $"Осталось: {remaining.Hours:00}:{remaining.Minutes:00}:{remaining.Seconds:00}";
             }
 
             if (_dailyBest != null)
@@ -427,7 +633,7 @@ namespace DontGetSidetracked.Presentation
                     : "ЛУЧШИЙ  —";
 
             if (_campaignMeta != null)
-                _campaignMeta.text = completed + "/" + CampaignLevelCatalog.TotalLevels + "  •  ★ " + totalStars;
+                _campaignMeta.text = "Пройдено: " + completed + "/" + CampaignLevelCatalog.TotalLevels;
 
             if (_campaignProgressFill != null)
             {
@@ -436,6 +642,27 @@ namespace DontGetSidetracked.Presentation
                     : Mathf.Clamp01(completed / (float)CampaignLevelCatalog.TotalLevels);
                 _campaignProgressFill.rectTransform.anchorMax = new Vector2(Mathf.Max(0.02f, ratio), 1f);
             }
+        }
+
+        private static string FormatRussianDate(DateTime value)
+        {
+            string month;
+            switch (value.Month)
+            {
+                case 1: month = "января"; break;
+                case 2: month = "февраля"; break;
+                case 3: month = "марта"; break;
+                case 4: month = "апреля"; break;
+                case 5: month = "мая"; break;
+                case 6: month = "июня"; break;
+                case 7: month = "июля"; break;
+                case 8: month = "августа"; break;
+                case 9: month = "сентября"; break;
+                case 10: month = "октября"; break;
+                case 11: month = "ноября"; break;
+                default: month = "декабря"; break;
+            }
+            return value.Day + " " + month;
         }
 
         private void SetDashboardVisible(bool visible)
