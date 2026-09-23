@@ -65,6 +65,13 @@ namespace DontGetSidetracked.Presentation
             RuntimePlatformCoordinator platform = FindFirstObjectByType<RuntimePlatformCoordinator>();
             if (TryDismissNotificationPrompt(platform)) return;
 
+            TutorialIntroCoordinator tutorialIntro = FindFirstObjectByType<TutorialIntroCoordinator>();
+            if (tutorialIntro != null && tutorialIntro.IsOpen)
+            {
+                tutorialIntro.HandleBack();
+                return;
+            }
+
             DailyIntroCoordinator dailyIntro = FindFirstObjectByType<DailyIntroCoordinator>();
             if (dailyIntro != null && dailyIntro.IsOpen)
             {
