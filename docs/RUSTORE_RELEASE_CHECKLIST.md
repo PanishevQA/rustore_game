@@ -61,7 +61,7 @@ Physical-device pass/fail protocol: `docs/DEVICE_SMOKE_TEST.md`.
 
 ## Advertising
 
-- [ ] В `Packages/manifest.json` закреплён официальный Yandex Mobile Ads Unity plugin **8.4.0** через upstream Git tag `#8.4.0` (повторно сверено 2026-09-18; перед production всё равно перепроверить актуальную официальную версию).
+- [ ] В `Packages/manifest.json` закреплён официальный Yandex Mobile Ads Unity plugin **8.4.0** через upstream Git tag `#8.4.0` (повторно сверено 2026-09-23; перед production всё равно перепроверить актуальную официальную версию).
 - [ ] `Game.Monetization.asmdef` ссылается на `YandexMobileAds` и автоматически включает `YANDEX_MOBILE_ADS` только для проверенной линии `[8.4.0,8.5.0)`; ручной глобальный define не требуется.
 - [ ] EDM4U закреплён на `v1.2.188`; production build успешно выполнил встроенный synchronous Force Resolve. При ошибке resolver release обязан блокироваться.
 - [ ] Production build сгенерировал `Custom Main Gradle Template`, `Custom Gradle Properties Template` и `Custom Gradle Settings Template` из текущего Unity Editor; preflight подтвердил Yandex Android dependency `8.4.0` в resolved template.
