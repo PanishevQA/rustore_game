@@ -338,8 +338,11 @@ namespace DontGetSidetracked.Presentation
             Image iconWell = ReleaseUiComponents.GlassCard(card, "ProductIconWell",
                 new Vector2(0.030f, 0.19f), new Vector2(0.190f, 0.81f), accent, false);
             iconWell.color = new Color(accent.r, accent.g, accent.b, hero ? 0.16f : 0.10f);
-            ReleaseUiComponents.Icon(iconWell.transform, "ProductIcon", ProductIcon(productId),
-                new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f));
+            if (string.Equals(productId, ProductIds.RemoveAds, StringComparison.Ordinal))
+                AddNoAdsGlyph(iconWell.transform, accent);
+            else
+                ReleaseUiComponents.Icon(iconWell.transform, "ProductIcon", ProductIcon(productId),
+                    new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f));
             if (hero)
             {
                 Image badge = ReleaseUiComponents.GlassCard(card, "PremiumBadge",
@@ -417,13 +420,45 @@ namespace DontGetSidetracked.Presentation
         {
             switch (productId)
             {
-                case ProductIds.RemoveAds: return GeneratedUiAssets.NoAdsIcon;
+                // Remove Ads uses a runtime glyph instead of an imported sprite on Android.
+                case ProductIds.RemoveAds: return GeneratedUiAssets.StoreIcon;
                 case ProductIds.Hints10: return GeneratedUiAssets.HintIcon;
                 case ProductIds.StarterPack: return GeneratedUiAssets.StoreIcon;
                 case ProductIds.SkinNeon: return GeneratedUiAssets.CosmeticIcon;
                 case ProductIds.SkinRetro: return GeneratedUiAssets.ReplayIcon;
                 default: return GeneratedUiAssets.StoreIcon;
             }
+        }
+
+        private static void AddNoAdsGlyph(Transform parent, Color accent)
+        {
+            Image ring = ReleaseUiKit.Panel(parent, "NoAdsGlyphRing",
+                new Vector2(0.16f, 0.16f), new Vector2(0.84f, 0.84f),
+                new Color(0.010f, 0.035f, 0.065f, 0.92f), accent, false);
+            ring.raycastTarget = false;
+
+            Text ad = ReleaseUiKit.TextBlock(ring.transform, "NoAdsLetters", "AD", 30,
+                TextAnchor.MiddleCenter, new Vector2(0.10f, 0.08f), new Vector2(0.90f, 0.92f),
+                ReleaseUiComponents.Text, FontStyle.Bold);
+            ReleaseUiKit.AddTextShadow(ad, 0.45f, -2f);
+
+            Transform slashRoot = ReleaseUiKit.Rect(parent, "NoAdsSlash",
+                new Vector2(0.12f, 0.46f), new Vector2(0.88f, 0.54f));
+            RectTransform slashRect = slashRoot.GetComponent<RectTransform>();
+            slashRect.localRotation = Quaternion.Euler(0f, 0f, -36f);
+
+            Image slash = slashRoot.gameObject.AddComponent<Image>();
+            slash.sprite = ReleaseUiKit.Rounded;
+            slash.type = Image.Type.Sliced;
+            slash.color = new Color(ReleaseUiComponents.Danger.r, ReleaseUiComponents.Danger.g,
+                ReleaseUiComponents.Danger.b, 0.98f);
+            slash.raycastTarget = false;
+
+            Shadow glow = slashRoot.gameObject.AddComponent<Shadow>();
+            glow.effectColor = new Color(ReleaseUiComponents.Danger.r, ReleaseUiComponents.Danger.g,
+                ReleaseUiComponents.Danger.b, 0.30f);
+            glow.effectDistance = new Vector2(0f, -2f);
+            glow.useGraphicAlpha = true;
         }
 
         private static string ProductSubtitle(string id)
