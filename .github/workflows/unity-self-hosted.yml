@@ -76,6 +76,60 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_release_candidate_checks.ps1 -BuildSmokeApk
 
+      - name: Install gameplay v2 APK and capture target phases
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_signed_device_smoke_apk.ps1
+
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $serial = ((& $adbExe devices) | Where-Object { $_ -match "^([^\s]+)\s+device\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
+          if ([string]::IsNullOrWhiteSpace($serial)) { throw "No authorized Android device found." }
+
+          $out = Join-Path $PWD "artifacts\device-smoke"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          function Shot([string]$Name) {
+            $remote = "/sdcard/nesbeisya-$Name.png"
+            & $adbExe -s $serial shell screencap -p $remote
+            & $adbExe -s $serial pull $remote (Join-Path $out "$Name.png") | Out-Host
+            & $adbExe -s $serial shell rm $remote | Out-Null
+          }
+
+          & $adbExe -s $serial shell am force-stop ru.release.nesbeisya | Out-Null
+          & $adbExe -s $serial shell monkey -p ru.release.nesbeisya -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 6
+
+          & $adbExe -s $serial shell input tap 540 1510
+          Start-Sleep -Seconds 2
+          Shot "00-training-menu"
+
+          & $adbExe -s $serial shell input tap 540 2050
+          Start-Sleep -Milliseconds 650
+          Shot "01-route-showing-countdown"
+
+          Start-Sleep -Seconds 4
+          Shot "02-drawing"
+
+          & $adbExe -s $serial shell input tap 960 300
+          Start-Sleep -Seconds 2
+          Shot "03-pause"
+
+          $appPid = ((& $adbExe -s $serial shell pidof ru.release.nesbeisya) | Out-String).Trim()
+          if ([string]::IsNullOrWhiteSpace($appPid)) { throw "App process died during gameplay v2 smoke." }
+
+          @(
+            "GameplayV2DeviceSmoke=PASS",
+            "Serial=$serial",
+            "Pid=$appPid",
+            "ShowingCountdownCapture=PASS",
+            "DrawingCapture=PASS",
+            "PauseCapture=PASS"
+          ) | Set-Content -Path (Join-Path $out "gameplay-v2-report.txt") -Encoding UTF8
+
       - name: Run Android integration and native AAR probe
         if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
         shell: powershell
@@ -92,3 +146,4 @@ jobs:
             artifacts/agent-check/**
             artifacts/release-candidate/**
             artifacts/android-integration-probe/**
+            artifacts/device-smoke/**
