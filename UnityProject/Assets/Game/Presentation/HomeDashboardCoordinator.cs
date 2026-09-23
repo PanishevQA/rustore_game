@@ -328,6 +328,18 @@ namespace DontGetSidetracked.Presentation
             Transform host = CreateRect(parent, "TargetDailyRoutePreview",
                 new Vector2(0.63f, 0.42f), new Vector2(0.94f, 0.83f));
 
+            Sprite routeSkin = ReleaseSkinAssets.RoutePanel;
+            if (routeSkin != null)
+            {
+                Image skin = host.gameObject.AddComponent<Image>();
+                skin.sprite = routeSkin;
+                skin.type = Image.Type.Simple;
+                skin.preserveAspect = true;
+                skin.color = Color.white;
+                skin.raycastTarget = false;
+                return;
+            }
+
             var points = new List<FixedPoint2>
             {
                 FixedPoint2.FromNormalized(0.08, 0.24),
