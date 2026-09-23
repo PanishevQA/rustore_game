@@ -113,40 +113,27 @@ jobs:
             & $adbExe -s $serial pull $remote (Join-Path $out "$Name.png") | Out-Host
             & $adbExe -s $serial shell rm $remote | Out-Null
           }
-          function Tap([int]$X, [int]$Y) {
+          function FreshHome {
+            & $adbExe -s $serial shell am force-stop $package | Out-Null
+            & $adbExe -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
+            Start-Sleep -Seconds 2
+          }
+          function OpenAndShot([string]$Name, [int]$X, [int]$Y) {
+            FreshHome
             & $adbExe -s $serial shell input tap $X $Y
-            Start-Sleep -Milliseconds 1200
-          }
-          function BackHome {
-            & $adbExe -s $serial shell input keyevent KEYCODE_BACK
-            Start-Sleep -Milliseconds 800
+            Start-Sleep -Milliseconds 1400
+            Shot $Name
           }
 
-          & $adbExe -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
-          Start-Sleep -Seconds 2
+          FreshHome
           Shot "01-home"
+          OpenAndShot "02-training" 535 1795
+          OpenAndShot "03-daily" 710 950
+          OpenAndShot "04-campaign" 795 1320
+          OpenAndShot "05-store" 745 1980
+          OpenAndShot "06-statistics" 285 1980
 
-          Tap 430 1380
-          Shot "02-training"
-          BackHome
-
-          Tap 565 725
-          Shot "03-daily"
-          BackHome
-
-          Tap 635 1015
-          Shot "04-campaign"
-          BackHome
-
-          Tap 600 1515
-          Shot "05-store"
-          BackHome
-
-          Tap 230 1515
-          Shot "06-statistics"
-          BackHome
-
-          (& $adbExe -s $serial logcat -d -t 3000 -v time) | Set-Content -Path (Join-Path $out "logcat.txt") -Encoding UTF8
+          (& $adbExe -s $serial logcat -d -t 3500 -v time) | Set-Content -Path (Join-Path $out "logcat.txt") -Encoding UTF8
           (& $adbExe -s $serial shell wm size) | Set-Content -Path (Join-Path $out "wm-size.txt") -Encoding UTF8
           (& $adbExe -s $serial shell dumpsys window) | Set-Content -Path (Join-Path $out "window-dump.txt") -Encoding UTF8
 
@@ -157,6 +144,7 @@ jobs:
             "Serial=$serial",
             "Model=$model",
             "ApiLevel=$api",
+            "ScreenSize=1080x2400",
             "Screens=01-home,02-training,03-daily,04-campaign,05-store,06-statistics"
           ) | Set-Content -Path (Join-Path $out "capture-report.txt") -Encoding UTF8
 
