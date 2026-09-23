@@ -116,7 +116,7 @@ jobs:
           function FreshHome {
             & $adbExe -s $serial shell am force-stop $package | Out-Null
             & $adbExe -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
-            Start-Sleep -Seconds 2
+            Start-Sleep -Seconds 5
           }
           function OpenAndShot([string]$Name, [int]$X, [int]$Y) {
             FreshHome
