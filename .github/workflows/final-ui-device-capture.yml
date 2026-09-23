@@ -1,0 +1,80 @@
+name: final-ui-device-capture
+
+on:
+  push:
+    branches:
+      - 'agent/final-ui-capture/**'
+    paths:
+      - '.github/workflows/final-ui-device-capture.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: [self-hosted, windows, x64, unity]
+    timeout-minutes: 15
+    steps:
+      - name: Capture exact installed final APK screens
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $devices = @()
+          foreach ($line in (& $adbExe devices)) {
+            if ($line -match "^([^\s]+)\s+device\s*$") { $devices += $Matches[1] }
+          }
+          if ($devices.Count -ne 1) { throw "Expected exactly one authorized Android device; found $($devices.Count)." }
+          $serial = $devices[0]
+          $package = "ru.release.nesbeisya"
+          $out = Join-Path $PWD "final-ui-capture"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          function FreshHome {
+            & $adbExe -s $serial shell am force-stop $package | Out-Null
+            & $adbExe -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
+            Start-Sleep -Seconds 6
+          }
+          function Shot([string]$Name) {
+            $remote = "/sdcard/nesbeisya-final-$Name.png"
+            & $adbExe -s $serial shell screencap -p $remote
+            & $adbExe -s $serial pull $remote (Join-Path $out "$Name.png") | Out-Host
+            & $adbExe -s $serial shell rm $remote | Out-Null
+          }
+          function OpenAndShot([string]$Name, [int]$X, [int]$Y) {
+            FreshHome
+            & $adbExe -s $serial shell input tap $X $Y
+            Start-Sleep -Seconds 3
+            Shot $Name
+          }
+
+          FreshHome
+          Shot "01-home"
+          OpenAndShot "02-training" 535 1795
+          OpenAndShot "03-daily" 710 950
+          OpenAndShot "04-campaign" 795 1320
+          OpenAndShot "05-statistics" 285 1980
+          OpenAndShot "06-store" 745 1980
+
+          $appPid = ((& $adbExe -s $serial shell pidof $package) | Out-String).Trim()
+          if ([string]::IsNullOrWhiteSpace($appPid)) { throw "App process not alive after final UI capture." }
+
+          @(
+            "FinalUiCapture=PASS",
+            "Package=$package",
+            "Model=$(((& $adbExe -s $serial shell getprop ro.product.model) | Out-String).Trim())",
+            "Android=$(((& $adbExe -s $serial shell getprop ro.build.version.release) | Out-String).Trim())",
+            "ApiLevel=$(((& $adbExe -s $serial shell getprop ro.build.version.sdk) | Out-String).Trim())",
+            "Pid=$appPid"
+          ) | Set-Content -Path (Join-Path $out "report.txt") -Encoding UTF8
+
+      - name: Upload final UI evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-ui-device-capture-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: final-ui-capture/**
