@@ -1,0 +1,82 @@
+name: final-gameplay-device-capture
+
+on:
+  push:
+    branches:
+      - 'agent/final-gameplay-capture/**'
+    paths:
+      - '.github/workflows/final-gameplay-device-capture.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: [self-hosted, windows, x64, unity]
+    timeout-minutes: 15
+    steps:
+      - name: Exercise Training gameplay on exact installed final APK
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $devices = @()
+          foreach ($line in (& $adbExe devices)) {
+            if ($line -match "^([^\s]+)\s+device\s*$") { $devices += $Matches[1] }
+          }
+          if ($devices.Count -ne 1) { throw "Expected exactly one authorized Android device; found $($devices.Count)." }
+          $serial = $devices[0]
+          $package = "ru.release.nesbeisya"
+          $out = Join-Path $PWD "final-gameplay-capture"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          function Shot([string]$Name) {
+            $remote = "/sdcard/nesbeisya-$Name.png"
+            & $adbExe -s $serial shell screencap -p $remote
+            & $adbExe -s $serial pull $remote (Join-Path $out "$Name.png") | Out-Host
+            & $adbExe -s $serial shell rm $remote | Out-Null
+          }
+
+          & $adbExe -s $serial shell am force-stop $package | Out-Null
+          & $adbExe -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 6
+
+          # Open Training from Home.
+          & $adbExe -s $serial shell input tap 535 1795
+          Start-Sleep -Seconds 3
+          Shot "01-training-menu"
+
+          # Start selected Easy training.
+          & $adbExe -s $serial shell input tap 540 2045
+          Start-Sleep -Milliseconds 900
+          Shot "02-route-preview"
+
+          # Easy shows for ~3.5 s; capture after it disappears.
+          Start-Sleep -Seconds 4
+          Shot "03-draw-phase"
+
+          # Complete one continuous gesture inside the play area.
+          & $adbExe -s $serial shell input swipe 245 1160 825 1370 900
+          Start-Sleep -Seconds 3
+          Shot "04-after-gesture"
+
+          $appPid = ((& $adbExe -s $serial shell pidof $package) | Out-String).Trim()
+          if ([string]::IsNullOrWhiteSpace($appPid)) { throw "App process died during gameplay smoke." }
+
+          @(
+            "FinalGameplayCapture=PASS",
+            "Package=$package",
+            "Serial=$serial",
+            "Pid=$appPid"
+          ) | Set-Content -Path (Join-Path $out "report.txt") -Encoding UTF8
+
+      - name: Upload gameplay evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-gameplay-device-capture-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: final-gameplay-capture/**
