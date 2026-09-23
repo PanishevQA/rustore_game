@@ -108,7 +108,7 @@ Pure suite покрывает deterministic routes, scoring, Daily, save migrati
 
 ## RuStore / Android release target
 
-Последняя сверка RuStore targets на 2026-09-22:
+Последняя сверка RuStore targets на 2026-09-23:
 
 - Pay Unity: `11.1.0`;
 - Install Referrer Android: `10.6.1`;
@@ -127,7 +127,8 @@ Pay/Remote Config/Update/Review закреплены в `Packages/manifest.json`
 
 - `Tools → НЕ СБЕЙСЯ! → Release Readiness Report` выполняет Android/branding/Gradle/EDM preparation и объединяет version/placeholder/Android-SDK/RuStore Pay blockers в один отчёт;
 - `scripts/run_release_candidate_checks.ps1` на Windows автоматически находит Unity Hub Editor из `ProjectVersion.txt`, запускает Unity compile + EditMode + PlayMode tests, serialized-project validation и затем readiness report;
-- `SignedDeviceSmokeBuild` собирает signed non-Development APK для физического smoke-теста отдельно от публикационного AAB; SHA-256 sidecar проверяется перед установкой;\n- QA reset удаляет также backup Remote Config cache, поэтому clean-state regression больше не восстанавливает старую конфигурацию.
+- `SignedDeviceSmokeBuild` собирает signed non-Development APK для физического smoke-теста отдельно от публикационного AAB; SHA-256 sidecar проверяется перед установкой;
+- QA reset удаляет также backup Remote Config cache, поэтому clean-state regression больше не восстанавливает старую конфигурацию.
 
 ## Что нельзя честно завершить только изменениями в GitHub
 
