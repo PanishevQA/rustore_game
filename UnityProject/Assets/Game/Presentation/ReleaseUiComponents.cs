@@ -342,9 +342,9 @@ namespace DontGetSidetracked.Presentation
                 hideFlags = HideFlags.HideAndDontSave
             };
 
-            Color top = new Color(0.014f, 0.066f, 0.145f, 1f);
-            Color middle = new Color(0.008f, 0.032f, 0.078f, 1f);
-            Color bottom = new Color(0.001f, 0.007f, 0.022f, 1f);
+            Color top = new Color(0.020f, 0.085f, 0.180f, 1f);
+            Color middle = new Color(0.010f, 0.040f, 0.095f, 1f);
+            Color bottom = new Color(0.002f, 0.010f, 0.030f, 1f);
             Color[] pixels = new Color[width * height];
 
             for (int y = 0; y < height; y++)
@@ -363,8 +363,8 @@ namespace DontGetSidetracked.Presentation
                         new Vector2(nx, ny), new Vector2(0.18f, 0.84f)) / 0.48f), 1.55f);
                     float violetGlow = Mathf.Pow(Mathf.Clamp01(1f - Vector2.Distance(
                         new Vector2(nx, ny), new Vector2(0.86f, 0.60f)) / 0.50f), 1.65f);
-                    color += new Color(0.012f, 0.060f, 0.100f, 0f) * cyanGlow;
-                    color += new Color(0.050f, 0.020f, 0.105f, 0f) * violetGlow;
+                    color += new Color(0.020f, 0.080f, 0.125f, 0f) * cyanGlow;
+                    color += new Color(0.065f, 0.030f, 0.135f, 0f) * violetGlow;
 
                     int starHash = (x * 43 + y * 79 + x * y * 5) % 431;
                     if (ny > 0.22f && starHash == 0)
