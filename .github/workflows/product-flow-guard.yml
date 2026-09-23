@@ -150,6 +150,14 @@ jobs:
           grep -q 'ExitButton' UnityProject/Assets/Game/Presentation/GameplayHudCoordinator.cs
           grep -q 'GameplayHudCoordinator.IsGameplayPaused' UnityProject/Assets/Game/Presentation/GameBootstrap.cs
 
+          # Result target surface must proxy the existing round actions and preserve viral share/challenge.
+          grep -q 'ScoreRingHost' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q 'ResultMetrics' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q 'InvokePrimary' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q 'InvokeSecondary' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q 'БРОСИТЬ ВЫЗОВ' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q '_imageButton.gameObject.SetActive(false)' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+
           # Training must be explicit to the player instead of silently cycling difficulty.
           grep -q 'TrainingSelectCanvas' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'ЛЁГКАЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
