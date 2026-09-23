@@ -128,25 +128,23 @@ Pay/Remote Config/Update/Review закреплены в `Packages/manifest.json`
 - `Tools → НЕ СБЕЙСЯ! → Release Readiness Report` выполняет Android/branding/Gradle/EDM preparation и объединяет version/placeholder/Android-SDK/RuStore Pay blockers в один отчёт;
 - `scripts/run_release_candidate_checks.ps1` на Windows автоматически находит Unity Hub Editor из `ProjectVersion.txt`, запускает Unity compile + EditMode + PlayMode tests, serialized-project validation и затем readiness report;
 - `SignedDeviceSmokeBuild` собирает signed non-Development APK для физического smoke-теста отдельно от публикационного AAB; SHA-256 sidecar проверяется перед установкой;
+- self-hosted Full gate, Android integration/native AAR probe и production Build mode успешно прошли на release-машине 2026-09-23;
+- финальный signed device-smoke APK: 29 568 585 bytes, SHA-256 `ac203efe0ca760e12ac7ea146a656b9ea6a4e6f0680bc53bccc56f90ecba666b`;
+- финальный clean production AAB: 28 991 730 bytes, SHA-256 `d3e5f76de14a3da31487babf3b7d5f2ae75d189f16b209b6a9f5c940309e77a3`; release metadata: package `ru.release.nesbeisya`, version `1.0` (1), Unity `6000.3.24f1`;
+- self-hosted workflow очищает generated `artifacts/*` перед запуском, поэтому release ZIP не смешивает свежий AAB/APK со stale outputs предыдущих прогонов;
 - QA reset удаляет также backup Remote Config cache, поэтому clean-state regression больше не восстанавливает старую конфигурацию.
 
 ## Что нельзя честно завершить только изменениями в GitHub
 
-Это не недостающий gameplay, а внешняя финальная приёмка/конфигурация:
+Репозиторная и release-machine часть завершена. Оставшиеся блокеры требуют физического Android/RuStore окружения:
 
-- production package name из RuStore Console;
-- production keystore/key alias;
-- реальные PayClient/RuStore Console параметры;
-- isolated Unity 6000.3.24f1 probes подтверждают, что оба Unity-пакета компилируются по отдельности, но не могут безопасно использоваться вместе из-за duplicate `.meta` GUID; production использует Remote Config Unity + Install Referrer Android;
-- Install Referrer 10.6.1 physical-device smoke test;
-- Remote Config 10.5.1 AppId и physical-device fallback test;
-- реальные Yandex `R-M-...` block IDs + signed-device ad smoke test (plugin 8.4.0 и EDM4U закреплены; production entrypoint сам выполняет fail-closed Force Resolve);
-- Pay success/cancel/error/restore через реальный RuStore;
-- deeplink + Install Referrer после реальной установки;
-- Review / Update на устройстве с RuStore;
-- Android 13 notification permission/local notification;
-- PNG FileProvider/system share на устройстве;
-- signed AAB;
-- multi-device DPI/safe-area/lifecycle regression.
+- установить финальный signed device-smoke APK на реальное устройство и пройти Tutorial / Campaign / Daily / Training / Duel / Store;
+- Install Referrer 10.6.1: реальная установка через RuStore → первый запуск → восстановление challenge;
+- Remote Config 10.5.1: получить production-конфигурацию и проверить cache/default fallback без сети;
+- Yandex rewarded/interstitial: signed-device показ, reward callback, frequency cap и logcat;
+- Pay: success/cancel/error/restore через реальный RuStore;
+- deeplink, PNG FileProvider/system share, Review и Update на устройстве с RuStore;
+- Android 13+ notification permission/local reminder;
+- multi-device DPI/safe-area/lifecycle regression, включая минимум API 25 и Android 13+.
 
 PR #1 остаётся Draft до общей финальной приёмки. Промежуточный ручной тест не используется как условие продолжения разработки.
