@@ -403,8 +403,8 @@ namespace DontGetSidetracked.Presentation
             _lastScoreBreakdown = result;
             _lastResultScore = result.Score;
             _referenceGraphic.SetPoints(_route.ReferencePoints);
-            _referenceGraphic.color = new Color(0.1f, 0.9f, 1f, 0.65f);
-            _playerGraphic.color = result.Score >= 90 ? new Color(0.2f, 1f, 0.45f, 1f) : new Color(1f, 0.75f, 0.15f, 1f);
+            _referenceGraphic.color = new Color(0.72f, 0.80f, 0.90f, 0.56f);
+            _playerGraphic.color = new Color(0.10f, 0.88f, 1f, 1f);
             _title.text = "РЕЗУЛЬТАТ";
             _status.text = $"{result.Score:0.0}%";
 
