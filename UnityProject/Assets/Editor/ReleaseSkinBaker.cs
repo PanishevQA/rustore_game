@@ -12,7 +12,7 @@ namespace DontGetSidetracked.EditorTools
     internal static class ReleaseSkinBaker
     {
         private const string Folder = "Assets/Resources/ReleaseSkin";
-        private const int Version = 5;
+        private const int Version = 6;
 
         static ReleaseSkinBaker()
         {
@@ -46,8 +46,8 @@ namespace DontGetSidetracked.EditorTools
             Configure("Gameplay", 62, true);
             Configure("Route", 56, true);
             Configure("NavViolet", 50, true);
-            Configure("Primary", 52, true);
-            Configure("Secondary", 52, true);
+            Configure("Primary", 38, true);
+            Configure("Secondary", 38, true);
             Configure("ScoreRing", 0, false);
             AssetDatabase.SaveAssets();
         }
@@ -140,7 +140,7 @@ namespace DontGetSidetracked.EditorTools
             Color right=primary?C("#6948FF"):C("#121343");
             Color rim=primary?C("#45E7FF"):C("#31A9FF");
             Texture2D t=NewTexture(w,h);
-            int r=48;
+            int r=36;
             for(int y=0;y<h;y++) for(int x=0;x<w;x++)
             {
                 float a=RoundedMask(x,y,w,h,r);
