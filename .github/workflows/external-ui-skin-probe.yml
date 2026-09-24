@@ -1,0 +1,72 @@
+name: external-ui-skin-probe
+
+on:
+  push:
+    branches:
+      - 'experiment/devdog-ui-skin-probe-*'
+    paths:
+      - '.github/workflows/external-ui-skin-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, windows, x64, unity]
+    timeout-minutes: 20
+    steps:
+      - name: Inspect Devdog Sci-Fi uGUI assets
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $root = Join-Path $env:RUNNER_TEMP "devdog-sci-fi-ui"
+          if (Test-Path $root) { Remove-Item $root -Recurse -Force }
+
+          git --version
+          git lfs version
+          git clone --depth 1 https://github.com/devdogio/sci-fi-ui.git $root
+          Push-Location $root
+          git lfs pull
+          Pop-Location
+
+          $src = Join-Path $root "Assets\Devdog\SciFiDesign"
+          if (-not (Test-Path $src)) { throw "SciFiDesign assets not found." }
+
+          $out = Join-Path $PWD "external-ui-probe"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          Get-ChildItem $src -Recurse -File |
+            Where-Object { $_.Extension -match '^\.(png|jpg|jpeg|psd|ai|prefab|anim|controller|ttf)$' } |
+            Select-Object @{n='Path';e={$_.FullName.Substring($src.Length+1)}}, Length, Extension |
+            Sort-Object Extension, Length -Descending |
+            Export-Csv (Join-Path $out "asset-manifest.csv") -NoTypeInformation -Encoding UTF8
+
+          Get-ChildItem $src -Recurse -File |
+            Where-Object { $_.Extension -match '^\.(png|jpg|jpeg)$' -and $_.Length -gt 1000 } |
+            Sort-Object Length -Descending |
+            Select-Object -First 50 @{n='Path';e={$_.FullName.Substring($src.Length+1)}}, Length |
+            Format-Table -AutoSize |
+            Out-String -Width 240 |
+            Set-Content (Join-Path $out "top-raster-assets.txt") -Encoding UTF8
+
+          Get-ChildItem $src -Recurse -File |
+            Where-Object { $_.Extension -eq '.prefab' } |
+            Select-Object @{n='Path';e={$_.FullName.Substring($src.Length+1)}}, Length |
+            Sort-Object Length -Descending |
+            Select-Object -First 80 |
+            Export-Csv (Join-Path $out "prefab-manifest.csv") -NoTypeInformation -Encoding UTF8
+
+          @(
+            "Probe=PASS",
+            "Source=https://github.com/devdogio/sci-fi-ui",
+            "License=MIT",
+            "UiSystem=uGUI",
+            "AssetCount=$((Get-ChildItem $src -Recurse -File).Count)"
+          ) | Set-Content (Join-Path $out "report.txt") -Encoding UTF8
+
+      - name: Upload probe report
+        uses: actions/upload-artifact@v4
+        with:
+          name: devdog-ui-skin-probe-${{ github.sha }}
+          retention-days: 14
+          path: external-ui-probe/**
