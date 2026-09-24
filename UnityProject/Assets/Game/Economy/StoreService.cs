@@ -1,0 +1,312 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using DontGetSidetracked.Core;
+using DontGetSidetracked.Services;
+
+namespace DontGetSidetracked.Economy
+{
+    public static class ProductIds
+    {
+        public const string RemoveAds = "remove_ads";
+        public const string StarterPack = "starter_pack";
+        public const string SkinNeon = "skin_neon";
+        public const string SkinRetro = "skin_retro";
+        public const string Hints10 = "hints_10";
+
+        public static readonly string[] Mvp =
+        {
+            RemoveAds,
+            StarterPack,
+            SkinNeon,
+            SkinRetro,
+            Hints10
+        };
+    }
+
+    public sealed class StorePurchaseResult
+    {
+        public PaymentPurchaseResult Payment { get; }
+        public PurchaseVerificationResult Verification { get; }
+        public bool GrantApplied { get; }
+        public bool Verified => Verification != null && Verification.Verified;
+
+        public StorePurchaseResult(
+            PaymentPurchaseResult payment,
+            PurchaseVerificationResult verification,
+            bool grantApplied)
+        {
+            Payment = payment;
+            Verification = verification;
+            GrantApplied = grantApplied;
+        }
+    }
+
+    public sealed class StoreService
+    {
+        private readonly IPaymentService _payments;
+        private readonly IPurchaseVerificationApi _verificationApi;
+        private readonly ISaveRepository _saveRepository;
+        private readonly SaveData _save;
+        private readonly string _playerId;
+
+        public SaveData Save => _save;
+        public bool InterstitialsRemoved => HasEntitlement(ProductIds.RemoveAds) || HasEntitlement(ProductIds.StarterPack);
+
+        public StoreService(
+            IPaymentService payments,
+            ISaveRepository saveRepository,
+            SaveData save,
+            IPurchaseVerificationApi verificationApi = null,
+            string playerId = null)
+        {
+            _payments = payments ?? throw new ArgumentNullException(nameof(payments));
+            _saveRepository = saveRepository ?? throw new ArgumentNullException(nameof(saveRepository));
+            _save = SaveMigrator.Migrate(save ?? SaveData.CreateNew());
+            _verificationApi = verificationApi;
+            _playerId = string.IsNullOrWhiteSpace(playerId) ? _save.AnonymousPlayerId : playerId;
+        }
+
+        public Task<IReadOnlyList<StoreProduct>> LoadCatalogAsync() =>
+            _payments.GetProductsAsync(ProductIds.Mvp);
+
+        public async Task<StorePurchaseResult> PurchaseAsync(string productId)
+        {
+            if (!IsKnownProduct(productId))
+                throw new ArgumentException("Unknown store product.", nameof(productId));
+
+            PaymentPurchaseResult payment = await _payments.PurchaseAsync(productId);
+            if (payment == null || !payment.IsSuccess)
+                return new StorePurchaseResult(payment, null, false);
+
+            PurchaseVerificationResult verification = _verificationApi != null
+                ? await VerifyWithBackendAsync(productId, payment)
+                : await VerifyWithRuStoreAsync(productId, payment);
+
+            if (verification == null || !verification.Verified ||
+                !string.Equals(verification.ProductId, productId, StringComparison.Ordinal))
+                return new StorePurchaseResult(payment, verification, false);
+
+            string verifiedPurchaseId = string.IsNullOrWhiteSpace(verification.PurchaseId)
+                ? payment.PurchaseId
+                : verification.PurchaseId;
+            if (string.IsNullOrWhiteSpace(verifiedPurchaseId))
+            {
+                return new StorePurchaseResult(
+                    payment,
+                    new PurchaseVerificationResult(false, productId, null, payment.InvoiceId, verification.Status,
+                        "Verified purchase has no purchaseId."),
+                    false);
+            }
+
+            var verifiedPayment = new PaymentPurchaseResult(
+                PurchaseOutcome.Completed,
+                productId,
+                verifiedPurchaseId,
+                payment.InvoiceId,
+                payment.SubscriptionToken);
+            bool granted = ApplyPurchase(verifiedPayment);
+            if (granted) _saveRepository.Save(_save);
+            return new StorePurchaseResult(payment, verification, granted);
+        }
+
+        public async Task<int> RestoreAsync()
+        {
+            // RuStore GetPurchases is the authoritative restore source for confirmed non-consumables.
+            IReadOnlyList<string> owned = await _payments.RestoreEntitlementsAsync();
+            int changed = 0;
+            if (owned != null)
+            {
+                for (int i = 0; i < owned.Count; i++)
+                    if (ApplyNonConsumableEntitlement(owned[i])) changed++;
+            }
+
+            if (changed > 0) _saveRepository.Save(_save);
+            return changed;
+        }
+
+        public bool HasEntitlement(string id) =>
+            _save.Entitlements != null && _save.Entitlements.Contains(id);
+
+        public bool OwnsSkin(string skinId) =>
+            _save.Inventory != null && _save.Inventory.Contains(skinId);
+
+        private async Task<PurchaseVerificationResult> VerifyWithBackendAsync(
+            string productId,
+            PaymentPurchaseResult payment)
+        {
+            if (string.IsNullOrWhiteSpace(payment.InvoiceId))
+            {
+                return new PurchaseVerificationResult(false, productId, payment.PurchaseId, payment.InvoiceId, string.Empty,
+                    "RuStore purchase result has no invoiceId.");
+            }
+
+            try
+            {
+                return await _verificationApi.VerifyPurchaseAsync(
+                    _playerId,
+                    productId,
+                    payment.InvoiceId,
+                    payment.PurchaseId);
+            }
+            catch (Exception error)
+            {
+                return new PurchaseVerificationResult(
+                    false,
+                    productId,
+                    payment.PurchaseId,
+                    payment.InvoiceId,
+                    string.Empty,
+                    error.Message);
+            }
+        }
+
+        private async Task<PurchaseVerificationResult> VerifyWithRuStoreAsync(
+            string productId,
+            PaymentPurchaseResult payment)
+        {
+            if (string.IsNullOrWhiteSpace(payment.PurchaseId))
+            {
+                return new PurchaseVerificationResult(
+                    false,
+                    productId,
+                    null,
+                    payment.InvoiceId,
+                    string.Empty,
+                    "RuStore purchase result has no purchaseId.");
+            }
+
+            // Consumables cannot be restored as durable entitlements. A successful RuStore purchase result,
+            // combined with a unique purchaseId persisted in SaveData, is the local replay-protection boundary.
+            if (string.Equals(productId, ProductIds.Hints10, StringComparison.Ordinal))
+            {
+                return new PurchaseVerificationResult(
+                    true,
+                    productId,
+                    payment.PurchaseId,
+                    payment.InvoiceId,
+                    "RUSTORE_PURCHASE_RESULT");
+            }
+
+            try
+            {
+                IReadOnlyList<string> owned = await _payments.RestoreEntitlementsAsync();
+                if (Contains(owned, productId))
+                {
+                    return new PurchaseVerificationResult(
+                        true,
+                        productId,
+                        payment.PurchaseId,
+                        payment.InvoiceId,
+                        "RUSTORE_CONFIRMED_OWNERSHIP");
+                }
+
+                return new PurchaseVerificationResult(
+                    false,
+                    productId,
+                    payment.PurchaseId,
+                    payment.InvoiceId,
+                    string.Empty,
+                    "Purchase succeeded, but RuStore has not returned the item as a confirmed owned non-consumable yet.");
+            }
+            catch (Exception error)
+            {
+                return new PurchaseVerificationResult(
+                    false,
+                    productId,
+                    payment.PurchaseId,
+                    payment.InvoiceId,
+                    string.Empty,
+                    error.Message);
+            }
+        }
+
+        private bool ApplyPurchase(PaymentPurchaseResult purchase)
+        {
+            if (string.IsNullOrWhiteSpace(purchase.PurchaseId)) return false;
+            if (_save.ProcessedPurchaseIds.Contains(purchase.PurchaseId)) return false;
+            _save.ProcessedPurchaseIds.Add(purchase.PurchaseId);
+
+            switch (purchase.ProductId)
+            {
+                case ProductIds.RemoveAds:
+                    AddUnique(_save.Entitlements, ProductIds.RemoveAds);
+                    return true;
+
+                case ProductIds.StarterPack:
+                    AddUnique(_save.Entitlements, ProductIds.StarterPack);
+                    AddUnique(_save.Entitlements, ProductIds.RemoveAds);
+                    AddUnique(_save.Inventory, ProductIds.SkinNeon);
+                    AddUnique(_save.Inventory, ProductIds.SkinRetro);
+                    AddUnique(_save.Inventory, "skin_gold");
+                    return true;
+
+                case ProductIds.SkinNeon:
+                    AddUnique(_save.Entitlements, ProductIds.SkinNeon);
+                    AddUnique(_save.Inventory, ProductIds.SkinNeon);
+                    return true;
+
+                case ProductIds.SkinRetro:
+                    AddUnique(_save.Entitlements, ProductIds.SkinRetro);
+                    AddUnique(_save.Inventory, ProductIds.SkinRetro);
+                    return true;
+
+                case ProductIds.Hints10:
+                    _save.Hints += 10;
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        private bool ApplyNonConsumableEntitlement(string productId)
+        {
+            if (!IsKnownProduct(productId) || productId == ProductIds.Hints10) return false;
+            bool changed = false;
+
+            if (productId == ProductIds.RemoveAds)
+            {
+                changed |= AddUnique(_save.Entitlements, ProductIds.RemoveAds);
+            }
+            else if (productId == ProductIds.StarterPack)
+            {
+                changed |= AddUnique(_save.Entitlements, ProductIds.StarterPack);
+                changed |= AddUnique(_save.Entitlements, ProductIds.RemoveAds);
+                changed |= AddUnique(_save.Inventory, ProductIds.SkinNeon);
+                changed |= AddUnique(_save.Inventory, ProductIds.SkinRetro);
+                changed |= AddUnique(_save.Inventory, "skin_gold");
+            }
+            else if (productId == ProductIds.SkinNeon || productId == ProductIds.SkinRetro)
+            {
+                changed |= AddUnique(_save.Entitlements, productId);
+                changed |= AddUnique(_save.Inventory, productId);
+            }
+
+            return changed;
+        }
+
+        private static bool IsKnownProduct(string productId)
+        {
+            if (string.IsNullOrWhiteSpace(productId)) return false;
+            for (int i = 0; i < ProductIds.Mvp.Length; i++)
+                if (string.Equals(ProductIds.Mvp[i], productId, StringComparison.Ordinal)) return true;
+            return false;
+        }
+
+        private static bool Contains(IReadOnlyList<string> values, string expected)
+        {
+            if (values == null || string.IsNullOrWhiteSpace(expected)) return false;
+            for (int i = 0; i < values.Count; i++)
+                if (string.Equals(values[i], expected, StringComparison.Ordinal)) return true;
+            return false;
+        }
+
+        private static bool AddUnique(List<string> target, string value)
+        {
+            if (target.Contains(value)) return false;
+            target.Add(value);
+            return true;
+        }
+    }
+}

@@ -1,0 +1,94 @@
+name: unity-self-hosted
+
+on:
+  push:
+    branches:
+      - 'agent/**'
+    paths:
+      - 'AGENTS.md'
+      - 'UnityProject/**'
+      - 'scripts/**'
+      - '.github/workflows/unity-self-hosted.yml'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Agent validation mode'
+        required: true
+        default: 'Unity'
+        type: choice
+        options:
+          - Unity
+          - Full
+          - Build
+          - ReleaseCandidate
+          - DeviceSmokeApk
+          - AndroidIntegrationProbe
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unity-self-hosted-${{ github.repository }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  unity:
+    name: Unity batchmode gate
+    if: ${{ vars.UNITY_SELF_HOSTED_ENABLED == 'true' && github.repository == 'PanishevQA/rustore_game' }}
+    runs-on: [self-hosted, windows, x64, unity]
+    timeout-minutes: 60
+    env:
+      UNITY_EXE: ${{ vars.UNITY_EXE }}
+      # Trusted push branches can request a release action by prefix; all other agent/** pushes run Full.
+      # workflow_dispatch remains available for explicit manual mode selection.
+      AGENT_CHECK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || startsWith(github.ref_name, 'agent/release-candidate/') && 'ReleaseCandidate' || startsWith(github.ref_name, 'agent/build/') && 'Build' || startsWith(github.ref_name, 'agent/device-smoke/') && 'DeviceSmokeApk' || startsWith(github.ref_name, 'agent/android-probe/') && 'AndroidIntegrationProbe' || 'Full' }}
+
+    steps:
+      - name: Checkout trusted agent branch
+        uses: actions/checkout@v4
+        with:
+          clean: false
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Clean stale release artifacts
+        shell: powershell
+        run: |
+          foreach ($path in @("artifacts/agent-check", "artifacts/release-candidate", "artifacts/android-integration-probe")) {
+            if (Test-Path $path) { Remove-Item $path -Recurse -Force }
+          }
+
+      - name: Bootstrap portable Python
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap_portable_python.ps1
+
+      - name: Verify Unity runner environment
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_unity_runner_environment.ps1
+
+      - name: Run Unity agent gate
+        if: ${{ env.AGENT_CHECK_MODE != 'AndroidIntegrationProbe' && env.AGENT_CHECK_MODE != 'DeviceSmokeApk' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_check.ps1 -Mode $env:AGENT_CHECK_MODE -SkipFast
+
+      - name: Build signed device-smoke APK
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_release_candidate_checks.ps1 -BuildSmokeApk
+
+      - name: Run Android integration and native AAR probe
+        if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_android_integration_probe.ps1 -TimeoutSeconds 2400
+
+      - name: Upload Unity diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-agent-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            artifacts/agent-check/**
+            artifacts/release-candidate/**
+            artifacts/android-integration-probe/**

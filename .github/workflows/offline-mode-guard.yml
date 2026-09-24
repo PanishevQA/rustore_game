@@ -1,0 +1,158 @@
+name: offline-mode-guard
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify offline-first runtime invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          test -f UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
+          test -f UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs
+          test -f UnityProject/Assets/Game/Gameplay/ChallengeAssistanceTracker.cs
+          test -f UnityProject/Assets/Game/Economy/CosmeticSelectionService.cs
+          test -f UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
+          test -f UnityProject/Assets/Game/Core/GameSettingsService.cs
+          test -f UnityProject/Assets/Game/Presentation/FeedbackRuntimeCoordinator.cs
+          test -f UnityProject/Assets/Game/Gameplay/ScoreCelebrationPolicy.cs
+          test -f UnityProject/Assets/Game/Daily/DailyBestService.cs
+          test -f UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          test -f UnityProject/Assets/Game/Presentation/ResultShareCardRenderer.cs
+          test -f UnityProject/Assets/Game/Presentation/NativeImageShare.cs
+          test -f UnityProject/Assets/ResultShare.androidlib/build.gradle
+          test -f UnityProject/Assets/ResultShare.androidlib/src/main/res/xml/nesbeisya_file_paths.xml
+          grep -q 'OptionalBackendBaseUrl = ""' UnityProject/Assets/Game/Presentation/GameRuntimeSettings.cs
+          grep -q 'OfflineGameApi' UnityProject/Assets/Game/Network/UnityGameApi.cs
+          grep -q 'SeedForDate' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'BuildInstallUrl' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+
+          # Friend challenges must remain self-contained. Current L4 carries the full L3 payload plus
+          # a checksum; legacy L1/L2/L3 tokens stay readable for backward compatibility.
+          grep -q 'private const string Prefix = "L4"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'private const string LegacyV1Prefix = "L1"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'private const string LegacyV2Prefix = "L2"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'private const string LegacyV3Prefix = "L3"' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'CalculateChecksum' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'GetCurrentDisplayTimes' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'displayTimeEasyMs' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'displayTimeMediumMs' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'displayTimeHardMs' UnityProject/Assets/Game/Social/OfflineGameApi.cs
+          grep -q 'DisplayTimeEasyMs' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'DisplayTimeMediumMs' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'DisplayTimeHardMs' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'RouteCount' UnityProject/Assets/Game/Presentation/GameBootstrap.cs
+
+          # Local campaign must stay deterministic and entirely device-side.
+          test -f UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          test -f UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+          test -f UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs
+          grep -q 'TotalLevels = 60' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          grep -q 'CampaignStarPolicy' UnityProject/Assets/Game/Gameplay/CampaignLevels.cs
+          grep -q 'HighestUnlockedLevel' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'LevelProgress' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'CurrentVersion = 13' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'CampaignRuntimeCoordinator.StartLevel' UnityProject/Assets/Game/Presentation/CampaignLevelMenuOverlay.cs
+          grep -q 'level_complete' UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs
+
+          # Hints bought in the store or earned via rewarded ads must be usable, locally persisted,
+          # and Daily hint usage must propagate as assisted instead of silently remaining competitive.
+          grep -q 'save.Hints--' UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs
+          grep -q 'ChallengeAssistanceTracker.MarkAssisted' UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs
+          grep -q 'ChallengeAssistanceTracker.IsAssisted' UnityProject/Assets/Game/Daily/DailySessionService.cs
+          grep -q 'string.Equals(mode, "Daily"' UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs
+          grep -q 'string.Equals(mode, "Training"' UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs
+          if grep -n 'string.Equals(mode, "Duel"' UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs; then
+            echo 'Hints must not be offered in friend Duel mode.'
+            exit 1
+          fi
+
+          # Cosmetic purchases must have a user-selectable local effect. Selection is persisted in SaveData,
+          # ownership is enforced by Economy, and Presentation applies it only while Drawing.
+          grep -q 'SelectedSkinId' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'IsSelectable' UnityProject/Assets/Game/Economy/CosmeticSelectionService.cs
+          grep -q 'OpenCosmetics' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'CosmeticSelectionService' UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
+          grep -q 'GameBootstrapRuntimeBridge.TryCaptureHintContext' UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
+          grep -q '!context.IsDrawing' UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs
+
+          # Sound/Haptics settings must control real feedback, not decorative toggles. Haptics use Android View
+          # feedback and therefore must not add an explicit VIBRATE permission to our custom manifest.
+          grep -q 'OpenSettings' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs
+          grep -q 'SetSound' UnityProject/Assets/Game/Core/GameSettingsService.cs
+          grep -q 'SetHaptics' UnityProject/Assets/Game/Core/GameSettingsService.cs
+          grep -q 'AudioClip.Create' UnityProject/Assets/Game/Presentation/FeedbackRuntimeCoordinator.cs
+          grep -q 'performHapticFeedback' UnityProject/Assets/Game/Presentation/FeedbackRuntimeCoordinator.cs
+          grep -q 'save.Settings.Sound' UnityProject/Assets/Game/Presentation/FeedbackRuntimeCoordinator.cs
+          grep -q 'save.Settings.Haptics' UnityProject/Assets/Game/Presentation/FeedbackRuntimeCoordinator.cs
+          if grep -n 'android.permission.VIBRATE' UnityProject/Assets/Plugins/Android/AndroidManifest.xml; then
+            echo 'VIBRATE permission is unnecessary for View.performHapticFeedback and must not be requested explicitly.'
+            exit 1
+          fi
+          grep -q '"HintCanvas"' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+
+          # Result presentation must stay useful rather than decorative: stable score medals, bounded per-Daily records,
+          # a real PNG card through FileProvider, and a Duel rematch affordance.
+          grep -q 'DailyBests' UnityProject/Assets/Game/Core/SaveData.cs
+          grep -q 'PerfectEffectThreshold' UnityProject/Assets/Game/Gameplay/ScoreCelebrationPolicy.cs
+          grep -q 'MaxStoredRecords = 60' UnityProject/Assets/Game/Daily/DailyBestService.cs
+          grep -q 'ScoreCelebrationPolicy.Evaluate' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q 'DailyBestService' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q 'label.text = "РЕВАНШ"' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q 'ResultShareCardRenderer.RenderPng' UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs
+          grep -q 'FileProvider' UnityProject/Assets/Game/Presentation/NativeImageShare.cs
+          grep -q '\${applicationId}.shareprovider' UnityProject/Assets/Plugins/Android/AndroidManifest.xml
+          grep -q 'nesbeisya_file_paths' UnityProject/Assets/Plugins/Android/AndroidManifest.xml
+          grep -q '"ResultEnhancementCanvas"' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
+
+          # Remote Config controls session tuning but never route geometry, and all compatibility callers
+          # must resolve the same shared RuStoreRemoteConfigRuntime provider.
+          grep -q 'RuStoreRemoteConfigRuntime.Service' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs
+          grep -q 'RuStoreRemoteConfigClient' UnityProject/Assets/Game/Platform/RuStore/RuStoreRemoteConfigService.cs
+          grep -q 'daily_route_count' UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
+          grep -q 'route_display_time_easy_ms' UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
+          grep -q 'route_display_time_medium_ms' UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
+          grep -q 'route_display_time_hard_ms' UnityProject/Assets/Game/Presentation/RemoteGameplayTuningCoordinator.cs
+
+          # Runtime config must not fetch our own /config/bootstrap endpoint in release code.
+          if grep -nE 'UnityWebRequest|/config/bootstrap' UnityProject/Assets/Game/Network/BootstrapRemoteConfigService.cs; then
+            echo 'Developer-operated bootstrap config HTTP dependency detected.'
+            exit 1
+          fi
+
+          # Local release UI must not promise background server synchronization.
+          if grep -nE 'FlushPendingAttempts|Синхронизац|отправим позже|Ожидает синхронизации' \
+              UnityProject/Assets/Game/Presentation/GameBootstrap.cs; then
+            echo 'Legacy server-sync UX detected in offline-first GameBootstrap.'
+            exit 1
+          fi
+
+          # The production store must work without the optional developer backend.
+          if grep -nE 'UnityGameApi|DontGetSidetracked\.Network' UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs; then
+            echo 'Store UI is wired to developer backend/network code.'
+            exit 1
+          fi
+          grep -q 'RUSTORE_CONFIRMED_OWNERSHIP' UnityProject/Assets/Game/Economy/StoreService.cs
+          grep -q 'RUSTORE_PURCHASE_RESULT' UnityProject/Assets/Game/Economy/StoreService.cs
+
+          # Reject concrete release wiring to a mandatory developer backend. Do not match prose such as
+          # "no backend is required", because that would be a self-defeating false positive.
+          if grep -RInE 'ProductionBackendBaseUrl|configure the deployed HTTPS backend|REQUIRED_BACKEND_URL' \
+              UnityProject/Assets/Game docs README.md \
+              --exclude=UnityGameApi.cs \
+              --exclude=BootstrapRemoteConfigService.cs; then
+            echo 'Mandatory developer-backend configuration detected.'
+            exit 1
+          fi
+
+          if grep -RInE 'https?://(localhost|127\.0\.0\.1)' UnityProject/Assets/Game; then
+            echo 'Local developer HTTP endpoint leaked into runtime.'
+            exit 1
+          fi

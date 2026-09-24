@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="4.2.2" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../UnityProject/Assets/Game/Core/*.cs" Link="Core/%(Filename)%(Extension)" />
+    <Compile Include="../UnityProject/Assets/Game/Gameplay/*.cs" Link="Gameplay/%(Filename)%(Extension)" />
+    <Compile Include="../UnityProject/Assets/Game/Services/*.cs" Link="Services/%(Filename)%(Extension)" />
+    <Compile Include="../UnityProject/Assets/Game/Daily/*.cs" Link="Daily/%(Filename)%(Extension)" />
+    <Compile Include="../UnityProject/Assets/Game/Social/*.cs" Link="Social/%(Filename)%(Extension)" />
+    <Compile Include="../UnityProject/Assets/Game/Economy/*.cs" Link="Economy/%(Filename)%(Extension)" />
+    <Compile Include="../UnityProject/Assets/Game/Monetization/*.cs" Link="Monetization/%(Filename)%(Extension)" />
+
+    <Compile Include="../UnityProject/Assets/Game/Tests/GameplayRulesTests.cs" Link="Tests/GameplayRulesTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/CampaignLevelsTests.cs" Link="Tests/CampaignLevelsTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/RouteRuntimeTuningTests.cs" Link="Tests/RouteRuntimeTuningTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/SaveAndStreakTests.cs" Link="Tests/SaveAndStreakTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/SaveRecoveryPolicyTests.cs" Link="Tests/SaveRecoveryPolicyTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/AppVersionPolicyTests.cs" Link="Tests/AppVersionPolicyTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/DailySessionServiceTests.cs" Link="Tests/DailySessionServiceTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/DailyReminderPolicyTests.cs" Link="Tests/DailyReminderPolicyTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/ReferralLinkParserTests.cs" Link="Tests/ReferralLinkParserTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/DuelSessionServiceTests.cs" Link="Tests/DuelSessionServiceTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/ReviewPolicyTests.cs" Link="Tests/ReviewPolicyTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/StoreServiceTests.cs" Link="Tests/StoreServiceTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/PlatformUiLaunchGateTests.cs" Link="Tests/PlatformUiLaunchGateTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/CosmeticSelectionServiceTests.cs" Link="Tests/CosmeticSelectionServiceTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/GameSettingsServiceTests.cs" Link="Tests/GameSettingsServiceTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/ResultEnhancementPolicyTests.cs" Link="Tests/ResultEnhancementPolicyTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/AdControllersTests.cs" Link="Tests/AdControllersTests.cs" />
+    <Compile Include="../UnityProject/Assets/Game/Tests/OfflineModeTests.cs" Link="Tests/OfflineModeTests.cs" />
+  </ItemGroup>
+</Project>

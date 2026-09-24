@@ -1,0 +1,6 @@
+{
+  "name": "Game.Economy",
+  "rootNamespace": "DontGetSidetracked.Economy",
+  "references": ["Game.Core", "Game.Services"],
+  "autoReferenced": true
+}

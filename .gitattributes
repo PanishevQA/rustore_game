@@ -1,0 +1,27 @@
+# Keep Unity text assets stable across Windows/macOS/Linux.
+*.meta text eol=lf
+*.unity text eol=lf
+*.asset text eol=lf
+*.asmdef text eol=lf
+*.cs text eol=lf
+*.json text eol=lf
+*.xml text eol=lf
+*.gradle text eol=lf
+*.properties text eol=lf
+*.md text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.keystore binary
+*.jks binary
+
+# Unity YAML legitimately writes blank scalar values with a trailing space.
+*.meta whitespace=-blank-at-eol
+*.asset whitespace=-blank-at-eol
+*.unity whitespace=-blank-at-eol

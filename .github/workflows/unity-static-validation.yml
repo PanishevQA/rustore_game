@@ -1,0 +1,130 @@
+name: unity-static-validation
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate AI agent contract
+        run: python scripts/validate_agent_contract.py
+      - name: Validate self-hosted Unity runner security contract
+        run: python scripts/validate_self_hosted_unity_runner.py
+      - name: Parse agent PowerShell scripts
+        shell: pwsh
+        run: |
+          $failed = $false
+          foreach ($path in @("scripts/agent_check.ps1", "scripts/run_release_candidate_checks.ps1", "scripts/verify_unity_runner_environment.ps1", "scripts/bootstrap_portable_python.ps1", "scripts/install_unity_runner_logon_task.ps1", "scripts/configure_release_signing_runner.ps1", "scripts/install_signed_device_smoke_apk.ps1", "scripts/run_android_integration_probe.ps1", "scripts/probe_rustore_native_aar.ps1")) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              $failed = $true
+              Write-Host "PowerShell parse errors in $path"
+              $errors | ForEach-Object { Write-Host $_.Message }
+            }
+          }
+          if ($failed) { exit 1 }
+      - name: Validate Unity project structure and release-critical pins
+        run: python scripts/validate_unity_project.py
+      - name: Validate RuStore SDK verified baseline
+        run: python scripts/validate_rustore_sdk_baseline.py
+      - name: Validate RuStore Pay release contract
+        run: python scripts/validate_rustore_pay_release.py
+      - name: Validate referral and Install Referrer release contract
+        run: python scripts/validate_referral_release.py
+      - name: Validate Android editor and release configuration
+        run: python scripts/validate_editor_android_config.py
+      - name: Validate release build observability
+        run: python scripts/validate_build_observability.py
+      - name: Validate Android production build entrypoint
+        run: python scripts/validate_android_release_build_entrypoint.py
+      - name: Validate signed device-smoke APK entrypoint
+        run: python scripts/validate_signed_device_smoke_build.py
+      - name: Validate production signing runtime guard
+        run: python scripts/validate_signing_runtime.py
+      - name: Test release artifact integrity verifier
+        run: python scripts/test_release_artifact_verifier.py
+      - name: Test Unity log diagnostics parser
+        run: python scripts/test_analyze_unity_log.py
+      - name: Validate Remote Config build identity
+        run: python scripts/validate_remote_config_build_identity.py
+      - name: Validate Remote Config version policy
+        run: python scripts/validate_remote_config_version_policy.py
+      - name: Validate Remote Config cache recovery
+        run: python scripts/validate_remote_config_cache_recovery.py
+      - name: Validate release placeholder contract
+        run: python scripts/validate_release_placeholders.py
+      - name: Validate Yandex Mobile Ads release contract
+        run: python scripts/validate_yandex_ads_release.py
+      - name: Validate release UI regression contract
+        run: python scripts/validate_release_ui.py
+      - name: Validate async navigation invariants
+        run: python scripts/validate_async_navigation.py
+      - name: Validate platform and store async invariants
+        run: python scripts/validate_platform_async.py
+      - name: Validate Campaign runtime bootstrap boundary
+        run: python scripts/validate_campaign_runtime_contract.py
+      - name: Validate Campaign overlay lifecycle ownership
+        run: python scripts/validate_campaign_overlay_lifecycle.py
+      - name: Validate result share ownership and stale navigation
+        run: python scripts/validate_result_share_ownership.py
+      - name: Validate Training and Hint runtime bootstrap boundary
+        run: python scripts/validate_training_hint_runtime_contract.py
+      - name: Validate Feedback and Cosmetic runtime boundary
+        run: python scripts/validate_feedback_cosmetic_runtime_contract.py
+      - name: Guard shared GameBootstrap runtime contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          bridge='UnityProject/Assets/Game/Presentation/GameBootstrapRuntimeBridge.cs'
+          mobile='UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs'
+          ads='UnityProject/Assets/Game/Presentation/AdRuntimeCoordinator.cs'
+          rewarded='UnityProject/Assets/Game/Presentation/RewardedHomeOverlay.cs'
+          platform='UnityProject/Assets/Game/Presentation/RuntimePlatformCoordinator.cs'
+          meta='UnityProject/Assets/Game/Presentation/MetaMenuOverlay.cs'
+          campaign='UnityProject/Assets/Game/Presentation/CampaignRuntimeCoordinator.cs'
+          result='UnityProject/Assets/Game/Presentation/ResultEnhancementCoordinator.cs'
+          training='UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs'
+          hint='UnityProject/Assets/Game/Presentation/HintRuntimeCoordinator.cs'
+          feedback='UnityProject/Assets/Game/Presentation/FeedbackRuntimeCoordinator.cs'
+          cosmetic='UnityProject/Assets/Game/Presentation/CosmeticRuntimeCoordinator.cs'
+
+          test -f "$bridge"
+          grep -q 'public static bool IsIdleHome' "$bridge"
+          grep -q 'public static bool IsPlainHome' "$bridge"
+          grep -q 'public static bool IsResult' "$bridge"
+
+          grep -q 'GameBootstrapRuntimeBridge.IsHome' "$mobile"
+          grep -q 'GameBootstrapRuntimeBridge.IsActiveRound' "$mobile"
+          grep -q 'GameBootstrapRuntimeBridge.IsTutorial' "$mobile"
+          grep -q 'GameBootstrapRuntimeBridge.AbortToHome' "$mobile"
+          grep -q 'GameBootstrapRuntimeBridge.RestartTutorial' "$mobile"
+          grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' "$ads"
+          grep -q 'GameBootstrapRuntimeBridge.IsResult' "$ads"
+          grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' "$rewarded"
+          grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' "$platform"
+          grep -q 'GameBootstrapRuntimeBridge.IsPlainHome' "$meta"
+          grep -q 'GameBootstrapRuntimeBridge.PrepareCampaign' "$campaign"
+          grep -q 'GameBootstrapRuntimeBridge.BeginRoute' "$campaign"
+          grep -q 'GameBootstrapRuntimeBridge.TryCaptureResult' "$result"
+          grep -q 'GameBootstrapRuntimeBridge.StartTrainingDifficulty' "$training"
+          grep -q 'GameBootstrapRuntimeBridge.TryCaptureHintContext' "$hint"
+          grep -q 'GameBootstrapRuntimeBridge.IsResult' "$feedback"
+          grep -q 'GameBootstrapRuntimeBridge.TryCaptureHintContext' "$cosmetic"
+
+          for file in "$mobile" "$ads" "$rewarded" "$platform" "$meta" "$campaign" "$result" "$training" "$hint" "$feedback" "$cosmetic"; do
+            if grep -nE 'System\.Reflection|BindingFlags|GetField\(|GetMethod\(' "$file"; then
+              echo "Private GameBootstrap reflection leaked outside GameBootstrapRuntimeBridge: $file"
+              exit 1
+            fi
+          done
+
+          grep -q 'BindingFlags.Instance | BindingFlags.NonPublic' "$bridge"
+          grep -q 'ReportMissingContractIfNeeded' "$bridge"

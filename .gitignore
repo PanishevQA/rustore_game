@@ -1,0 +1,66 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+UserSettings/
+MemoryCaptures/
+Recordings/
+*.csproj
+*.sln
+*.user
+*.unityproj
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Android build artifacts
+*.apk
+*.aab
+*.apks
+
+# Android signing / local secrets
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+keystore.properties
+local.properties
+*.properties.local
+.env
+.env.*
+
+# Python backend
+__pycache__/
+.pytest_cache/
+*.pyc
+.venv/
+server/data/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Unity-generated Gradle templates
+# Generated from the pinned Unity editor by AndroidDependencyConfigurator.
+UnityProject/Assets/Plugins/Android/mainTemplate.gradle
+UnityProject/Assets/Plugins/Android/mainTemplate.gradle.meta
+UnityProject/Assets/Plugins/Android/gradleTemplate.properties
+UnityProject/Assets/Plugins/Android/gradleTemplate.properties.meta
+UnityProject/Assets/Plugins/Android/settingsTemplate.gradle
+UnityProject/Assets/Plugins/Android/settingsTemplate.gradle.meta
+
+# Deterministically generated release branding
+UnityProject/Assets/GeneratedBrand/
+
+# Local generated reports / scratch artifacts
+/artifacts/
+UnityProject/Assets/GeneratedBrand.meta

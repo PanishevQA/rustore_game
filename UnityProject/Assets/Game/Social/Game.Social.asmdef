@@ -1,0 +1,6 @@
+{
+  "name": "Game.Social",
+  "rootNamespace": "DontGetSidetracked.Social",
+  "references": ["Game.Core", "Game.Gameplay", "Game.Services"],
+  "autoReferenced": true
+}
