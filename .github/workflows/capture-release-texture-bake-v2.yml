@@ -40,10 +40,19 @@ jobs:
             return $local
           }
 
+          & $adbExe -s $serial shell input keyevent KEYCODE_WAKEUP | Out-Null
+          & $adbExe -s $serial shell wm dismiss-keyguard | Out-Null
+          & $adbExe -s $serial shell input keyevent 82 | Out-Null
+          & $adbExe -s $serial shell svc power stayon true | Out-Null
+          Start-Sleep -Seconds 1
+
           & $adbExe -s $serial shell am force-stop $package | Out-Null
           & $adbExe -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
           Start-Sleep -Seconds 7
-          Shot "01-home-v2"
+          $homePath = Shot "01-home-v2"
+          if ((Get-Item $homePath).Length -lt 50000) {
+            throw "Home capture looks blank/locked: $((Get-Item $homePath).Length) bytes"
+          }
 
           & $adbExe -s $serial shell input tap 540 1510
           Start-Sleep -Seconds 2
