@@ -182,8 +182,8 @@ namespace DontGetSidetracked.Presentation
                 _canvas.transform,
                 "UseHint",
                 string.Empty,
-                new Vector2(0.15f, 0.192f),
-                new Vector2(0.85f, 0.250f),
+                new Vector2(0.15f, 0.156f),
+                new Vector2(0.85f, 0.198f),
                 UseHint,
                 21);
 
@@ -191,12 +191,18 @@ namespace DontGetSidetracked.Presentation
             if (placeholder != null) placeholder.gameObject.SetActive(false);
 
             Image buttonImage = _button.GetComponent<Image>();
+            bool authoredButton = buttonImage != null && buttonImage.sprite == ReleaseSkinAssets.SecondaryButton;
             if (buttonImage != null)
-                buttonImage.color = new Color(ReleaseUiKit.Gold.r, ReleaseUiKit.Gold.g, ReleaseUiKit.Gold.b, 0.08f);
+            {
+                buttonImage.color = authoredButton
+                    ? Color.white
+                    : new Color(ReleaseUiKit.Gold.r, ReleaseUiKit.Gold.g, ReleaseUiKit.Gold.b, 0.08f);
+            }
 
             Outline outline = _button.GetComponent<Outline>();
             if (outline != null)
             {
+                outline.enabled = !authoredButton;
                 outline.effectColor = new Color(ReleaseUiKit.Gold.r, ReleaseUiKit.Gold.g, ReleaseUiKit.Gold.b, 0.42f);
                 outline.effectDistance = new Vector2(2f, -2f);
             }
