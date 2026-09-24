@@ -119,8 +119,10 @@ namespace DontGetSidetracked.Presentation
             Transform root = ReleaseUiKit.Rect(parent, name, min, max);
             Image image = root.gameObject.AddComponent<Image>();
             image.sprite = _primaryGradient;
-            image.type = Image.Type.Sliced;
+            bool authoredPrimary = _primaryGradient == ReleaseSkinAssets.PrimaryButton;
+            image.type = authoredPrimary ? Image.Type.Simple : Image.Type.Sliced;
             image.color = Color.white;
+            image.preserveAspect = false;
 
             Button button = root.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
@@ -135,10 +137,10 @@ namespace DontGetSidetracked.Presentation
             button.colors = colors;
 
             Shadow shadow = root.gameObject.AddComponent<Shadow>();
-            shadow.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, _primaryGradient == ReleaseSkinAssets.PrimaryButton ? 0.18f : 0.30f);
+            shadow.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, authoredPrimary ? 0.18f : 0.30f);
             shadow.effectDistance = new Vector2(0f, -7f);
 
-            if (_primaryGradient != ReleaseSkinAssets.PrimaryButton)
+            if (!authoredPrimary)
             {
                 Outline glow = root.gameObject.AddComponent<Outline>();
                 glow.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, 0.38f);
