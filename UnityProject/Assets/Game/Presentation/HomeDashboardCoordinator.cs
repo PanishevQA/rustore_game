@@ -189,36 +189,29 @@ namespace DontGetSidetracked.Presentation
             _dashboardMotion = root.AddComponent<ReleasePanelMotion>();
 
             ReleaseUiComponents.Backdrop(root.transform, "HomeBackdrop");
-
             BuildTargetTopBar(root.transform);
 
-            Text logo = ReleaseUiKit.TextBlock(root.transform, "Logo", "НЕ СБЕЙСЯ!", 66,
-                TextAnchor.MiddleCenter, new Vector2(0.12f, 0.825f), new Vector2(0.88f, 0.895f),
+            // Home is intentionally content-first: brand, one dominant Daily CTA,
+            // campaign progress, one compact stats strip and three secondary destinations.
+            // This keeps the first screen scannable on a phone instead of presenting
+            // four equally weighted menu rows.
+            Text logo = ReleaseUiKit.TextBlock(root.transform, "Logo", "НЕ СБЕЙСЯ!", 58,
+                TextAnchor.MiddleLeft, new Vector2(0.07f, 0.850f), new Vector2(0.72f, 0.910f),
                 ReleaseUiComponents.Text, FontStyle.Bold);
-            ReleaseUiKit.AddTextShadow(logo, 0.58f, -3f);
+            ReleaseUiKit.AddTextShadow(logo, 0.54f, -3f);
             Outline logoGlow = logo.gameObject.AddComponent<Outline>();
             logoGlow.effectColor = new Color(ReleaseUiComponents.Cyan.r, ReleaseUiComponents.Cyan.g,
-                ReleaseUiComponents.Cyan.b, 0.28f);
+                ReleaseUiComponents.Cyan.b, 0.22f);
             logoGlow.effectDistance = new Vector2(2f, -2f);
 
-            BuildTargetDailyCard(root.transform);
-            BuildTargetStatCards(root.transform);
+            ReleaseUiKit.TextBlock(root.transform, "Tagline", "ЗАПОМНИ МАРШРУТ  •  ПОВТОРИ ТОЧНО", 18,
+                TextAnchor.MiddleLeft, new Vector2(0.07f, 0.815f), new Vector2(0.78f, 0.850f),
+                ReleaseUiComponents.Muted, FontStyle.Bold);
 
-            CreateTargetNavRow(root.transform, "CampaignRow", "КАМПАНИЯ", "Пройдено: 0/60",
-                GeneratedUiAssets.CampaignIcon, ReleaseUiComponents.Blue,
-                new Vector2(0.055f, 0.405f), new Vector2(0.945f, 0.472f), OpenCampaignFromHome, out _campaignMeta);
-
-            CreateTargetNavRow(root.transform, "TrainingRow", "ТРЕНИРОВКА", "Без ограничений",
-                GeneratedUiAssets.TrainingIcon, ReleaseUiComponents.Cyan,
-                new Vector2(0.055f, 0.329f), new Vector2(0.945f, 0.396f), OpenTrainingFromHome, out _);
-
-            CreateTargetNavRow(root.transform, "RatingRow", "РЕЙТИНГ", "Топ игроков",
-                GeneratedUiAssets.StatisticsIcon, ReleaseUiComponents.Violet,
-                new Vector2(0.055f, 0.253f), new Vector2(0.945f, 0.320f), OpenStatisticsFromHome, out _);
-
-            CreateTargetNavRow(root.transform, "StoreRow", "МАГАЗИН", "Скины, подсказки, без рекламы",
-                GeneratedUiAssets.StoreIcon, new Color(0.83f, 0.38f, 1f, 1f),
-                new Vector2(0.055f, 0.177f), new Vector2(0.945f, 0.244f), OpenStoreFromHome, out _);
+            BuildDailyCard(root.transform);
+            BuildCampaignCard(root.transform);
+            BuildStatRow(root.transform);
+            BuildQuickActions(root.transform);
         }
 
         private void BuildTargetTopBar(Transform parent)
@@ -525,7 +518,7 @@ namespace DontGetSidetracked.Presentation
         private void BuildDailyCard(Transform parent)
         {
             Transform card = ReleaseUiComponents.GlassCard(parent, "DailyCard",
-                new Vector2(0.07f, 0.600f), new Vector2(0.93f, 0.835f),
+                new Vector2(0.07f, 0.585f), new Vector2(0.93f, 0.805f),
                 ReleaseUiComponents.Cyan, true).transform;
 
             ReleaseUiKit.TextBlock(card, "DailyKicker", "ИСПЫТАНИЕ ДНЯ", 28, TextAnchor.MiddleLeft,
@@ -557,7 +550,7 @@ namespace DontGetSidetracked.Presentation
         private void BuildCampaignCard(Transform parent)
         {
             Transform card = ReleaseUiComponents.GlassCard(parent, "CampaignCard",
-                new Vector2(0.07f, 0.425f), new Vector2(0.93f, 0.585f),
+                new Vector2(0.07f, 0.410f), new Vector2(0.93f, 0.570f),
                 ReleaseUiComponents.Violet, false).transform;
 
             CreateText(card, "CampaignKicker", "КАМПАНИЯ", 24, TextAnchor.MiddleLeft,
@@ -601,7 +594,7 @@ namespace DontGetSidetracked.Presentation
             // One readable progress strip replaces four narrow dashboard cards. At phone
             // width every value now has room to breathe and the Home hierarchy stays clear.
             Image strip = ReleaseUiComponents.GlassCard(parent, "HomeStatsStrip",
-                new Vector2(0.07f, 0.315f), new Vector2(0.93f, 0.410f),
+                new Vector2(0.07f, 0.300f), new Vector2(0.93f, 0.395f),
                 ReleaseUiComponents.Blue, false);
 
             _starsValue = CreateCompactMetric(strip.transform, "StarsStat", "ЗВЁЗДЫ", "0",
@@ -648,16 +641,16 @@ namespace DontGetSidetracked.Presentation
             // Training is the secondary gameplay loop, so it gets a full-width touch target.
             // Meta destinations stay one row below instead of becoming three tiny columns.
             CreateQuickAction(parent, "TrainingQuick", "ТРЕНИРОВКА", "Бесконечные маршруты", ReleaseUiComponents.Success,
-                new Vector2(0.07f, 0.235f), new Vector2(0.93f, 0.300f),
+                new Vector2(0.07f, 0.220f), new Vector2(0.93f, 0.285f),
                 OpenTrainingFromHome);
 
             CreateQuickAction(parent, "StatsQuick", "СТАТИСТИКА", "Прогресс и рекорды", ReleaseUiComponents.Violet,
-                new Vector2(0.07f, 0.155f), new Vector2(0.49f, 0.220f),
-                () => InvokeLegacy(_legacyStats));
+                new Vector2(0.07f, 0.140f), new Vector2(0.49f, 0.205f),
+                OpenStatisticsFromHome);
 
             CreateQuickAction(parent, "StoreQuick", "МАГАЗИН", "Скины и подсказки", ReleaseUiComponents.Cyan,
-                new Vector2(0.51f, 0.155f), new Vector2(0.93f, 0.220f),
-                () => InvokeLegacy(_legacyStore));
+                new Vector2(0.51f, 0.140f), new Vector2(0.93f, 0.205f),
+                OpenStoreFromHome);
         }
 
         private void CreateQuickAction(
@@ -719,7 +712,7 @@ namespace DontGetSidetracked.Presentation
             int completed = progress.CompletedLevels();
             int totalStars = progress.TotalStars();
 
-            if (_streakValue != null) _streakValue.text = save.Streak.ToString();
+            if (_streakValue != null) _streakValue.text = save.Streak + " ДН";
             if (_starsValue != null) _starsValue.text = totalStars.ToString();
             if (_coinsValue != null) _coinsValue.text = save.Coins.ToString();
             if (_hintsValue != null) _hintsValue.text = save.Hints.ToString();
@@ -743,7 +736,7 @@ namespace DontGetSidetracked.Presentation
                     : "ЛУЧШИЙ  —";
 
             if (_campaignMeta != null)
-                _campaignMeta.text = "Пройдено: " + completed + "/" + CampaignLevelCatalog.TotalLevels;
+                _campaignMeta.text = completed + "/" + CampaignLevelCatalog.TotalLevels + "  •  ★ " + totalStars;
 
             if (_campaignProgressFill != null)
             {
