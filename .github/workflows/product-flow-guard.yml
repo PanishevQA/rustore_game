@@ -165,7 +165,11 @@ jobs:
           grep -q 'СЛОЖНАЯ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'SelectDifficulty' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'StartSelected' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
-          grep -q 'НАЧАТЬ ТРЕНИРОВКУ' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'TrainingRoutePreview' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'CreateDifficultyChip' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'StartTrainingDifficulty' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q '"ИГРАТЬ"' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
+          grep -q 'TrainingRewarded' UnityProject/Assets/Game/Presentation/TrainingMenuCoordinator.cs
           grep -q 'TrainingSelectCanvas' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
           grep -q 'DailyIntroCanvas' UnityProject/Assets/Game/Presentation/MobileUiCoordinator.cs
 

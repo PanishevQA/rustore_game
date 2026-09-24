@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using DontGetSidetracked.Core;
 using DontGetSidetracked.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,7 +26,10 @@ namespace DontGetSidetracked.Presentation
         private readonly Text[] _difficultyTimings = new Text[3];
         private readonly Text[] _difficultyStates = new Text[3];
         private readonly Image[] _difficultyChecks = new Image[3];
+        private readonly Text[] _difficultyLabels = new Text[3];
         private Text _selectionSummary;
+        private Text _rewardedLabel;
+        private Button _rewardedButton;
 
         public bool IsOpen => _panel != null && _panel.activeSelf;
 
@@ -133,6 +138,7 @@ namespace DontGetSidetracked.Presentation
             Canvas canvas = _canvas.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 75;
+
             CanvasScaler scaler = _canvas.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1080, 1920);
@@ -143,130 +149,301 @@ namespace DontGetSidetracked.Presentation
             _backdrop = dim;
             ReleaseUiKit.Stretch(dim.GetComponent<RectTransform>());
             Image dimImage = dim.GetComponent<Image>();
-            dimImage.color = new Color(0.005f, 0.010f, 0.028f, 0.86f);
+            dimImage.color = new Color(0.001f, 0.005f, 0.016f, 0.93f);
             dimImage.raycastTarget = true;
 
-            _panel = new GameObject("TrainingPanel", typeof(RectTransform), typeof(Image));
+            _panel = new GameObject("TrainingPanel", typeof(RectTransform));
             _panel.transform.SetParent(_canvas.transform, false);
-            ReleaseUiKit.SetAnchors(_panel.GetComponent<RectTransform>(), new Vector2(0.035f, 0.035f), new Vector2(0.965f, 0.965f));
-            Image panelImage = _panel.GetComponent<Image>();
-            panelImage.sprite = ReleaseUiKit.Rounded;
-            panelImage.type = Image.Type.Sliced;
-            panelImage.color = new Color(0.008f, 0.020f, 0.050f, 0.995f);
+            ReleaseUiKit.SetAnchors(_panel.GetComponent<RectTransform>(), new Vector2(0.035f, 0.025f), new Vector2(0.965f, 0.975f));
             ReleaseUiComponents.Backdrop(_panel.transform, "TrainingReleaseBackdrop");
-
-            Outline outline = _panel.AddComponent<Outline>();
-            outline.effectColor = new Color(ReleaseUiKit.Cyan.r, ReleaseUiKit.Cyan.g, ReleaseUiKit.Cyan.b, 0.14f);
-            outline.effectDistance = new Vector2(2f, -2f);
-
-            Shadow shadow = _panel.AddComponent<Shadow>();
-            shadow.effectColor = new Color(0f, 0f, 0f, 0.52f);
-            shadow.effectDistance = new Vector2(0f, -12f);
             _panel.AddComponent<ReleasePanelMotion>();
 
-            var releaseVisual = new GameObject("ReleaseVisual", typeof(RectTransform));
-            releaseVisual.transform.SetParent(_panel.transform, false);
-            ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
+            Image backSurface = ReleaseUiKit.Panel(
+                _panel.transform,
+                "Close",
+                new Vector2(0.045f, 0.900f),
+                new Vector2(0.125f, 0.952f),
+                new Color(0.018f, 0.055f, 0.105f, 0.98f),
+                ReleaseUiComponents.Cyan,
+                false);
+            Button backButton = backSurface.gameObject.AddComponent<Button>();
+            backButton.targetGraphic = backSurface;
+            backButton.onClick.AddListener(Close);
+            BuildBackChevron(backSurface.transform);
 
-            ReleaseUiComponents.SecondaryButton(_panel.transform, "Close", "НАЗАД",
-                new Vector2(0.055f, 0.875f), new Vector2(0.255f, 0.935f), Close, 24);
-
-            ReleaseUiComponents.Icon(_panel.transform, "GeneratedTrainingIcon", GeneratedUiAssets.TrainingIcon,
-                new Vector2(0.43f, 0.855f), new Vector2(0.57f, 0.935f));
-
-            Text title = ReleaseUiKit.TextBlock(_panel.transform, "Title", "ТРЕНИРОВКА", 50,
-                TextAnchor.MiddleCenter, new Vector2(0.16f, 0.795f), new Vector2(0.84f, 0.855f),
-                ReleaseUiComponents.Text, FontStyle.Bold);
+            Text title = ReleaseUiKit.TextBlock(
+                _panel.transform,
+                "Title",
+                "ТРЕНИРОВКА",
+                42,
+                TextAnchor.MiddleCenter,
+                new Vector2(0.22f, 0.895f),
+                new Vector2(0.78f, 0.955f),
+                ReleaseUiComponents.Text,
+                FontStyle.Bold);
             ReleaseUiKit.AddTextShadow(title, 0.50f, -3f);
 
-            ReleaseUiKit.TextBlock(_panel.transform, "Subtitle",
-                "Новые маршруты. Столько попыток, сколько нужно.", 25,
-                TextAnchor.MiddleCenter, new Vector2(0.13f, 0.755f), new Vector2(0.87f, 0.800f),
+            ReleaseUiKit.TextBlock(
+                _panel.transform,
+                "Subtitle",
+                "Без ограничений",
+                20,
+                TextAnchor.MiddleCenter,
+                new Vector2(0.22f, 0.862f),
+                new Vector2(0.78f, 0.900f),
                 ReleaseUiComponents.Muted);
 
-            Image guidance = ReleaseUiComponents.GlassCard(_panel.transform, "TrainingGuidance",
-                new Vector2(0.07f, 0.665f), new Vector2(0.93f, 0.745f), ReleaseUiComponents.Cyan);
-            ReleaseUiComponents.Icon(guidance.transform, "MemoryIcon", GeneratedUiAssets.EyeIcon,
-                new Vector2(0.04f, 0.18f), new Vector2(0.16f, 0.82f));
-            ReleaseUiKit.TextBlock(guidance.transform, "Copy", "Запомни форму и повороты.\nПовтори линию одним движением.", 25,
-                TextAnchor.MiddleLeft, new Vector2(0.20f, 0.14f), new Vector2(0.94f, 0.86f), ReleaseUiComponents.Text);
+            Image preview = ReleaseUiKit.Panel(
+                _panel.transform,
+                "TrainingRoutePreview",
+                new Vector2(0.070f, 0.565f),
+                new Vector2(0.930f, 0.840f),
+                new Color(0.006f, 0.024f, 0.060f, 0.99f),
+                ReleaseUiComponents.Cyan,
+                true);
+            if (ReleaseSkinAssets.RoutePanel != null)
+            {
+                preview.sprite = ReleaseSkinAssets.RoutePanel;
+                preview.type = Image.Type.Sliced;
+                preview.color = Color.white;
+                Outline po = preview.GetComponent<Outline>();
+                if (po != null) po.enabled = false;
+            }
+            if (ReleaseSkinAssets.RoutePanel == null)
+                BuildPreviewRoute(preview.transform);
 
-            ReleaseUiComponents.SectionHeader(_panel.transform, "ВЫБЕРИ СЛОЖНОСТЬ",
-                new Vector2(0.07f, 0.615f), new Vector2(0.62f, 0.650f));
+            ReleaseUiKit.TextBlock(
+                _panel.transform,
+                "DifficultyCaption",
+                "СЛОЖНОСТЬ",
+                18,
+                TextAnchor.MiddleLeft,
+                new Vector2(0.070f, 0.505f),
+                new Vector2(0.360f, 0.548f),
+                ReleaseUiComponents.Muted,
+                FontStyle.Bold);
 
-            CreateDifficultyCard(0, "EasyCard", "ЛЁГКАЯ", "Короткие плавные маршруты",
-                ReleaseUiComponents.Success, new Vector2(0.07f, 0.505f), new Vector2(0.93f, 0.605f));
+            CreateDifficultyChip(0, "EasyChip", "ЛЁГКАЯ",
+                new Vector2(0.070f, 0.430f), new Vector2(0.345f, 0.500f));
+            CreateDifficultyChip(1, "MediumChip", "СРЕДНЯЯ",
+                new Vector2(0.365f, 0.430f), new Vector2(0.640f, 0.500f));
+            CreateDifficultyChip(2, "HardChip", "СЛОЖНАЯ",
+                new Vector2(0.660f, 0.430f), new Vector2(0.930f, 0.500f));
 
-            CreateDifficultyCard(1, "MediumCard", "СРЕДНЯЯ", "Больше поворотов и изгибов",
-                ReleaseUiComponents.Cyan, new Vector2(0.07f, 0.390f), new Vector2(0.93f, 0.490f));
+            _selectionSummary = null;
 
-            CreateDifficultyCard(2, "HardCard", "СЛОЖНАЯ", "Сложная форма, узкий коридор",
-                ReleaseUiComponents.Violet, new Vector2(0.07f, 0.275f), new Vector2(0.93f, 0.375f));
+            ReleaseUiComponents.PrimaryButton(
+                _panel.transform,
+                "StartTraining",
+                "ИГРАТЬ",
+                new Vector2(0.070f, 0.285f),
+                new Vector2(0.930f, 0.370f),
+                StartSelected,
+                31);
 
-            Image progress = ReleaseUiComponents.GlassCard(_panel.transform, "TrainingProgress",
-                new Vector2(0.07f, 0.185f), new Vector2(0.93f, 0.255f), ReleaseUiComponents.Blue, false);
-            _selectionSummary = ReleaseUiKit.TextBlock(progress.transform, "ProgressCopy", string.Empty, 25,
-                TextAnchor.MiddleCenter, new Vector2(0.05f, 0.10f), new Vector2(0.95f, 0.90f),
-                ReleaseUiComponents.Text, FontStyle.Bold);
+            Image rewarded = ReleaseUiComponents.GlassCard(
+                _panel.transform,
+                "TrainingRewarded",
+                new Vector2(0.070f, 0.095f),
+                new Vector2(0.930f, 0.220f),
+                ReleaseUiComponents.Violet,
+                true);
+            if (ReleaseSkinAssets.NavViolet != null)
+            {
+                rewarded.sprite = ReleaseSkinAssets.NavViolet;
+                rewarded.type = Image.Type.Sliced;
+                rewarded.color = Color.white;
+            }
 
-            ReleaseUiComponents.PrimaryButton(_panel.transform, "StartTraining", "НАЧАТЬ ТРЕНИРОВКУ",
-                new Vector2(0.07f, 0.085f), new Vector2(0.93f, 0.165f), StartSelected, 28);
+            Image adIcon = ReleaseUiComponents.Icon(
+                rewarded.transform,
+                "RewardedIcon",
+                GeneratedUiAssets.EyeIcon,
+                new Vector2(0.045f, 0.18f),
+                new Vector2(0.170f, 0.82f));
+            adIcon.color = Color.white;
+
+            _rewardedLabel = ReleaseUiKit.TextBlock(
+                rewarded.transform,
+                "RewardedCopy",
+                "СМОТРИ РЕКЛАМУ →\nЕЩЁ ОДИН ПРОСМОТР МАРШРУТА",
+                20,
+                TextAnchor.MiddleLeft,
+                new Vector2(0.205f, 0.12f),
+                new Vector2(0.82f, 0.88f),
+                ReleaseUiComponents.Text,
+                FontStyle.Bold);
+            ReleaseUiKit.TextBlock(
+                rewarded.transform,
+                "RewardedArrow",
+                "›",
+                38,
+                TextAnchor.MiddleCenter,
+                new Vector2(0.855f, 0.10f),
+                new Vector2(0.955f, 0.90f),
+                new Color(0.86f, 0.55f, 1f, 1f),
+                FontStyle.Bold);
+
+            _rewardedButton = rewarded.gameObject.AddComponent<Button>();
+            _rewardedButton.targetGraphic = rewarded;
+            _rewardedButton.onClick.AddListener(ClaimTrainingReward);
 
             RefreshDifficultySelection();
         }
 
-        private void CreateDifficultyCard(
-            int difficulty,
-            string name,
-            string title,
-            string description,
-            Color accent,
-            Vector2 min,
-            Vector2 max)
+        private void CreateDifficultyChip(int difficulty, string name, string title, Vector2 min, Vector2 max)
         {
-            Image card = ReleaseUiComponents.GlassCard(_panel.transform, name, min, max, accent, false);
-            _difficultyCards[difficulty] = card;
+            Color accent = difficulty == 0
+                ? ReleaseUiComponents.Cyan
+                : difficulty == 1
+                    ? ReleaseUiComponents.Blue
+                    : ReleaseUiComponents.Violet;
 
-            Button button = card.gameObject.AddComponent<Button>();
-            button.targetGraphic = card;
-            button.transition = Selectable.Transition.ColorTint;
-            ColorBlock colors = button.colors;
-            colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(1.10f, 1.10f, 1.10f, 1f);
-            colors.selectedColor = Color.white;
-            colors.pressedColor = new Color(0.64f, 0.76f, 0.84f, 1f);
-            colors.disabledColor = new Color(0.60f, 0.64f, 0.72f, 1f);
-            colors.fadeDuration = 0.08f;
-            button.colors = colors;
+            Image chip = ReleaseUiComponents.GlassCard(_panel.transform, name, min, max, accent, false);
+            _difficultyCards[difficulty] = chip;
+
+            Button button = chip.gameObject.AddComponent<Button>();
+            button.targetGraphic = chip;
             button.onClick.AddListener(() => SelectDifficulty(difficulty));
 
-            for (int i = 0; i < 3; i++)
+            Text label = ReleaseUiKit.TextBlock(
+                chip.transform,
+                "Label",
+                title,
+                20,
+                TextAnchor.MiddleCenter,
+                new Vector2(0.06f, 0.20f),
+                new Vector2(0.94f, 0.80f),
+                ReleaseUiComponents.Text,
+                FontStyle.Bold);
+            label.raycastTarget = false;
+            _difficultyLabels[difficulty] = label;
+
+            _difficultyTimings[difficulty] = ReleaseUiKit.TextBlock(
+                chip.transform,
+                "Timing",
+                string.Empty,
+                12,
+                TextAnchor.UpperCenter,
+                new Vector2(0.05f, 0.00f),
+                new Vector2(0.95f, 0.24f),
+                Color.clear);
+            _difficultyStates[difficulty] = ReleaseUiKit.TextBlock(
+                chip.transform,
+                "SelectionState",
+                string.Empty,
+                12,
+                TextAnchor.MiddleCenter,
+                new Vector2(0.05f, 0.00f),
+                new Vector2(0.95f, 0.20f),
+                Color.clear);
+            _difficultyChecks[difficulty] = null;
+        }
+
+        private static void BuildBackChevron(Transform parent)
+        {
+            Transform upper = ReleaseUiKit.Rect(parent, "ChevronUpper",
+                new Vector2(0.38f, 0.46f), new Vector2(0.66f, 0.56f));
+            Image upperImage = upper.gameObject.AddComponent<Image>();
+            upperImage.sprite = ReleaseUiKit.Rounded;
+            upperImage.type = Image.Type.Sliced;
+            upperImage.color = ReleaseUiComponents.Cyan;
+            upperImage.raycastTarget = false;
+            upper.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, -42f);
+
+            Transform lower = ReleaseUiKit.Rect(parent, "ChevronLower",
+                new Vector2(0.38f, 0.36f), new Vector2(0.66f, 0.46f));
+            Image lowerImage = lower.gameObject.AddComponent<Image>();
+            lowerImage.sprite = ReleaseUiKit.Rounded;
+            lowerImage.type = Image.Type.Sliced;
+            lowerImage.color = ReleaseUiComponents.Cyan;
+            lowerImage.raycastTarget = false;
+            lower.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, 42f);
+        }
+
+        private static void BuildPreviewRoute(Transform parent)
+        {
+            Transform host = ReleaseUiKit.Rect(parent, "PreviewRouteHost",
+                new Vector2(0.07f, 0.09f), new Vector2(0.93f, 0.91f));
+
+            var points = new List<FixedPoint2>
             {
-                Image bar = ReleaseUiKit.Panel(card.transform, "DifficultyBar" + i,
-                    new Vector2(0.045f + i * 0.035f, 0.26f), new Vector2(0.07f + i * 0.035f, 0.46f + i * 0.12f),
-                    i <= difficulty ? accent : new Color(0.19f, 0.25f, 0.34f, 1f), accent, false);
-                bar.raycastTarget = false;
+                FixedPoint2.FromNormalized(0.07, 0.22),
+                FixedPoint2.FromNormalized(0.16, 0.48),
+                FixedPoint2.FromNormalized(0.28, 0.67),
+                FixedPoint2.FromNormalized(0.42, 0.70),
+                FixedPoint2.FromNormalized(0.55, 0.58),
+                FixedPoint2.FromNormalized(0.66, 0.42),
+                FixedPoint2.FromNormalized(0.77, 0.45),
+                FixedPoint2.FromNormalized(0.88, 0.70),
+                FixedPoint2.FromNormalized(0.95, 0.82)
+            };
+
+            var glowGo = new GameObject("PreviewGlow", typeof(RectTransform), typeof(RouteGraphic));
+            glowGo.transform.SetParent(host, false);
+            ReleaseUiKit.Stretch(glowGo.GetComponent<RectTransform>());
+            RouteGraphic glow = glowGo.GetComponent<RouteGraphic>();
+            glow.color = new Color(0.05f, 0.70f, 1f, 0.28f);
+            glow.Thickness = 30f;
+            glow.raycastTarget = false;
+            glow.SetPoints(points);
+
+            var lineGo = new GameObject("PreviewLine", typeof(RectTransform), typeof(RouteGraphic));
+            lineGo.transform.SetParent(host, false);
+            ReleaseUiKit.Stretch(lineGo.GetComponent<RectTransform>());
+            RouteGraphic line = lineGo.GetComponent<RouteGraphic>();
+            line.color = new Color(0.16f, 0.82f, 1f, 1f);
+            line.Thickness = 10f;
+            line.raycastTarget = false;
+            line.SetPoints(points);
+
+            Image start = ReleaseUiKit.Dot(host, "PreviewStart", Color.white,
+                new Vector2(0.015f, 0.145f), new Vector2(0.105f, 0.285f));
+            Outline startGlow = start.gameObject.AddComponent<Outline>();
+            startGlow.effectColor = new Color(0.08f, 0.72f, 1f, 0.72f);
+            startGlow.effectDistance = new Vector2(3f, -3f);
+
+            Image end = ReleaseUiKit.Dot(host, "PreviewEnd", ReleaseUiComponents.Cyan,
+                new Vector2(0.895f, 0.745f), new Vector2(0.985f, 0.885f));
+            Image inner = ReleaseUiKit.Dot(end.transform, "PreviewEndInner",
+                new Color(0.008f, 0.025f, 0.060f, 1f),
+                new Vector2(0.27f, 0.27f), new Vector2(0.73f, 0.73f));
+            inner.raycastTarget = false;
+        }
+
+        private async void ClaimTrainingReward()
+        {
+            if (_rewardedButton == null || !_rewardedButton.interactable) return;
+
+            var ads = AdRuntimeCoordinator.Ads;
+            if (ads == null || !ads.IsRewardedReady)
+            {
+                if (_rewardedLabel != null) _rewardedLabel.text = "РЕКЛАМА ПОКА НЕДОСТУПНА";
+                return;
             }
 
-            ReleaseUiKit.TextBlock(card.transform, "Label", title, 31,
-                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.50f), new Vector2(0.65f, 0.88f),
-                ReleaseUiComponents.Text, FontStyle.Bold);
-
-            ReleaseUiKit.TextBlock(card.transform, "Description", description, 22,
-                TextAnchor.MiddleLeft, new Vector2(0.18f, 0.08f), new Vector2(0.71f, 0.48f),
-                ReleaseUiComponents.Muted);
-
-            _difficultyTimings[difficulty] = ReleaseUiKit.TextBlock(card.transform, "Timing", string.Empty, 22,
-                TextAnchor.MiddleRight, new Vector2(0.66f, 0.54f), new Vector2(0.94f, 0.87f),
-                accent, FontStyle.Bold);
-            _difficultyStates[difficulty] = ReleaseUiKit.TextBlock(card.transform, "SelectionState", string.Empty, 20,
-                TextAnchor.MiddleRight, new Vector2(0.73f, 0.10f), new Vector2(0.88f, 0.43f), accent, FontStyle.Bold);
-
-            Image check = ReleaseUiComponents.Icon(card.transform, "SelectionCheck", GeneratedUiAssets.CheckIcon,
-                new Vector2(0.885f, 0.11f), new Vector2(0.955f, 0.42f));
-            check.color = accent;
-            check.gameObject.SetActive(false);
-            _difficultyChecks[difficulty] = check;
+            _rewardedButton.interactable = false;
+            try
+            {
+                bool rewarded = await ads.ShowRewardedAsync(DontGetSidetracked.Services.RewardPlacement.FreeHint);
+                if (rewarded)
+                {
+                    var repository = new JsonFileSaveRepository();
+                    SaveData save = repository.Load();
+                    save.Hints++;
+                    repository.Save(save);
+                    if (_rewardedLabel != null) _rewardedLabel.text = "ДОП. ПРОСМОТР ДОСТУПЕН";
+                }
+            }
+            catch (Exception error)
+            {
+                Debug.LogWarning("Training rewarded unavailable: " + error.Message);
+                if (_rewardedLabel != null) _rewardedLabel.text = "РЕКЛАМА ПОКА НЕДОСТУПНА";
+            }
+            finally
+            {
+                _rewardedButton.interactable = true;
+            }
         }
 
         private void RefreshDifficultySelection()
@@ -275,31 +452,62 @@ namespace DontGetSidetracked.Presentation
             {
                 Image card = _difficultyCards[i];
                 if (card == null) continue;
-                Outline outline = card.GetComponent<Outline>();
-                if (outline == null) continue;
+
                 bool selected = i == _selectedDifficulty;
-                Color accent = i == 0 ? ReleaseUiComponents.Success :
-                               i == 1 ? ReleaseUiComponents.Cyan :
-                                        ReleaseUiComponents.Violet;
-                outline.effectColor = new Color(accent.r, accent.g, accent.b, selected ? 0.72f : 0.20f);
-                outline.effectDistance = selected ? new Vector2(4f, -4f) : new Vector2(2f, -2f);
-                card.color = selected
-                    ? new Color(
-                        Mathf.Lerp(0.026f, accent.r * 0.14f, 0.45f),
-                        Mathf.Lerp(0.070f, accent.g * 0.14f, 0.45f),
-                        Mathf.Lerp(0.115f, accent.b * 0.14f, 0.45f),
-                        0.995f)
-                    : new Color(0.020f, 0.055f, 0.100f, 0.955f);
-                _difficultyTimings[i].text = "ПОКАЗ " + (RouteRuntimeTuning.GetDisplayTimeMs((RouteDifficulty)i) / 1000f).ToString("0.0") + " С";
-                _difficultyStates[i].text = selected ? "ВЫБРАНО" : string.Empty;
-                if (_difficultyChecks[i] != null)
+                Color accent = i == 0
+                    ? ReleaseUiComponents.Cyan
+                    : i == 1
+                        ? ReleaseUiComponents.Blue
+                        : ReleaseUiComponents.Violet;
+
+                if (selected && ReleaseSkinAssets.PrimaryButton != null)
                 {
-                    _difficultyChecks[i].gameObject.SetActive(selected);
-                    _difficultyChecks[i].color = accent;
+                    card.sprite = ReleaseSkinAssets.PrimaryButton;
+                    card.type = Image.Type.Simple;
+                    card.color = Color.white;
                 }
+                else if (!selected && ReleaseSkinAssets.SecondaryButton != null)
+                {
+                    card.sprite = ReleaseSkinAssets.SecondaryButton;
+                    card.type = Image.Type.Sliced;
+                    card.color = new Color(0.68f, 0.75f, 0.86f, 0.92f);
+                }
+                else
+                {
+                    card.color = selected ? Color.white : new Color(0.30f, 0.38f, 0.50f, 0.88f);
+                }
+
+                if (_difficultyLabels[i] != null)
+                    _difficultyLabels[i].color = selected
+                        ? new Color(0.010f, 0.050f, 0.100f, 1f)
+                        : ReleaseUiComponents.Text;
+
+                Shadow shadow = card.GetComponent<Shadow>();
+                if (shadow != null)
+                {
+                    shadow.effectColor = selected
+                        ? new Color(accent.r, accent.g, accent.b, 0.38f)
+                        : new Color(0f, 0f, 0f, 0.20f);
+                    shadow.effectDistance = selected ? new Vector2(0f, -5f) : new Vector2(0f, -2f);
+                }
+
+                if (_difficultyTimings[i] != null)
+                    _difficultyTimings[i].text = string.Empty;
+                if (_difficultyStates[i] != null)
+                    _difficultyStates[i].text = string.Empty;
+                if (_difficultyChecks[i] != null)
+                    _difficultyChecks[i].gameObject.SetActive(false);
             }
-            string selectedName = _selectedDifficulty == 0 ? "ЛЁГКАЯ" : _selectedDifficulty == 1 ? "СРЕДНЯЯ" : "СЛОЖНАЯ";
-            if (_selectionSummary != null) _selectionSummary.text = selectedName + "  •  ТОЧНОСТЬ ВАЖНЕЕ СКОРОСТИ";
+
+            string selectedName = _selectedDifficulty == 0
+                ? "ЛЁГКАЯ"
+                : _selectedDifficulty == 1
+                    ? "СРЕДНЯЯ"
+                    : "СЛОЖНАЯ";
+
+            float seconds = RouteRuntimeTuning.GetDisplayTimeMs((RouteDifficulty)_selectedDifficulty) / 1000f;
+            if (_selectionSummary != null)
+                _selectionSummary.text = selectedName + "  •  ПОКАЗ " + seconds.ToString("0.0") + " С";
         }
 
         private static void SetAnchors(RectTransform rect, Vector2 min, Vector2 max)
