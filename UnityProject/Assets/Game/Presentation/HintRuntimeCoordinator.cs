@@ -178,12 +178,15 @@ namespace DontGetSidetracked.Presentation
             releaseVisual.transform.SetParent(_canvas.transform, false);
             ReleaseUiKit.Stretch(releaseVisual.GetComponent<RectTransform>());
 
+            // Keep the hint control below the gesture board. The previous position
+            // overlapped the lower play area on tall Android devices and could intercept
+            // the player's route gesture.
             _button = ReleaseUiComponents.SecondaryButton(
                 _canvas.transform,
                 "UseHint",
                 string.Empty,
-                new Vector2(0.15f, 0.192f),
-                new Vector2(0.85f, 0.250f),
+                new Vector2(0.15f, 0.115f),
+                new Vector2(0.85f, 0.170f),
                 UseHint,
                 21);
 
@@ -192,7 +195,7 @@ namespace DontGetSidetracked.Presentation
 
             Image buttonImage = _button.GetComponent<Image>();
             if (buttonImage != null)
-                buttonImage.color = new Color(ReleaseUiKit.Gold.r, ReleaseUiKit.Gold.g, ReleaseUiKit.Gold.b, 0.08f);
+                buttonImage.color = new Color(0.035f, 0.055f, 0.090f, 0.98f);
 
             Outline outline = _button.GetComponent<Outline>();
             if (outline != null)
