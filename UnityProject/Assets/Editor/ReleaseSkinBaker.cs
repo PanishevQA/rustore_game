@@ -12,7 +12,7 @@ namespace DontGetSidetracked.EditorTools
     internal static class ReleaseSkinBaker
     {
         private const string Folder = "Assets/Resources/ReleaseSkin";
-        private const int Version = 3;
+        private const int Version = 4;
 
         static ReleaseSkinBaker()
         {
@@ -160,15 +160,15 @@ namespace DontGetSidetracked.EditorTools
         {
             Texture2D t=NewTexture(size,size);
             Vector2 center=new Vector2((size-1)*.5f,(size-1)*.5f);
-            float outer=size*.45f, inner=size*.35f;
+            float outer=size*.46f, inner=size*.31f;
             for(int y=0;y<size;y++) for(int x=0;x<size;x++)
             {
                 float d=Vector2.Distance(new Vector2(x,y),center);
-                float glow=Mathf.Clamp01(1f-Mathf.Abs(d-outer)/(size*.055f));
+                float glow=Mathf.Clamp01(1f-Mathf.Abs(d-outer)/(size*.075f));
                 float ring=(d<=outer && d>=inner)?1f:0f;
                 Color col=new Color(.05f,.80f,1f,0);
                 if(ring>0) col=Color.Lerp(C("#13CFFF"),C("#6C53FF"),(Mathf.Atan2(y-center.y,x-center.x)+Mathf.PI)/(2*Mathf.PI));
-                col.a=Mathf.Max(ring*.98f,glow*.24f);
+                col.a=Mathf.Max(ring,glow*.42f);
                 t.SetPixel(x,y,col);
             }
             t.Apply(); return t;
