@@ -14,6 +14,7 @@ namespace DontGetSidetracked.Presentation
         private static Sprite _secondaryGradient;
         private static Sprite _glassSheen;
         private static Sprite _glassPanel;
+        private static Sprite _navViolet;
         private static Texture2D _backdropTexture;
 
         public static readonly Color Navy = new Color(0.012f, 0.030f, 0.070f, 1f);
@@ -70,11 +71,12 @@ namespace DontGetSidetracked.Presentation
                 : new Color(0.88f, 0.94f, 1f, 1f);
             Image card = ReleaseUiKit.Panel(parent, name, min, max, fill, accent, true);
 
-            if (_glassPanel != null)
+            Sprite authoredPanel = IsVioletAccent(accent) && _navViolet != null ? _navViolet : _glassPanel;
+            if (authoredPanel != null)
             {
-                card.sprite = _glassPanel;
+                card.sprite = authoredPanel;
                 card.type = Image.Type.Sliced;
-                card.color = Color.Lerp(Color.white, accent, strong ? 0.10f : 0.055f);
+                card.color = Color.white;
 
                 Outline outline = card.GetComponent<Outline>();
                 if (outline != null) outline.enabled = false;
@@ -133,20 +135,23 @@ namespace DontGetSidetracked.Presentation
             button.colors = colors;
 
             Shadow shadow = root.gameObject.AddComponent<Shadow>();
-            shadow.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, 0.30f);
+            shadow.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, _primaryGradient == ReleaseSkinAssets.PrimaryButton ? 0.18f : 0.30f);
             shadow.effectDistance = new Vector2(0f, -7f);
 
-            Outline glow = root.gameObject.AddComponent<Outline>();
-            glow.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, 0.38f);
-            glow.effectDistance = new Vector2(2f, -2f);
+            if (_primaryGradient != ReleaseSkinAssets.PrimaryButton)
+            {
+                Outline glow = root.gameObject.AddComponent<Outline>();
+                glow.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, 0.38f);
+                glow.effectDistance = new Vector2(2f, -2f);
 
-            Transform sheenRoot = ReleaseUiKit.Rect(root, "ButtonSheen",
-                new Vector2(0.025f, 0.54f), new Vector2(0.975f, 0.955f));
-            Image sheen = sheenRoot.gameObject.AddComponent<Image>();
-            sheen.sprite = _glassSheen;
-            sheen.type = Image.Type.Sliced;
-            sheen.color = new Color(1f, 1f, 1f, 0.16f);
-            sheen.raycastTarget = false;
+                Transform sheenRoot = ReleaseUiKit.Rect(root, "ButtonSheen",
+                    new Vector2(0.025f, 0.54f), new Vector2(0.975f, 0.955f));
+                Image sheen = sheenRoot.gameObject.AddComponent<Image>();
+                sheen.sprite = _glassSheen;
+                sheen.type = Image.Type.Sliced;
+                sheen.color = new Color(1f, 1f, 1f, 0.16f);
+                sheen.raycastTarget = false;
+            }
 
             Text text = ReleaseUiKit.TextBlock(root, "Label", label, fontSize, TextAnchor.MiddleCenter,
                 Vector2.zero, Vector2.one, Text, FontStyle.Bold);
@@ -171,8 +176,9 @@ namespace DontGetSidetracked.Presentation
             image.color = Color.white;
 
             Outline outline = root.gameObject.AddComponent<Outline>();
-            outline.effectColor = _secondaryGradient != null
-                ? new Color(Cyan.r, Cyan.g, Cyan.b, 0.14f)
+            bool authoredSecondary = _secondaryGradient == ReleaseSkinAssets.SecondaryButton;
+            outline.effectColor = authoredSecondary
+                ? new Color(Cyan.r, Cyan.g, Cyan.b, 0.06f)
                 : new Color(Cyan.r, Cyan.g, Cyan.b, 0.42f);
             outline.effectDistance = new Vector2(2f, -2f);
 
@@ -265,6 +271,11 @@ namespace DontGetSidetracked.Presentation
                 min, max, use, FontStyle.Bold);
         }
 
+        private static bool IsVioletAccent(Color accent)
+        {
+            return accent.b > 0.72f && accent.r > 0.32f && accent.g < 0.58f;
+        }
+
         private static void EnsureAssets()
         {
             if (_primaryGradient == null)
@@ -277,6 +288,8 @@ namespace DontGetSidetracked.Presentation
                         new Color(0.05f, 0.04f, 0.16f, 1f));
             if (_glassPanel == null)
                 _glassPanel = ReleaseSkinAssets.GlassPanel;
+            if (_navViolet == null)
+                _navViolet = ReleaseSkinAssets.NavViolet;
             if (_glassSheen == null)
                 _glassSheen = CreateVerticalSheenSprite(96, 64, 20);
             if (_backdropTexture == null)
