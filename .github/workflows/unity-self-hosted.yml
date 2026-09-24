@@ -76,6 +76,69 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_release_candidate_checks.ps1 -BuildSmokeApk
 
+      - name: Install signed device-smoke APK
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_signed_device_smoke_apk.ps1
+
+      - name: Capture gameplay after hint layout fix
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+          $devices = @()
+          foreach ($line in (& $adbExe devices)) {
+            if ($line -match "^([^\s]+)\s+device\s*$") { $devices += $Matches[1] }
+          }
+          if ($devices.Count -ne 1) { throw "Expected exactly one authorized Android device; found $($devices.Count)." }
+          $serial = $devices[0]
+          $package = "ru.release.nesbeisya"
+          $out = Join-Path $PWD "artifacts\gameplay-hint-capture"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          function Shot([string]$Name) {
+            $remote = "/sdcard/nesbeisya-$Name.png"
+            $local = Join-Path $out "$Name.png"
+            & $adbExe -s $serial shell screencap -p $remote
+            & $adbExe -s $serial pull $remote $local | Out-Host
+            & $adbExe -s $serial shell rm $remote | Out-Null
+          }
+
+          & $adbExe -s $serial shell input keyevent KEYCODE_WAKEUP | Out-Null
+          & $adbExe -s $serial shell wm dismiss-keyguard | Out-Null
+          & $adbExe -s $serial shell am force-stop $package | Out-Null
+          & $adbExe -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 6
+
+          & $adbExe -s $serial shell input tap 540 1840
+          Start-Sleep -Seconds 2
+          Shot "01-training-menu"
+
+          & $adbExe -s $serial shell input tap 540 2045
+          Start-Sleep -Milliseconds 900
+          Shot "02-route-preview"
+
+          Start-Sleep -Seconds 5
+          Shot "03-draw-phase"
+
+          # Physical capture above establishes the Easy route markers around these
+          # coordinates on the 1080x2400 device: cyan start at bottom, white end at top.
+          & $adbExe -s $serial shell input swipe 520 1790 507 980 1200
+          Start-Sleep -Seconds 3
+          Shot "04-result"
+
+          $appPid = ((& $adbExe -s $serial shell pidof $package) | Out-String).Trim()
+          if ([string]::IsNullOrWhiteSpace($appPid)) { throw "App process died during gameplay capture." }
+
+          @(
+            "GameplayHintCapture=PASS",
+            "Serial=$serial",
+            "Gesture=520,1790 -> 507,980",
+            "Pid=$appPid"
+          ) | Set-Content -Path (Join-Path $out "report.txt") -Encoding UTF8
+
       - name: Run Android integration and native AAR probe
         if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
         shell: powershell
@@ -92,3 +155,5 @@ jobs:
             artifacts/agent-check/**
             artifacts/release-candidate/**
             artifacts/android-integration-probe/**
+            artifacts/device-smoke/**
+            artifacts/gameplay-hint-capture/**
