@@ -1,0 +1,110 @@
+name: capture-release-texture-bake-v2
+
+on:
+  push:
+    branches:
+      - 'agent/capture-release-texture-bake-v2-*'
+    paths:
+      - '.github/workflows/capture-release-texture-bake-v2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: [self-hosted, windows, x64, unity]
+    timeout-minutes: 15
+    steps:
+      - name: Capture clean v2 skin evidence
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          Add-Type -AssemblyName System.Drawing
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $serial = ((& $adbExe devices) | Where-Object { $_ -match "^([^\s]+)\s+device\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
+          if ([string]::IsNullOrWhiteSpace($serial)) { throw "No authorized Android device found." }
+
+          $package = "ru.release.nesbeisya"
+          $out = Join-Path $PWD "fresh-v2-skin-capture"
+          if (Test-Path $out) { Remove-Item $out -Recurse -Force }
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          function Shot([string]$Name) {
+            $remote = "/sdcard/nesbeisya-$Name.png"
+            $local = Join-Path $out "$Name.png"
+            & $adbExe -s $serial shell screencap -p $remote
+            & $adbExe -s $serial pull $remote $local | Out-Host
+            & $adbExe -s $serial shell rm $remote | Out-Null
+            return $local
+          }
+
+          & $adbExe -s $serial shell am force-stop $package | Out-Null
+          & $adbExe -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 7
+          Shot "01-home-v2"
+
+          & $adbExe -s $serial shell input tap 540 1510
+          Start-Sleep -Seconds 2
+          Shot "02-training-v2"
+
+          & $adbExe -s $serial shell input tap 540 2050
+          Start-Sleep -Seconds 5
+          $drawPath = Shot "03-draw-v2"
+
+          $bmp = [System.Drawing.Bitmap]::FromFile($drawPath)
+          try {
+            $cyan = New-Object System.Collections.Generic.List[System.Drawing.Point]
+            $white = New-Object System.Collections.Generic.List[System.Drawing.Point]
+
+            for ($y = 760; $y -lt 1780; $y += 2) {
+              for ($x = 80; $x -lt 1000; $x += 2) {
+                $px = $bmp.GetPixel($x, $y)
+                if ($px.R -lt 85 -and $px.G -gt 175 -and $px.B -gt 185 -and ([Math]::Abs($px.B-$px.G) -lt 85)) {
+                  $cyan.Add([System.Drawing.Point]::new($x,$y))
+                }
+                if ($px.R -gt 225 -and $px.G -gt 225 -and $px.B -gt 225) {
+                  $white.Add([System.Drawing.Point]::new($x,$y))
+                }
+              }
+            }
+
+            if ($cyan.Count -lt 3 -or $white.Count -lt 3) {
+              throw "Marker detection failed: cyan=$($cyan.Count) white=$($white.Count)"
+            }
+
+            $startX = [int](($cyan | Measure-Object -Property X -Average).Average)
+            $startY = [int](($cyan | Measure-Object -Property Y -Average).Average)
+            $endX = [int](($white | Measure-Object -Property X -Average).Average)
+            $endY = [int](($white | Measure-Object -Property Y -Average).Average)
+
+            Write-Host "Detected start=($startX,$startY) end=($endX,$endY)"
+            & $adbExe -s $serial shell input swipe $startX $startY $endX $endY 1200
+          }
+          finally {
+            $bmp.Dispose()
+          }
+
+          Start-Sleep -Seconds 4
+          Shot "04-result-v2"
+
+          $appPid = ((& $adbExe -s $serial shell pidof $package) | Out-String).Trim()
+          if ([string]::IsNullOrWhiteSpace($appPid)) { throw "App process died during fresh v2 capture." }
+
+          @(
+            "FreshV2SkinCapture=PASS",
+            "Serial=$serial",
+            "Start=$startX,$startY",
+            "End=$endX,$endY",
+            "Pid=$appPid"
+          ) | Set-Content -Path (Join-Path $out "report.txt") -Encoding UTF8
+
+      - name: Upload fresh v2 evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-release-texture-bake-v2-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: fresh-v2-skin-capture/**
