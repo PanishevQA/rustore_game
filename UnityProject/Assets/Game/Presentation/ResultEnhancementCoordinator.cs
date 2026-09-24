@@ -534,7 +534,8 @@ namespace DontGetSidetracked.Presentation
             Image detail = ReleaseUiComponents.GlassCard(_canvas.transform, "ResultDetail",
                 new Vector2(0.07f, 0.325f), new Vector2(0.93f, 0.382f),
                 ReleaseUiComponents.Blue, false);
-            detail.color = new Color(0.016f, 0.043f, 0.082f, 0.96f);
+            if (detail.sprite != ReleaseSkinAssets.GlassPanel && detail.sprite != ReleaseSkinAssets.NavViolet)
+                detail.color = new Color(0.016f, 0.043f, 0.082f, 0.96f);
             _detailCard = detail.gameObject;
 
             _detailText = ReleaseUiKit.TextBlock(detail.transform, "Detail", string.Empty, 18,
@@ -609,7 +610,8 @@ namespace DontGetSidetracked.Presentation
         private static Text Metric(Transform parent, string name, string label, Vector2 min, Vector2 max, Color accent)
         {
             Image cell = ReleaseUiComponents.GlassCard(parent, name, min, max, accent, false);
-            cell.color = new Color(0.018f, 0.046f, 0.084f, 0.97f);
+            if (cell.sprite != ReleaseSkinAssets.GlassPanel && cell.sprite != ReleaseSkinAssets.NavViolet)
+                cell.color = new Color(0.018f, 0.046f, 0.084f, 0.97f);
 
             ReleaseUiKit.TextBlock(cell.transform, "Caption", label, 15, TextAnchor.UpperLeft,
                 new Vector2(0.065f, 0.45f), new Vector2(0.94f, 0.90f),

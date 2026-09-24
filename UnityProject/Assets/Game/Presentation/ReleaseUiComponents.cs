@@ -66,6 +66,7 @@ namespace DontGetSidetracked.Presentation
             Color accent,
             bool strong = false)
         {
+            EnsureAssets();
             Color fill = strong
                 ? new Color(0.94f, 0.98f, 1f, 1f)
                 : new Color(0.88f, 0.94f, 1f, 1f);
@@ -174,14 +175,14 @@ namespace DontGetSidetracked.Presentation
             Transform root = ReleaseUiKit.Rect(parent, name, min, max);
             Image image = root.gameObject.AddComponent<Image>();
             image.sprite = _secondaryGradient ?? ReleaseUiKit.Rounded;
-            image.type = Image.Type.Sliced;
+            bool authoredSecondary = _secondaryGradient == ReleaseSkinAssets.SecondaryButton;
+            image.type = authoredSecondary ? Image.Type.Simple : Image.Type.Sliced;
             image.color = Color.white;
+            image.preserveAspect = false;
 
             Outline outline = root.gameObject.AddComponent<Outline>();
-            bool authoredSecondary = _secondaryGradient == ReleaseSkinAssets.SecondaryButton;
-            outline.effectColor = authoredSecondary
-                ? new Color(Cyan.r, Cyan.g, Cyan.b, 0.06f)
-                : new Color(Cyan.r, Cyan.g, Cyan.b, 0.42f);
+            outline.enabled = !authoredSecondary;
+            outline.effectColor = new Color(Cyan.r, Cyan.g, Cyan.b, 0.42f);
             outline.effectDistance = new Vector2(2f, -2f);
 
             Button button = root.gameObject.AddComponent<Button>();
