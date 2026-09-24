@@ -76,6 +76,56 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_release_candidate_checks.ps1 -BuildSmokeApk
 
+      - name: Install signed device-smoke APK
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_signed_device_smoke_apk.ps1
+
+      - name: Capture polished Home on device
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $out = Join-Path $PWD "artifacts\home-release-capture"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          $adb = Get-Command adb -ErrorAction SilentlyContinue
+          if ($adb) { $adbExe = $adb.Source } else {
+            $unity = [Environment]::ExpandEnvironmentVariables($env:UNITY_EXE)
+            if ([string]::IsNullOrWhiteSpace($unity) -or -not (Test-Path $unity)) {
+              $unity = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Unity.exe"
+            }
+            $adbExe = Join-Path (Split-Path -Parent $unity) "Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          }
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $devices = @()
+          foreach ($line in (& $adbExe devices)) {
+            if ($line -match "^([^\s]+)\s+device\s*$") { $devices += $Matches[1] }
+          }
+          if ($devices.Count -ne 1) { throw "Expected exactly one authorized Android device; found $($devices.Count)." }
+          $serial = $devices[0]
+          $package = "ru.release.nesbeisya"
+
+          & $adbExe -s $serial shell input keyevent KEYCODE_WAKEUP | Out-Null
+          & $adbExe -s $serial shell wm dismiss-keyguard | Out-Null
+          & $adbExe -s $serial shell am force-stop $package | Out-Null
+          & $adbExe -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 6
+
+          $remote = "/sdcard/nesbeisya-home-release-polish.png"
+          $local = Join-Path $out "home.png"
+          & $adbExe -s $serial shell screencap -p $remote
+          & $adbExe -s $serial pull $remote $local | Out-Host
+          & $adbExe -s $serial shell rm $remote | Out-Null
+
+          if (-not (Test-Path $local) -or (Get-Item $local).Length -lt 50000) {
+            throw "Home capture is missing or suspiciously small."
+          }
+
+          (& $adbExe -s $serial shell wm size) | Set-Content -Path (Join-Path $out "wm-size.txt") -Encoding UTF8
+          (& $adbExe -s $serial logcat -d -t 2500 -v time) | Set-Content -Path (Join-Path $out "logcat.txt") -Encoding UTF8
+
       - name: Run Android integration and native AAR probe
         if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
         shell: powershell
@@ -92,3 +142,5 @@ jobs:
             artifacts/agent-check/**
             artifacts/release-candidate/**
             artifacts/android-integration-probe/**
+            artifacts/device-smoke/**
+            artifacts/home-release-capture/**
