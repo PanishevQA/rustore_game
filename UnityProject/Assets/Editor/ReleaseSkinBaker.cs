@@ -12,7 +12,7 @@ namespace DontGetSidetracked.EditorTools
     internal static class ReleaseSkinBaker
     {
         private const string Folder = "Assets/Resources/ReleaseSkin";
-        private const int Version = 4;
+        private const int Version = 5;
 
         static ReleaseSkinBaker()
         {
@@ -146,9 +146,9 @@ namespace DontGetSidetracked.EditorTools
                 float a=RoundedMask(x,y,w,h,r);
                 if(a<=0){t.SetPixel(x,y,Color.clear);continue;}
                 float nx=x/(float)(w-1);
+                // Keep the body vertically uniform so Unity 9-slicing cannot expose
+                // horizontal seams at the top/centre/bottom slice boundaries.
                 Color col=Color.Lerp(left,right,nx);
-                float highlight=Mathf.SmoothStep(.52f,1f,y/(float)(h-1));
-                col += new Color(.12f,.12f,.18f,0)*highlight;
                 float edge=RoundedEdge(x,y,w,h,r,3);
                 col=Color.Lerp(col,rim,edge*.88f);
                 col.a*=a; t.SetPixel(x,y,col);
