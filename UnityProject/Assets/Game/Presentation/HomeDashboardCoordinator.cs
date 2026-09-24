@@ -517,7 +517,7 @@ namespace DontGetSidetracked.Presentation
 
         private void BuildDailyCard(Transform parent)
         {
-            Transform card = ReleaseUiComponents.GlassCard(parent, "DailyCard",
+            Transform card = CreateHomeSurface(parent, "DailyCard",
                 new Vector2(0.07f, 0.585f), new Vector2(0.93f, 0.805f),
                 ReleaseUiComponents.Cyan, true).transform;
 
@@ -539,7 +539,7 @@ namespace DontGetSidetracked.Presentation
             ReleaseUiComponents.PrimaryButton(card, "DailyPlay", "▶  ИГРАТЬ",
                 new Vector2(0.48f, 0.055f), new Vector2(0.945f, 0.245f), StartDailyFromHome, 31);
 
-            Image reward = ReleaseUiComponents.GlassCard(card, "DailyReward",
+            Image reward = CreateHomeSurface(card, "DailyReward",
                 new Vector2(0.055f, 0.055f), new Vector2(0.45f, 0.245f), ReleaseUiComponents.Gold, false);
             ReleaseUiKit.TextBlock(reward.transform, "RewardLabel", "DAILY", 16, TextAnchor.MiddleLeft,
                 new Vector2(0.08f, 0.54f), new Vector2(0.92f, 0.87f), ReleaseUiComponents.Muted, FontStyle.Bold);
@@ -549,7 +549,7 @@ namespace DontGetSidetracked.Presentation
 
         private void BuildCampaignCard(Transform parent)
         {
-            Transform card = ReleaseUiComponents.GlassCard(parent, "CampaignCard",
+            Transform card = CreateHomeSurface(parent, "CampaignCard",
                 new Vector2(0.07f, 0.410f), new Vector2(0.93f, 0.570f),
                 ReleaseUiComponents.Violet, false).transform;
 
@@ -593,7 +593,7 @@ namespace DontGetSidetracked.Presentation
         {
             // One readable progress strip replaces four narrow dashboard cards. At phone
             // width every value now has room to breathe and the Home hierarchy stays clear.
-            Image strip = ReleaseUiComponents.GlassCard(parent, "HomeStatsStrip",
+            Image strip = CreateHomeSurface(parent, "HomeStatsStrip",
                 new Vector2(0.07f, 0.300f), new Vector2(0.93f, 0.395f),
                 ReleaseUiComponents.Blue, false);
 
@@ -609,6 +609,43 @@ namespace DontGetSidetracked.Presentation
             CreateDivider(strip.transform, 0.25f);
             CreateDivider(strip.transform, 0.50f);
             CreateDivider(strip.transform, 0.75f);
+        }
+
+        private static Image CreateHomeSurface(
+            Transform parent,
+            string name,
+            Vector2 min,
+            Vector2 max,
+            Color accent,
+            bool strong)
+        {
+            Color fill = strong
+                ? new Color(0.028f, 0.085f, 0.150f, 0.985f)
+                : new Color(0.024f, 0.052f, 0.100f, 0.975f);
+            Image card = ReleaseUiKit.Panel(parent, name, min, max, fill, accent, true);
+
+            Outline outline = card.GetComponent<Outline>();
+            if (outline != null)
+            {
+                outline.effectColor = new Color(accent.r, accent.g, accent.b, strong ? 0.25f : 0.14f);
+                outline.effectDistance = new Vector2(1.2f, -1.2f);
+            }
+
+            Shadow shadow = card.GetComponent<Shadow>();
+            if (shadow != null)
+            {
+                shadow.effectColor = new Color(0f, 0f, 0f, strong ? 0.42f : 0.30f);
+                shadow.effectDistance = new Vector2(0f, strong ? -8f : -5f);
+            }
+
+            Transform accentRoot = CreateRect(card.transform, "AccentLine",
+                new Vector2(0.0f, 0.14f), new Vector2(0.006f, 0.86f));
+            Image accentLine = accentRoot.gameObject.AddComponent<Image>();
+            accentLine.sprite = _rounded;
+            accentLine.type = Image.Type.Sliced;
+            accentLine.color = new Color(accent.r, accent.g, accent.b, strong ? 0.92f : 0.60f);
+            accentLine.raycastTarget = false;
+            return card;
         }
 
         private static Text CreateCompactMetric(
@@ -641,15 +678,15 @@ namespace DontGetSidetracked.Presentation
             // Training is the secondary gameplay loop, so it gets a full-width touch target.
             // Meta destinations stay one row below instead of becoming three tiny columns.
             CreateQuickAction(parent, "TrainingQuick", "ТРЕНИРОВКА", "Бесконечные маршруты", ReleaseUiComponents.Success,
-                new Vector2(0.07f, 0.220f), new Vector2(0.93f, 0.285f),
+                new Vector2(0.07f, 0.228f), new Vector2(0.93f, 0.288f),
                 OpenTrainingFromHome);
 
             CreateQuickAction(parent, "StatsQuick", "СТАТИСТИКА", "Прогресс и рекорды", ReleaseUiComponents.Violet,
-                new Vector2(0.07f, 0.140f), new Vector2(0.49f, 0.205f),
+                new Vector2(0.07f, 0.160f), new Vector2(0.49f, 0.218f),
                 OpenStatisticsFromHome);
 
             CreateQuickAction(parent, "StoreQuick", "МАГАЗИН", "Скины и подсказки", ReleaseUiComponents.Cyan,
-                new Vector2(0.51f, 0.140f), new Vector2(0.93f, 0.205f),
+                new Vector2(0.51f, 0.160f), new Vector2(0.93f, 0.218f),
                 OpenStoreFromHome);
         }
 
@@ -663,7 +700,7 @@ namespace DontGetSidetracked.Presentation
             Vector2 max,
             UnityEngine.Events.UnityAction action)
         {
-            Transform card = ReleaseUiComponents.GlassCard(parent, name, min, max, accent, false).transform;
+            Transform card = CreateHomeSurface(parent, name, min, max, accent, false).transform;
 
             bool wide = max.x - min.x > 0.60f;
             float iconLeft = wide ? 0.035f : 0.055f;
@@ -683,12 +720,12 @@ namespace DontGetSidetracked.Presentation
                 glyph.fontStyle = FontStyle.Bold;
             }
 
-            Text heading = CreateText(card, "Title", title, wide ? 28 : 24, TextAnchor.MiddleLeft,
-                new Vector2(textLeft, 0.48f), new Vector2(0.94f, 0.82f), TextPrimary);
+            Text heading = CreateText(card, "Title", title, wide ? 27 : 23, TextAnchor.MiddleLeft,
+                new Vector2(textLeft, 0.50f), new Vector2(0.94f, 0.80f), TextPrimary);
             heading.fontStyle = FontStyle.Bold;
 
-            CreateText(card, "Subtitle", subtitle, wide ? 20 : 18, TextAnchor.MiddleLeft,
-                new Vector2(textLeft, 0.14f), new Vector2(0.94f, 0.50f), TextMuted);
+            CreateText(card, "Subtitle", subtitle, wide ? 18 : 16, TextAnchor.MiddleLeft,
+                new Vector2(textLeft, 0.20f), new Vector2(0.94f, 0.48f), TextMuted);
 
             Button button = card.gameObject.AddComponent<Button>();
             button.targetGraphic = card.GetComponent<Image>();
