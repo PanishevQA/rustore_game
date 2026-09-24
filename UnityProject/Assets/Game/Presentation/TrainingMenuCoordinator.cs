@@ -26,6 +26,7 @@ namespace DontGetSidetracked.Presentation
         private readonly Text[] _difficultyTimings = new Text[3];
         private readonly Text[] _difficultyStates = new Text[3];
         private readonly Image[] _difficultyChecks = new Image[3];
+        private readonly Text[] _difficultyLabels = new Text[3];
         private Text _selectionSummary;
         private Text _rewardedLabel;
         private Button _rewardedButton;
@@ -157,14 +158,18 @@ namespace DontGetSidetracked.Presentation
             ReleaseUiComponents.Backdrop(_panel.transform, "TrainingReleaseBackdrop");
             _panel.AddComponent<ReleasePanelMotion>();
 
-            ReleaseUiComponents.SecondaryButton(
+            Image backSurface = ReleaseUiKit.Panel(
                 _panel.transform,
                 "Close",
-                "←",
-                new Vector2(0.045f, 0.895f),
-                new Vector2(0.145f, 0.955f),
-                Close,
-                30);
+                new Vector2(0.045f, 0.900f),
+                new Vector2(0.125f, 0.952f),
+                new Color(0.018f, 0.055f, 0.105f, 0.98f),
+                ReleaseUiComponents.Cyan,
+                false);
+            Button backButton = backSurface.gameObject.AddComponent<Button>();
+            backButton.targetGraphic = backSurface;
+            backButton.onClick.AddListener(Close);
+            BuildBackChevron(backSurface.transform);
 
             Text title = ReleaseUiKit.TextBlock(
                 _panel.transform,
@@ -204,7 +209,8 @@ namespace DontGetSidetracked.Presentation
                 Outline po = preview.GetComponent<Outline>();
                 if (po != null) po.enabled = false;
             }
-            BuildPreviewRoute(preview.transform);
+            if (ReleaseSkinAssets.RoutePanel == null)
+                BuildPreviewRoute(preview.transform);
 
             ReleaseUiKit.TextBlock(
                 _panel.transform,
@@ -224,23 +230,14 @@ namespace DontGetSidetracked.Presentation
             CreateDifficultyChip(2, "HardChip", "СЛОЖНАЯ",
                 new Vector2(0.660f, 0.430f), new Vector2(0.930f, 0.500f));
 
-            _selectionSummary = ReleaseUiKit.TextBlock(
-                _panel.transform,
-                "SelectionSummary",
-                string.Empty,
-                18,
-                TextAnchor.MiddleCenter,
-                new Vector2(0.070f, 0.370f),
-                new Vector2(0.930f, 0.415f),
-                ReleaseUiComponents.Muted,
-                FontStyle.Bold);
+            _selectionSummary = null;
 
             ReleaseUiComponents.PrimaryButton(
                 _panel.transform,
                 "StartTraining",
                 "ИГРАТЬ",
-                new Vector2(0.070f, 0.260f),
-                new Vector2(0.930f, 0.345f),
+                new Vector2(0.070f, 0.285f),
+                new Vector2(0.930f, 0.370f),
                 StartSelected,
                 31);
 
@@ -261,7 +258,7 @@ namespace DontGetSidetracked.Presentation
             Image adIcon = ReleaseUiComponents.Icon(
                 rewarded.transform,
                 "RewardedIcon",
-                GeneratedUiAssets.AdIcon,
+                GeneratedUiAssets.EyeIcon,
                 new Vector2(0.045f, 0.18f),
                 new Vector2(0.170f, 0.82f));
             adIcon.color = Color.white;
@@ -269,7 +266,7 @@ namespace DontGetSidetracked.Presentation
             _rewardedLabel = ReleaseUiKit.TextBlock(
                 rewarded.transform,
                 "RewardedCopy",
-                "СМОТРИ РЕКЛАМУ →\nПОЛУЧИ ПОДСКАЗКУ",
+                "СМОТРИ РЕКЛАМУ →\nЕЩЁ ОДИН ПРОСМОТР МАРШРУТА",
                 20,
                 TextAnchor.MiddleLeft,
                 new Vector2(0.205f, 0.12f),
@@ -320,6 +317,7 @@ namespace DontGetSidetracked.Presentation
                 ReleaseUiComponents.Text,
                 FontStyle.Bold);
             label.raycastTarget = false;
+            _difficultyLabels[difficulty] = label;
 
             _difficultyTimings[difficulty] = ReleaseUiKit.TextBlock(
                 chip.transform,
@@ -340,6 +338,27 @@ namespace DontGetSidetracked.Presentation
                 new Vector2(0.95f, 0.20f),
                 Color.clear);
             _difficultyChecks[difficulty] = null;
+        }
+
+        private static void BuildBackChevron(Transform parent)
+        {
+            Transform upper = ReleaseUiKit.Rect(parent, "ChevronUpper",
+                new Vector2(0.38f, 0.46f), new Vector2(0.66f, 0.56f));
+            Image upperImage = upper.gameObject.AddComponent<Image>();
+            upperImage.sprite = ReleaseUiKit.Rounded;
+            upperImage.type = Image.Type.Sliced;
+            upperImage.color = ReleaseUiComponents.Cyan;
+            upperImage.raycastTarget = false;
+            upper.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, -42f);
+
+            Transform lower = ReleaseUiKit.Rect(parent, "ChevronLower",
+                new Vector2(0.38f, 0.36f), new Vector2(0.66f, 0.46f));
+            Image lowerImage = lower.gameObject.AddComponent<Image>();
+            lowerImage.sprite = ReleaseUiKit.Rounded;
+            lowerImage.type = Image.Type.Sliced;
+            lowerImage.color = ReleaseUiComponents.Cyan;
+            lowerImage.raycastTarget = false;
+            lower.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, 42f);
         }
 
         private static void BuildPreviewRoute(Transform parent)
@@ -413,7 +432,7 @@ namespace DontGetSidetracked.Presentation
                     SaveData save = repository.Load();
                     save.Hints++;
                     repository.Save(save);
-                    if (_rewardedLabel != null) _rewardedLabel.text = "ПОДСКАЗКА ПОЛУЧЕНА";
+                    if (_rewardedLabel != null) _rewardedLabel.text = "ДОП. ПРОСМОТР ДОСТУПЕН";
                 }
             }
             catch (Exception error)
@@ -441,17 +460,35 @@ namespace DontGetSidetracked.Presentation
                         ? ReleaseUiComponents.Blue
                         : ReleaseUiComponents.Violet;
 
-                card.color = selected
-                    ? Color.white
-                    : new Color(0.72f, 0.80f, 0.92f, 0.82f);
+                if (selected && ReleaseSkinAssets.PrimaryButton != null)
+                {
+                    card.sprite = ReleaseSkinAssets.PrimaryButton;
+                    card.type = Image.Type.Simple;
+                    card.color = Color.white;
+                }
+                else if (!selected && ReleaseSkinAssets.SecondaryButton != null)
+                {
+                    card.sprite = ReleaseSkinAssets.SecondaryButton;
+                    card.type = Image.Type.Sliced;
+                    card.color = new Color(0.68f, 0.75f, 0.86f, 0.92f);
+                }
+                else
+                {
+                    card.color = selected ? Color.white : new Color(0.30f, 0.38f, 0.50f, 0.88f);
+                }
+
+                if (_difficultyLabels[i] != null)
+                    _difficultyLabels[i].color = selected
+                        ? new Color(0.010f, 0.050f, 0.100f, 1f)
+                        : ReleaseUiComponents.Text;
 
                 Shadow shadow = card.GetComponent<Shadow>();
                 if (shadow != null)
                 {
                     shadow.effectColor = selected
-                        ? new Color(accent.r, accent.g, accent.b, 0.42f)
-                        : new Color(0f, 0f, 0f, 0.28f);
-                    shadow.effectDistance = selected ? new Vector2(0f, -6f) : new Vector2(0f, -3f);
+                        ? new Color(accent.r, accent.g, accent.b, 0.38f)
+                        : new Color(0f, 0f, 0f, 0.20f);
+                    shadow.effectDistance = selected ? new Vector2(0f, -5f) : new Vector2(0f, -2f);
                 }
 
                 if (_difficultyTimings[i] != null)
