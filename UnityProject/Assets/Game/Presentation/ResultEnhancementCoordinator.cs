@@ -494,8 +494,11 @@ namespace DontGetSidetracked.Presentation
                 _scoreGlow.gameObject.SetActive(false);
             }
 
-            Image scoreInner = CircleImage(_scoreRing.transform, "ScoreInner",
-                new Vector2(0.085f, 0.085f), new Vector2(0.915f, 0.915f),
+            Transform scoreInnerParent = authoredRing != null ? scoreHost : _scoreRing.transform;
+            Vector2 scoreInnerMin = authoredRing != null ? new Vector2(0.19f, 0.19f) : new Vector2(0.085f, 0.085f);
+            Vector2 scoreInnerMax = authoredRing != null ? new Vector2(0.81f, 0.81f) : new Vector2(0.915f, 0.915f);
+            Image scoreInner = CircleImage(scoreInnerParent, "ScoreInner",
+                scoreInnerMin, scoreInnerMax,
                 new Color(0.008f, 0.030f, 0.068f, 0.995f));
             scoreInner.raycastTarget = false;
 

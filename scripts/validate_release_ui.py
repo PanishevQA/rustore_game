@@ -63,14 +63,14 @@ required = {
     ),
     "release_skin": (
         'Root = "ReleaseSkin/"',
-        "Convert.FromBase64String",
-        'LoadTexture("Backdrop")',
-        'LoadSliced("Glass"',
-        'LoadSliced("Primary"',
-        'LoadSliced("Secondary"',
-        'LoadSliced("Gameplay"',
-        'LoadSimple("Route")',
-        'LoadSimple("ScoreRing")',
+        'Resources.Load<Texture2D>(Root + "Backdrop")',
+        'Load(ref _glass, "Glass")',
+        'Load(ref _gameplay, "Gameplay")',
+        'Load(ref _route, "Route")',
+        'Load(ref _navViolet, "NavViolet")',
+        'Load(ref _primary, "Primary")',
+        'Load(ref _secondary, "Secondary")',
+        'Load(ref _scoreRing, "ScoreRing")',
         "HasCoreSkin",
     ),
     "tutorial_intro": (
@@ -334,22 +334,29 @@ if "_hudVisible == visible" in texts["gameplay_hud"]:
 if "RectTransform rt = playArea.rectTransform;" in texts["visual_theme"]:
     errors.append("VisualThemeCoordinator must not own PlayArea geometry; GameplayHudCoordinator is the single board layout owner.")
 
-RELEASE_SKIN = ROOT / "UnityProject/Assets/Resources/ReleaseSkin"
-for asset in (
-    "Backdrop.txt",
-    "Primary.txt",
-    "Secondary.txt",
-    "Glass.txt",
-    "Gameplay.txt",
-    "NavViolet.txt",
-    "Route.txt",
-    "ScoreRing.txt",
-):
-    path = RELEASE_SKIN / asset
-    if not path.is_file():
-        errors.append(f"Missing authored release skin asset: {asset}")
-    elif len(path.read_text(encoding="utf-8").strip()) < 512:
-        errors.append(f"Authored release skin asset looks truncated: {asset}")
+SKIN_BAKER = ROOT / "UnityProject/Assets/Editor/ReleaseSkinBaker.cs"
+if not SKIN_BAKER.is_file():
+    errors.append("Missing editor-time release skin baker.")
+else:
+    baker = SKIN_BAKER.read_text(encoding="utf-8")
+    for marker in (
+        '[MenuItem("Tools/НЕ СБЕЙСЯ/Bake Release Skin")]',
+        'Folder = "Assets/Resources/ReleaseSkin"',
+        '"Backdrop.png"',
+        '"Glass.png"',
+        '"Gameplay.png"',
+        '"Route.png"',
+        '"NavViolet.png"',
+        '"Primary.png"',
+        '"Secondary.png"',
+        '"ScoreRing.png"',
+        "TextureImporterType.Sprite",
+        "spriteBorder",
+        "IPreprocessBuildWithReport",
+        "EnsureBaked();",
+    ):
+        if marker not in baker:
+            errors.append(f"ReleaseSkinBaker.cs release skin bake contract is missing: {marker!r}")
 
 if "ReleaseSkinAssets.Background" not in texts["ui_components"]:
     errors.append("ReleaseUiComponents must prefer the authored backdrop skin.")
