@@ -76,6 +76,32 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_release_candidate_checks.ps1 -BuildSmokeApk
 
+      - name: Install border-fix APK and capture Home
+        if: ${{ env.AGENT_CHECK_MODE == 'DeviceSmokeApk' }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_signed_device_smoke_apk.ps1
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+          $serial = ((& $adbExe devices) | Where-Object { $_ -match "^([^\s]+)\s+device\s*$" } | ForEach-Object { $Matches[1] } | Select-Object -First 1)
+          if ([string]::IsNullOrWhiteSpace($serial)) { throw "No authorized Android device found." }
+          $out = Join-Path $PWD "artifacts\device-smoke"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          & $adbExe -s $serial shell am force-stop ru.release.nesbeisya | Out-Null
+          & $adbExe -s $serial shell monkey -p ru.release.nesbeisya -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 7
+          & $adbExe -s $serial shell screencap -p /sdcard/nesbeisya-home-borderfix.png
+          & $adbExe -s $serial pull /sdcard/nesbeisya-home-borderfix.png (Join-Path $out "home-borderfix.png") | Out-Host
+          & $adbExe -s $serial shell rm /sdcard/nesbeisya-home-borderfix.png | Out-Null
+          $appPid = ((& $adbExe -s $serial shell pidof ru.release.nesbeisya) | Out-String).Trim()
+          if ([string]::IsNullOrWhiteSpace($appPid)) { throw "App process died during border-fix capture." }
+          @(
+            "BorderFixDeviceSmoke=PASS",
+            "Serial=$serial",
+            "Pid=$appPid"
+          ) | Set-Content -Path (Join-Path $out "borderfix-report.txt") -Encoding UTF8
+
       - name: Run Android integration and native AAR probe
         if: ${{ env.AGENT_CHECK_MODE == 'AndroidIntegrationProbe' }}
         shell: powershell
@@ -92,3 +118,4 @@ jobs:
             artifacts/agent-check/**
             artifacts/release-candidate/**
             artifacts/android-integration-probe/**
+            artifacts/device-smoke/**
