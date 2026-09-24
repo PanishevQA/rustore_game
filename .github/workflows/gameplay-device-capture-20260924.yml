@@ -1,0 +1,113 @@
+name: gameplay-device-capture-20260924
+
+on:
+  push:
+    branches:
+      - 'agent/final-gameplay-capture/**'
+    paths:
+      - '.github/workflows/gameplay-device-capture-20260924.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: [self-hosted, windows, x64, unity]
+    timeout-minutes: 15
+    steps:
+      - name: Capture installed Training gameplay phases
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          Add-Type -AssemblyName System.Drawing
+          $adbExe = "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\AndroidPlayer\SDK\platform-tools\adb.exe"
+          if (-not (Test-Path $adbExe)) { throw "adb not found: $adbExe" }
+
+          $devices = @()
+          foreach ($line in (& $adbExe devices)) {
+            if ($line -match "^([^\s]+)\s+device\s*$") { $devices += $Matches[1] }
+          }
+          if ($devices.Count -ne 1) { throw "Expected exactly one authorized Android device; found $($devices.Count)." }
+          $serial = $devices[0]
+          $package = "ru.release.nesbeisya"
+          $out = Join-Path $PWD "gameplay-device-capture"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          function Shot([string]$Name) {
+            $remote = "/sdcard/nesbeisya-$Name.png"
+            $local = Join-Path $out "$Name.png"
+            & $adbExe -s $serial shell screencap -p $remote
+            & $adbExe -s $serial pull $remote $local | Out-Host
+            & $adbExe -s $serial shell rm $remote | Out-Null
+            return $local
+          }
+
+          & $adbExe -s $serial shell input keyevent KEYCODE_WAKEUP | Out-Null
+          & $adbExe -s $serial shell wm dismiss-keyguard | Out-Null
+          & $adbExe -s $serial shell am force-stop $package | Out-Null
+          & $adbExe -s $serial shell monkey -p $package -c android.intent.category.LAUNCHER 1 | Out-Host
+          Start-Sleep -Seconds 6
+          Shot "00-home"
+
+          # Current polished Home Training card.
+          & $adbExe -s $serial shell input tap 540 1840
+          Start-Sleep -Seconds 2
+          Shot "01-training-menu"
+
+          # Start selected Easy Training.
+          & $adbExe -s $serial shell input tap 540 2045
+          Start-Sleep -Milliseconds 900
+          Shot "02-route-preview"
+
+          Start-Sleep -Seconds 5
+          $drawPath = Shot "03-draw-phase"
+
+          # Detect bright route markers in the play area and finish one gesture.
+          $bmp = [System.Drawing.Bitmap]::FromFile($drawPath)
+          try {
+            $cyan = New-Object System.Collections.Generic.List[System.Drawing.Point]
+            $warm = New-Object System.Collections.Generic.List[System.Drawing.Point]
+            for ($y = 650; $y -lt 1850; $y += 2) {
+              for ($x = 70; $x -lt 1010; $x += 2) {
+                $px = $bmp.GetPixel($x, $y)
+                if ($px.R -lt 110 -and $px.G -gt 150 -and $px.B -gt 165) {
+                  $cyan.Add([System.Drawing.Point]::new($x,$y))
+                }
+                if ($px.R -gt 190 -and $px.G -gt 110 -and $px.B -lt 170) {
+                  $warm.Add([System.Drawing.Point]::new($x,$y))
+                }
+              }
+            }
+            if ($cyan.Count -gt 10 -and $warm.Count -gt 10) {
+              $sx = [int](($cyan | Measure-Object -Property X -Average).Average)
+              $sy = [int](($cyan | Measure-Object -Property Y -Average).Average)
+              $ex = [int](($warm | Measure-Object -Property X -Average).Average)
+              $ey = [int](($warm | Measure-Object -Property Y -Average).Average)
+            } else {
+              $sx = 245; $sy = 1160; $ex = 825; $ey = 1370
+            }
+          }
+          finally { $bmp.Dispose() }
+
+          & $adbExe -s $serial shell input swipe $sx $sy $ex $ey 1100
+          Start-Sleep -Seconds 3
+          Shot "04-result"
+
+          $pid = ((& $adbExe -s $serial shell pidof $package) | Out-String).Trim()
+          if ([string]::IsNullOrWhiteSpace($pid)) { throw "App process died during gameplay capture." }
+
+          @(
+            "GameplayDeviceCapture=PASS",
+            "Serial=$serial",
+            "Gesture=$sx,$sy -> $ex,$ey",
+            "Pid=$pid"
+          ) | Set-Content -Path (Join-Path $out "report.txt") -Encoding UTF8
+
+      - name: Upload gameplay evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: gameplay-device-capture-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: gameplay-device-capture/**
