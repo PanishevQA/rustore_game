@@ -12,7 +12,7 @@ namespace DontGetSidetracked.EditorTools
     internal static class ReleaseSkinBaker
     {
         private const string Folder = "Assets/Resources/ReleaseSkin";
-        private const int Version = 6;
+        private const int Version = 7;
 
         static ReleaseSkinBaker()
         {
@@ -46,7 +46,7 @@ namespace DontGetSidetracked.EditorTools
             Configure("Gameplay", 62, true);
             Configure("Route", 56, true);
             Configure("NavViolet", 50, true);
-            Configure("Primary", 38, true);
+            Configure("Primary", 0, false);
             Configure("Secondary", 38, true);
             Configure("ScoreRing", 0, false);
             AssetDatabase.SaveAssets();
